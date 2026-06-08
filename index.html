@@ -126,6 +126,18 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 .medal{display:inline-flex;align-items:center;gap:6px;background:var(--bg3);border:1px solid var(--line);border-radius:20px;padding:5px 11px;margin:3px;font-size:12px;font-weight:600}
 .medal.got{border-color:var(--gold);color:var(--gold)}
 .sub-opt{display:flex;justify-content:space-between;align-items:center;padding:9px 10px;background:var(--bg3);border:1px solid var(--line);border-radius:9px;margin-bottom:6px;font-size:13px}
+.vid-cat{display:flex;align-items:center;gap:12px;padding:13px;background:var(--bg3);border:1px solid var(--line);border-radius:12px;margin-bottom:9px;cursor:pointer;transition:.15s}
+.vid-cat:active{transform:scale(.98)}
+.vid-cat.sug{border-color:var(--viol);background:rgba(156,107,255,.08)}
+.vid-cat .ve{font-size:26px}
+.vid-cat .vmeta{flex:1}.vid-cat .vmeta b{font-size:15px;font-family:'Anton';font-weight:400}
+.vid-cat .vmeta .vd{font-size:12px;color:var(--dim)}
+.vid-cat .vgo{color:var(--viol);font-size:20px}
+.video-wrap{position:relative;width:100%;padding-bottom:56.25%;height:0;border-radius:12px;overflow:hidden;border:1px solid var(--line);margin-top:8px}
+.video-wrap iframe{position:absolute;top:0;left:0;width:100%;height:100%;border:0}
+.vid-list-item{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:9px;margin-top:6px;cursor:pointer;font-size:13px}
+.vid-list-item:active{background:var(--bg3)}
+.vid-list-item .vn{flex:1}.vid-list-item .vt{font-size:11px;color:var(--dim)}
 </style>
 </head>
 <body>
@@ -195,9 +207,21 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 
 <!-- MENTE -->
 <section class="view" id="v-mind">
-  <div class="tabs"><button class="on" onclick="mindTab('ritual',this)">Ritual mañana</button><button onclick="mindTab('habits',this)">Hábitos</button></div>
-  <div id="mind-ritual">
-    <div class="card" style="border-color:var(--viol)"><h3>🧠 Ritual 15 min <span class="tag v">cuerpo+mente</span></h3><p class="mini">Antes de trabajar. La app te guía paso a paso.</p><div id="mindTimer"></div><div id="mindSteps" style="margin-top:12px"></div><button class="btn btn-viol" style="margin-top:10px" onclick="completeMind()">✓ Marcar completado hoy</button></div>
+  <div class="tabs"><button class="on" onclick="mindTab('video',this)">Guiado</button><button onclick="mindTab('ritual',this)">Ritual rápido</button><button onclick="mindTab('habits',this)">Hábitos</button></div>
+  <div id="mind-video">
+    <div class="card" style="border-color:var(--viol)"><h3>🎬 Activación guiada <span class="tag v">en vídeo</span></h3>
+      <p class="mini">Elige cómo arrancar el día y sigue el vídeo. Cada día propone uno distinto para no aburrir. Al terminar, marca completado.</p>
+      <div id="videoCats" style="margin-top:10px"></div>
+    </div>
+    <div id="videoPlayerCard" class="card" style="display:none">
+      <h3 id="vpTitle">▶ Vídeo</h3>
+      <div id="videoPlayer"></div>
+      <button class="btn btn-viol" style="margin-top:12px" onclick="completeMind()">✓ Marcar ritual completado hoy</button>
+      <p class="mini" id="vpStatus" style="margin-top:8px"></p>
+    </div>
+  </div>
+  <div id="mind-ritual" style="display:none">
+    <div class="card" style="border-color:var(--viol)"><h3>🧠 Ritual rápido 15 min</h3><p class="mini">Sin vídeo, guiado por pasos cronometrados. Útil si prefieres hacerlo a tu aire.</p><div id="mindTimer"></div><div id="mindSteps" style="margin-top:12px"></div><button class="btn btn-viol" style="margin-top:10px" onclick="completeMind()">✓ Marcar completado hoy</button></div>
   </div>
   <div id="mind-habits" style="display:none">
     <div class="card"><h3>✅ Hábitos de hoy</h3><div class="note viol">No busques el 100%. La clave es <b>no fallar dos días seguidos</b>.</div><div id="habitList" style="margin-top:10px"></div><details style="margin-top:8px"><summary style="cursor:pointer;color:var(--acc2);font-size:13px;font-weight:600">+ Editar hábitos</summary><div id="habitEdit" style="margin-top:8px"></div></details></div>

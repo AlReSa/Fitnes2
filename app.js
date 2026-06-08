@@ -80,10 +80,10 @@ function seed(){
 }
 
 /* ===== navegación ===== */
-function nav(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));el.classList.add('on');window.scrollTo(0,0);if(v==='home')renderDashboard();if(v==='mind'){renderMindSteps();renderMindTimer();renderHabits();}if(v==='body')renderBody();if(v==='train'){renderCycle();renderTodayReady();renderExtra();}}
+function nav(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));el.classList.add('on');window.scrollTo(0,0);if(v==='home')renderDashboard();if(v==='mind'){renderVideoCats();renderHabits();}if(v==='body')renderBody();if(v==='train'){renderCycle();renderTodayReady();renderExtra();}}
 function navBtn(i){return document.querySelectorAll('nav button')[i];}
 function trainTab(t,el){['hoy','prog','retos','rutinas'].forEach(x=>document.getElementById('train-'+x).style.display='none');document.getElementById('train-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='prog'){renderProgSelect();renderDensityChart();renderPR();renderHistory();}if(t==='retos'){renderMedals();renderFormatPR();}if(t==='rutinas'){renderRoutines();renderRotation();}if(t==='hoy'){renderCycle();renderTodayReady();renderExtra();}}
-function mindTab(t,el){['ritual','habits'].forEach(x=>document.getElementById('mind-'+x).style.display='none');document.getElementById('mind-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='habits'){renderHabits();renderHabitStreak();}else{renderMindSteps();renderMindTimer();}}
+function mindTab(t,el){['video','ritual','habits'].forEach(x=>document.getElementById('mind-'+x).style.display='none');document.getElementById('mind-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='habits'){renderHabits();renderHabitStreak();}else if(t==='ritual'){renderMindSteps();renderMindTimer();}else{renderVideoCats();}}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400);}
 function closeModal(){document.getElementById('modalBg').classList.remove('on');}
 function openModal(h){document.getElementById('modalBox').innerHTML='<button class="close" onclick="closeModal()">×</button>'+h;document.getElementById('modalBg').classList.add('on');}
@@ -326,6 +326,62 @@ function delMeasure(i){DB.body.splice(i,1);save();renderBody();renderDashboard()
 function renderExtra(){const d=today();const e=DB.extraLog[d]||{};document.getElementById('boxTic').classList.toggle('done',!!e.box);document.getElementById('boxTicTxt').textContent=e.box?'✓ Boxeo hecho hoy':'Hice boxeo hoy';document.getElementById('runTic').classList.toggle('done',!!e.run);document.getElementById('runTicTxt').textContent=e.run?'✓ Carrera hecha hoy':'Hice carrera hoy';}
 function toggleExtra(k){const d=today();DB.extraLog[d]=DB.extraLog[d]||{};DB.extraLog[d][k]=!DB.extraLog[d][k];save();renderExtra();renderDashboard();toast(DB.extraLog[d][k]?(k==='box'?'🥊 Boxeo':'🏃 Carrera')+' registrada':'Quitado');}
 
+/* ===================== MENTE · VÍDEOS GUIADOS ===================== */
+const VIDEO_LIB=[
+  {cat:'Movilidad',ic:'🤸',sub:'Despierta el cuerpo · 10 min',vids:[
+    {id:'aLboTQ9sp4w',t:'Movilidad 10 min para la mañana',dur:'10 min'},
+    {id:'N8iG4-VvJ-s',t:'Movilidad todo el cuerpo',dur:'10 min'},
+    {id:'l9XvauKO0VA',t:'Movilidad mañana, siéntete al 100%',dur:'15 min'},
+    {id:'DPUDZ4yQz3c',t:'Movilidad para corredores',dur:'10 min'}]},
+  {cat:'Yoga',ic:'🧘',sub:'Fluir y activar · 10 min',vids:[
+    {id:'vV-Y8euGt6U',t:'Yoga por la mañana para despertar',dur:'10 min'},
+    {id:'C01BuowiCQw',t:'Yoga 10 min para la mañana',dur:'10 min'},
+    {id:'qTj9vti6Dw0',t:'Yoga en casa principiantes',dur:'10 min'},
+    {id:'KoTp4C0zSTg',t:'Yoga estira todo el cuerpo',dur:'10 min'}]},
+  {cat:'Estiramientos',ic:'🙆',sub:'Suelta tensión · 10 min',vids:[
+    {id:'ZUa-FT1SQrg',t:'Estiramientos mañana cuerpo entero',dur:'10 min'},
+    {id:'3TwVkiu2tgs',t:'Estiramiento de isquiotibiales',dur:'10 min'},
+    {id:'ZHSPmo5SNVk',t:'Movilidad para sentadilla',dur:'10 min'}]},
+  {cat:'Respiración y foco',ic:'🌬️',sub:'Calma y energía · 5 min',vids:[
+    {id:'gm5VrUKd4zk',t:'Meditación de la mañana (5 min)',dur:'5 min'},
+    {id:'FAk0K00j1ps',t:'Meditación energía positiva',dur:'5 min'},
+    {id:'hqJZR4d80Do',t:'Respiración Wim Hof guiada (ritmo lento)',dur:'11 min'},
+    {id:'eC4pBdtN_bo',t:'Meditación al despertar',dur:'5 min'}]}
+];
+function dailyVidIndex(arr){return new Date().getDate()%arr.length;}
+function renderVideoCats(){
+  const el=document.getElementById('videoCats');if(!el)return;
+  const done=DB.mindLog[today()];
+  let html=done?`<div class="note viol" style="margin-bottom:10px">✓ Hoy ya has hecho tu activación. Puedes repetir cuando quieras.</div>`:'';
+  html+=VIDEO_LIB.map((c,ci)=>{
+    const sug=ci===(new Date().getDate()%VIDEO_LIB.length);
+    return `<div class="vid-cat ${sug?'sug':''}" onclick="openVideoCat(${ci})"><div class="ve">${c.ic}</div><div class="vmeta"><b>${c.cat}</b><div class="vd">${c.sub}${sug?' · sugerido hoy':''}</div></div><div class="vgo">▶</div></div>`;
+  }).join('');
+  el.innerHTML=html;
+}
+function openVideoCat(ci){
+  const c=VIDEO_LIB[ci];const idx=dailyVidIndex(c.vids);const v=c.vids[idx];
+  playVideo(v.id,c.cat+' · '+v.t);
+  // lista del resto para elegir otro
+  const rest=c.vids.map((x,i)=>`<div class="vid-list-item" onclick="playVideo('${x.id}','${(c.cat+' · '+x.t).replace(/'/g,'')}')"><div class="vn">${x.t}</div><div class="vt">${x.dur}</div></div>`).join('');
+  document.getElementById('videoPlayerCard').insertAdjacentHTML('beforeend','');
+  window._restHtml={ci,rest};
+  renderVideoRest();
+}
+function renderVideoRest(){
+  if(!window._restHtml)return;const c=VIDEO_LIB[window._restHtml.ci];
+  let host=document.getElementById('videoRest');
+  if(!host){host=document.createElement('div');host.id='videoRest';document.getElementById('videoPlayerCard').appendChild(host);}
+  host.innerHTML=`<div class="mini" style="margin-top:12px;text-transform:uppercase;letter-spacing:.04em">Más de ${c.cat}</div>${window._restHtml.rest}`;
+}
+function playVideo(id,title){
+  const card=document.getElementById('videoPlayerCard');card.style.display='block';
+  document.getElementById('vpTitle').textContent='▶ '+title;
+  document.getElementById('videoPlayer').innerHTML=`<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${id}?rel=0&playsinline=1" title="YouTube" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;
+  document.getElementById('vpStatus').textContent=DB.mindLog[today()]?'✓ Ritual marcado hoy':'Cuando termines, marca el ritual como completado.';
+  card.scrollIntoView({behavior:'smooth'});
+}
+
 /* ===================== MENTE ===================== */
 let MT={running:false,sec:0,idx:0,id:null,total:0};
 function renderMindTimer(){const el=document.getElementById('mindTimer');if(!el)return;const cur=MIND[MT.idx];const m=Math.floor(MT.sec/60),s=MT.sec%60;el.innerHTML=`<div class="timer-hero mind"><div class="phase">PASO ${MT.idx+1}/${MIND.length} · min ${cur.t}</div><div class="clock">${m}:${String(s).padStart(2,'0')}</div><div class="sub">${MT.running?'Sigue la guía':'Pulsa iniciar'}</div><div class="timer-ctrl">${MT.running?`<button class="btn2" onclick="mtPause()">Pausa</button>`:`<button class="btn-viol" onclick="mtStart()">${MT.total?'Sigue':'Iniciar'}</button>`}<button class="btn2" onclick="mtNext()">Sig ▶</button><button class="btn2" onclick="mtReset()">Reset</button></div></div>`;}
@@ -334,7 +390,7 @@ function mtPause(){MT.running=false;clearInterval(MT.id);renderMindTimer();}
 function mtNext(){if(MT.idx<MIND.length-1){MT.idx++;MT.sec=MIND[MT.idx].sec;}else MT.sec=0;renderMindTimer();renderMindSteps();}
 function mtReset(){clearInterval(MT.id);MT={running:false,sec:0,idx:0,id:null,total:0};renderMindTimer();renderMindSteps();}
 function renderMindSteps(){const el=document.getElementById('mindSteps');if(!el)return;el.innerHTML=MIND.map((s,i)=>`<div class="mind-step ${i===MT.idx?'active':''}"><div class="ms-t">${s.t}'</div><div class="ms-d">${s.d}</div></div>`).join('');}
-function completeMind(){DB.mindLog[today()]=true;const d=today();DB.habitLog[d]=DB.habitLog[d]||{};DB.habitLog[d]['h3']=true;save();toast('🧠 Ritual hecho. A por el día.');}
+function completeMind(){DB.mindLog[today()]=true;const d=today();DB.habitLog[d]=DB.habitLog[d]||{};DB.habitLog[d]['h3']=true;save();const st=document.getElementById('vpStatus');if(st)st.textContent='✓ Ritual marcado hoy. Buen arranque.';renderVideoCats();toast('🧠 Ritual hecho. A por el día.');}
 function renderHabits(){const el=document.getElementById('habitList');if(!el)return;const log=DB.habitLog[today()]||{};el.innerHTML=DB.habits.map(h=>`<div class="habit ${log[h.id]?'done':''}" onclick="toggleHabit('${h.id}')"><div class="hi">${h.ic}</div><div class="ht">${h.name}</div><div class="hck">✓</div></div>`).join('');const ee=document.getElementById('habitEdit');if(ee)ee.innerHTML=DB.habits.map(h=>`<div class="set-row" style="grid-template-columns:28px 1fr 28px"><span>${h.ic}</span><input value="${h.name}" oninput="updHabit('${h.id}',this.value)"><button class="del" style="background:none;color:var(--bad)" onclick="delHabit('${h.id}')">✕</button></div>`).join('')+`<button class="btn-sm btn2" style="margin-top:6px" onclick="addHabit()">+ hábito</button>`;}
 function toggleHabit(id){const d=today();DB.habitLog[d]=DB.habitLog[d]||{};DB.habitLog[d][id]=!DB.habitLog[d][id];save();renderHabits();}
 function updHabit(id,v){const h=DB.habits.find(x=>x.id===id);if(h)h.name=v;save();}
