@@ -142,7 +142,7 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 </head>
 <body>
 <header>
-  <div class="htop"><div class="logo">FOR<span>JA</span></div><div class="date" id="hdrDate"></div></div>
+  <div class="htop"><div class="logo">FOR<span>JA</span></div><div style="display:flex;align-items:center;gap:10px"><div class="date" id="hdrDate"></div><button onclick="openSettings()" style="background:var(--bg3);border:1px solid var(--line);color:var(--txt);width:36px;height:36px;border-radius:10px;font-size:18px">⚙️</button></div></div>
   <div class="motivate" id="motivate"></div>
 </header>
 <main>
@@ -165,7 +165,9 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
     <div class="stat"><div class="v viol" id="dRun">0</div><div class="l">carreras sem</div></div>
   </div></div>
   <div class="card"><h3>🎯 Reto de la semana</h3><div id="weekChallenge"></div></div>
+  <div class="card"><h3>📅 Resumen semanal</h3><div id="weeklySummary"></div></div>
   <div class="card"><h3 id="todayTitle">📅 Hoy</h3><div id="todayBox"></div></div>
+  <div class="card"><h3>🥊 Constancia (30 días)</h3><div id="extraHistory"></div></div>
   <div class="card"><h3>🗓️ Semana</h3><div id="weekView"></div></div>
 </section>
 
@@ -237,6 +239,7 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
   <button onclick="nav('mind',this)"><span class="ic">🧠</span>Mente</button>
 </nav>
 <div class="modal-bg" id="modalBg"><div class="modal" id="modalBox"></div></div>
+<input type="file" id="importFile" accept="application/json,.json" style="display:none" onchange="importData(this)">
 <div class="toast" id="toast"></div>
 <script src="app.js"></script>
 </body>
