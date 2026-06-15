@@ -35,8 +35,26 @@ const FINISHER=[
   {label:'Sprint metabólico',desc:'5 series de 30s fuerte / 30s suave (cinta/aire/sombra).',sec:300,timer:'down'}
 ];
 
-async function load(){try{const r=await window.storage.get(KEY);if(r&&r.value)DB=Object.assign(DB,JSON.parse(r.value));}catch(e){}seed();renderAll();}
-async function save(){try{await window.storage.set(KEY,JSON.stringify(DB));}catch(e){}}
+function load(){
+  try{
+    let raw=null;
+    if(typeof localStorage!=='undefined'){raw=localStorage.getItem(KEY);}
+    if(raw){DB=Object.assign(DB,JSON.parse(raw));}
+    else if(typeof window!=='undefined'&&window.storage&&window.storage.get){
+      window.storage.get(KEY).then(r=>{if(r&&r.value){DB=Object.assign(DB,JSON.parse(r.value));seed();renderAll();}}).catch(()=>{});
+    }
+  }catch(e){}
+  seed();renderAll();
+}
+function save(){
+  try{
+    const data=JSON.stringify(DB);
+    if(typeof localStorage!=='undefined'){localStorage.setItem(KEY,data);}
+    if(typeof window!=='undefined'&&window.storage&&window.storage.set){window.storage.set(KEY,data).catch(()=>{});}
+  }catch(e){
+    try{toast('⚠️ No se pudo guardar (¿memoria llena de fotos?)');}catch(_){}
+  }
+}
 
 let DB={
   profile:{weight:118,height:183,age:35,bench:75,squat:120,dead:150},
@@ -45,7 +63,8 @@ let DB={
   cycle:{weeks:6,start:'2026-06-08',rotIndex:0},
   body:[],bodyCfg:{everyWeeks:2},
   scores:[], medals:{}, formatPR:{},
-  athlete:null, mode:'gym', settings:{fontScale:1,wakeLock:false}, exNotes:{}
+  athlete:null, mode:'gym', settings:{fontScale:1,wakeLock:false}, exNotes:{},
+  goalWeight:105, lastBackup:null
 };
 const DEF_HAB=[{id:'h1',ic:'💧',name:'3 L de agua'},{id:'h2',ic:'🌞',name:'Luz natural 10 min'},{id:'h3',ic:'🧠',name:'Ritual de mañana'},{id:'h4',ic:'🥩',name:'Proteína en cada comida'},{id:'h5',ic:'📵',name:'Pausa de pantalla cada hora'},{id:'h6',ic:'😴',name:'Dormir 7-8 h'}];
 const MIND=[{t:'0-2',d:'Respira: 6 respiraciones, inhala 4s / exhala 6s. Suelta hombros y mandíbula.',sec:120},{t:'2-5',d:'Columna: gato-camello x8, rotaciones de tronco x8/lado, círculos de cadera x8.',sec:180},{t:'5-8',d:'Activa: 20 sentadillas + 15 elevaciones de talón + 10 círculos de brazos.',sec:180},{t:'8-11',d:'Tren alto: aperturas de pecho, cuello suave, muñecas (por el teclado) x10.',sec:180},{t:'11-14',d:'Foco: ¿cuál es LA tarea importante de hoy? Visualízate haciéndola.',sec:180},{t:'14-15',d:'Intención: di en voz alta tu objetivo del día y un hábito que cumplirás.',sec:60}];
@@ -81,6 +100,18 @@ function seed(){
 
 /* ===== RUTINAS DE VIAJE (sin gimnasio) ===== */
 /* Material: peso corporal, comba, bandas elásticas (10kg c/u) + barra modulable, espacio para correr */
+const TRAVEL_VID={
+  'Press banca con bandas (barra)':'wsCJgGmpHWk',
+  'Remo con banda':'xQrKtybGD7w',
+  'Press hombro con banda':'oKw3i0K8eAk',
+  'Sentadilla con banda':'YaXPRqUwItQ',
+  'Peso muerto rumano banda':'2SHsk9AzdjA',
+  'Curl banda + press banda':'xQrKtybGD7w',
+  'Comba EMOM':'dqrU2-xlouY','Comba AMRAP':'dqrU2-xlouY',
+  'Flexiones (pies elevados)':'4dF1DOWzf20','Flexiones':'4dF1DOWzf20',
+  'Sentadilla búlgara (banda/mochila)':'2C-uNgKwPLE',
+  'Intervalos carrera':'',
+};
 function travelRoutines(){
   return [
     {id:'t1',name:'TORSO VIAJE',day:'Lunes',travel:true,blocks:[
@@ -160,7 +191,7 @@ function renderDashboard(){
   const fl=fatLossScore();const fn=document.getElementById('fatNum');const fr=document.getElementById('fatRing');
   if(fl!=null){fn.textContent=fl;const col=fl>=66?'var(--ok)':fl>=40?'var(--gold)':'var(--bad)';fr.style.background=`conic-gradient(${col} ${fl*3.6}deg, var(--bg3) 0)`;document.getElementById('fatMsg').textContent=fl>=66?'vas bien':fl>=40?'aceptable':'aprieta';}
   else{fn.textContent='—';fr.style.background='var(--bg3)';document.getElementById('fatMsg').textContent='mide y entrena';}
-  renderWeekChallenge();renderWeeklySummary();renderExtraHistory();renderTodayDash();renderWeekView();
+  renderWeekChallenge();renderWeeklySummary();renderGoalProgress();renderBackupReminder();renderCalendar();renderExtraHistory();renderTodayDash();renderWeekView();
 }
 function renderExtraHistory(){const el=document.getElementById('extraHistory');if(!el)return;let html='';for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10);const e=DB.extraLog[ds]||{};const sess=DB.sessions.some(s=>s.date===ds);let bg='var(--bg3)',bd='var(--line)';if(e.box){bg='rgba(255,193,50,.3)';bd='var(--gold)';}else if(sess){bg='rgba(255,64,21,.25)';bd='var(--acc)';}else if(e.run){bg='rgba(156,107,255,.25)';bd='var(--viol)';}html+=`<span class="streak-dot" style="background:${bg};border-color:${bd}" title="${ds}${e.box?' 🥊':''}${e.run?' 🏃':''}${sess?' 💪':''}"></span>`;}
   const wk=weekDates();const totBox=Object.keys(DB.extraLog).filter(d=>DB.extraLog[d].box).length;const totRun=Object.keys(DB.extraLog).filter(d=>DB.extraLog[d].run).length;
@@ -253,7 +284,7 @@ function renderRotation(){const idx=(DB.cycle.rotIndex||0);document.getElementBy
 /* ===================== MODO ATLETA + FLUJO SESIÓN ===================== */
 function renderTodayReady(){const td=DAYS[(new Date().getDay()+6)%7];const r=DB.routines.find(x=>x.day===td);const el=document.getElementById('todayReady');document.getElementById('readyTitle').textContent='📅 '+td;
   if(DB.session){el.innerHTML='<p class="mini">Sesión en curso abajo 👇</p>';return;}
-  if(r)el.innerHTML=`<div class="day-row"><div class="dd">💪</div><div class="di"><b>${r.name}</b><div class="mini">4 bloques · Fuerza · Hipertrofia · Densidad · Finisher</div></div><button class="btn-sm btn-acc2" onclick="startFlow('${r.id}')">Empezar</button></div>`;
+  if(r)el.innerHTML=`<div class="day-row"><div class="dd">💪</div><div class="di"><b>${r.name}</b><div class="mini">4 bloques · Fuerza · Hipertrofia · Densidad · Finisher</div></div><button class="btn-sm btn-acc2" onclick="startFlow('${r.id}')">Empezar</button></div><button class="btn2" style="margin-top:8px" onclick="startWarmup('${r.id}')">🔥 Calentamiento guiado primero</button>`;
   else el.innerHTML=`<p class="mini">Hoy (${td}) sin rutina. Descanso o empieza una manual:</p><div style="margin-top:8px">${DB.routines.map(x=>`<button class="btn-sm btn2" style="margin:2px" onclick="startFlow('${x.id}')">${x.name}</button>`).join('')}</div>`;
 }
 function startFlow(rid){window._pendingRid=rid;openModal(`<h3>Modo Atleta</h3><p class="mini" style="margin-bottom:6px">¿Cómo llegas hoy? La sesión se ajusta a tu estado.</p><div class="athlete-opt"><button class="fresco" onclick="pickAthlete('fresco')"><span class="e">🔋</span>Fresco</button><button class="normal" onclick="pickAthlete('normal')"><span class="e">⚡</span>Normal</button><button class="fatigado" onclick="pickAthlete('fatigado')"><span class="e">🪫</span>Fatigado</button></div><p class="mini" style="margin-top:10px">Fresco: +volumen e intensidad · Normal: plan estándar · Fatigado: menos volumen, más descanso, finisher suave.</p>`);}
@@ -301,7 +332,9 @@ function renderSessionBody(){const s=DB.session;if(!s)return;let html='';
       let sugTxt=sug?`<div class="prev" style="color:var(--gold)">🎯 Sugerencia: ${sug}</div>`:'';
       const noteVal=DB.exNotes&&DB.exNotes[ex.name]||'';
       const noteTxt=`<input value="${noteVal.replace(/"/g,'&quot;')}" placeholder="📝 nota (agarre, molestia...)" oninput="setExNote('${ex.name.replace(/'/g,"")}',this.value)" style="font-size:12px;padding:7px 10px;margin-top:6px;background:var(--bg)">`;
-      html+=`<div class="ex-block ${b.superset?'super':''}"><div class="ex-head"><span class="nm" onclick="swapExercise(${bi},${ei})" style="cursor:pointer">${ex.name} ${SUBS[ex.name]?'<span style="color:var(--acc2);font-size:13px">⇄</span>':''}</span><span class="mini">${ex.reps} ${b.type==='fuerza'?'· RPE '+(ex.rpe||8):''} ${ex.rest?'· ⏸'+ex.rest+'s':''}</span></div>${prevTxt}${sugTxt}<div class="set-head"><span>#</span><span>Kg</span><span>Reps</span><span>${showRpe?'RPE':''}</span><span>✓</span></div>${ex.sets.map((st,j)=>`<div class="set-row"><span class="n">${j+1}</span><input type="number" inputmode="decimal" value="${st.kg}" placeholder="kg" oninput="setVal(${bi},${ei},${j},'kg',this.value)"><input type="number" inputmode="numeric" value="${st.reps}" placeholder="reps" oninput="setVal(${bi},${ei},${j},'reps',this.value)"><input type="number" inputmode="numeric" value="${st.rpe||''}" placeholder="${showRpe?'rpe':'-'}" ${showRpe?'':'disabled style=opacity:.3'} oninput="setVal(${bi},${ei},${j},'rpe',this.value)" style="grid-column:span 1"><button class="ok ${st.done?'on':''}" onclick="toggleSet(${bi},${ei},${j})">✓</button></div>`).join('')}${noteTxt}<button class="btn-sm btn2" style="margin-top:6px" onclick="addSet(${bi},${ei})">+ serie</button></div>`;
+      const vid=TRAVEL_VID[ex.name];
+      const vidBtn=vid?`<button class="btn-sm btn2" style="margin-top:6px" onclick="showExVideo('${vid}','${ex.name.replace(/'/g,"")}')">🎬 Ver técnica</button>`:'';
+      html+=`<div class="ex-block ${b.superset?'super':''}"><div class="ex-head"><span class="nm" onclick="swapExercise(${bi},${ei})" style="cursor:pointer">${ex.name} ${SUBS[ex.name]?'<span style="color:var(--acc2);font-size:13px">⇄</span>':''}</span><span style="display:flex;gap:4px;align-items:center"><button class="btn-sm btn2" style="padding:4px 8px" onclick="moveEx(${bi},${ei},-1)">↑</button><button class="btn-sm btn2" style="padding:4px 8px" onclick="moveEx(${bi},${ei},1)">↓</button></span></div><div class="mini" style="margin:-4px 0 6px">${ex.reps} ${b.type==='fuerza'?'· RPE '+(ex.rpe||8):''} ${ex.rest?'· ⏸'+ex.rest+'s':''}</div>${prevTxt}${sugTxt}<div class="set-head"><span>#</span><span>Kg</span><span>Reps</span><span>${showRpe?'RPE':''}</span><span>✓</span></div>${ex.sets.map((st,j)=>`<div class="set-row"><span class="n">${j+1}</span><input type="number" inputmode="decimal" value="${st.kg}" placeholder="kg" oninput="setVal(${bi},${ei},${j},'kg',this.value)"><input type="number" inputmode="numeric" value="${st.reps}" placeholder="reps" oninput="setVal(${bi},${ei},${j},'reps',this.value)"><input type="number" inputmode="numeric" value="${st.rpe||''}" placeholder="${showRpe?'rpe':'-'}" ${showRpe?'':'disabled style=opacity:.3'} oninput="setVal(${bi},${ei},${j},'rpe',this.value)" style="grid-column:span 1"><button class="ok ${st.done?'on':''}" onclick="toggleSet(${bi},${ei},${j})">✓</button></div>`).join('')}${vidBtn}${noteTxt}<button class="btn-sm btn2" style="margin-top:6px" onclick="addSet(${bi},${ei})">+ serie</button></div>`;
     });
   });
   document.getElementById('sessionBody').innerHTML=html;
@@ -323,6 +356,7 @@ function rpeSuggestion(name){
   return null;
 }
 function addSet(bi,ei){const ss=DB.session.blocks[bi].exercises[ei].sets;ss.push({kg:ss.length?ss[ss.length-1].kg:'',reps:'',done:false,rpe:''});renderSessionBody();}
+function moveEx(bi,ei,dir){const arr=DB.session.blocks[bi].exercises;const ni=ei+dir;if(ni<0||ni>=arr.length)return;const t=arr[ei];arr[ei]=arr[ni];arr[ni]=t;save();renderSessionBody();}
 function toggleSet(bi,ei,j){const st=DB.session.blocks[bi].exercises[ei].sets[j];st.done=!st.done;if(st.done){const ex=DB.session.blocks[bi].exercises[ei];if(ex.rest){restT(adjRest(ex.rest));}else if(DB.session.blocks[bi].superset){restT(30);}beep(1);}save();renderSessionBody();}
 function adjRest(r){return DB.session&&DB.session.athlete==='fatigado'?r+20:r;}
 function finishSession(){const s=DB.session;if(!s)return;
@@ -376,13 +410,36 @@ function renderRoutines(){const el=document.getElementById('routineList');if(!el
   const isT=DB.mode==='travel';
   let head=`<div class="row" style="margin-bottom:12px"><button class="btn-sm ${!isT?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('gym')">🏋️ Gym</button><button class="btn-sm ${isT?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('travel')">✈️ Viaje</button></div>`;
   if(isT)head+=`<div class="note" style="margin-bottom:10px">Modo viaje: rutinas sin gimnasio con peso corporal, comba, bandas + barra y carrera. Ideal para vacaciones.</div>`;
-  const list=DB.routines.map(r=>`<div class="ex-block"><div class="ex-head"><span class="nm">${r.name} <span class="split-tag">${r.day}</span></span><span><button class="btn-sm btn2" onclick="changeDay('${r.id}')">📅 día</button> <button class="btn-sm btn2" onclick="startFlow('${r.id}')">▶</button></span></div>${r.blocks.map(b=>`<div class="mini" style="margin-top:4px"><b style="color:var(--acc)">${b.label.replace('Bloque','B').replace(' · ',': ')}</b> ${b.exercises.map(e=>e.name+(SUBS[e.name]?` <span style="color:var(--acc2);cursor:pointer" onclick="showSubs('${e.name.replace(/'/g,"")}')">⇄</span>`:'')).join(' · ')}</div>`).join('')}</div>`).join('');
+  const list=DB.routines.map(r=>`<div class="ex-block"><div class="ex-head"><span class="nm">${r.name} <span class="split-tag">${r.day}</span></span><span><button class="btn-sm btn2" onclick="editRoutine('${r.id}')">✎</button> <button class="btn-sm btn2" onclick="changeDay('${r.id}')">📅</button> <button class="btn-sm btn2" onclick="startFlow('${r.id}')">▶</button></span></div>${r.blocks.map(b=>`<div class="mini" style="margin-top:4px"><b style="color:var(--acc)">${b.label.replace('Bloque','B').replace(' · ',': ')}</b> ${b.exercises.map(e=>e.name+(SUBS[e.name]?` <span style="color:var(--acc2);cursor:pointer" onclick="showSubs('${e.name.replace(/'/g,"")}')">⇄</span>`:'')).join(' · ')}</div>`).join('')}</div>`).join('');
   const box=`<div class="ex-block" style="border-color:var(--gold);margin-top:6px"><div class="ex-head"><span class="nm">🥊 BOXEO TÉCNICA <span class="split-tag" style="color:var(--gold)">guiado</span></span><button class="btn-sm btn-gold" onclick="startBoxSession()">▶ Empezar</button></div><div class="mini" style="margin-top:4px">5 rounds de 3 min con descanso de 1 min. Sombra, drills 1-2, combate imaginario y ráfagas, con vídeo y campana en cada round. Como tener un entrenador.</div></div>`;
   el.innerHTML=head+list+box;
 }
-function setMode(m){if(DB.mode===m)return;DB.mode=m;DB.routines=(m==='travel'?travelRoutines():buildRoutines(DB.cycle.rotIndex||0));save();renderRoutines();renderTodayReady();renderDashboard();toast(m==='travel'?'✈️ Modo viaje activado':'🏋️ Modo gym activado');}
+function setMode(m){if(DB.mode===m){renderRoutines();return;}
+  // guardar las rutinas actuales en su cajón antes de cambiar
+  if(DB.mode==='travel')DB.travelRoutinesSaved=DB.routines;else DB.gymRoutinesSaved=DB.routines;
+  DB.mode=m;
+  if(m==='travel')DB.routines=DB.travelRoutinesSaved&&DB.travelRoutinesSaved.length?DB.travelRoutinesSaved:travelRoutines();
+  else DB.routines=DB.gymRoutinesSaved&&DB.gymRoutinesSaved.length?DB.gymRoutinesSaved:buildRoutines(DB.cycle.rotIndex||0);
+  save();renderRoutines();renderTodayReady();renderDashboard();toast(m==='travel'?'✈️ Modo viaje activado':'🏋️ Modo gym activado');}
 function changeDay(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;openModal(`<h3>Cambiar día de ${r.name}</h3><p class="mini" style="margin-bottom:10px">Elige el día que mejor te encaje. Si coincide con otra rutina, podrás tenerlas el mismo día sin problema.</p><label>Día</label><select id="cdDay">${DAYS.map(d=>`<option ${d===r.day?'selected':''}>${d}</option>`).join('')}</select><button class="btn" style="margin-top:14px" onclick="saveDay('${rid}')">Guardar</button>`);}
 function saveDay(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;r.day=document.getElementById('cdDay').value;save();closeModal();renderRoutines();renderTodayReady();renderDashboard();toast('📅 Día actualizado');}
+function editRoutine(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;window._editRid=rid;renderRoutineEditor();}
+function renderRoutineEditor(){const r=DB.routines.find(x=>x.id===window._editRid);if(!r)return;
+  let html=`<h3>✎ Editar ${r.name}</h3><label>Nombre</label><input id="erName" value="${r.name.replace(/"/g,'&quot;')}" oninput="saveRoutineName()">`;
+  r.blocks.forEach((b,bi)=>{
+    html+=`<div class="ex-block" style="margin-top:10px"><b style="font-family:Anton;color:var(--acc)">${b.label}</b>`;
+    b.exercises.forEach((e,ei)=>{
+      html+=`<div style="margin-top:8px;padding:8px;background:var(--bg);border-radius:8px"><input value="${e.name.replace(/"/g,'&quot;')}" oninput="editExField(${bi},${ei},'name',this.value)" style="font-size:13px;margin-bottom:5px" placeholder="Ejercicio"><div class="row"><div><label>Series</label><input type="number" value="${e.sets}" oninput="editExField(${bi},${ei},'sets',this.value)"></div><div><label>Reps</label><input value="${e.reps||''}" oninput="editExField(${bi},${ei},'reps',this.value)"></div><div><label>Kg</label><input type="number" value="${e.kg||0}" oninput="editExField(${bi},${ei},'kg',this.value)"></div></div><div class="row" style="margin-top:5px"><div><label>Desc (s)</label><input type="number" value="${e.rest||0}" oninput="editExField(${bi},${ei},'rest',this.value)"></div><div style="flex:0 0 auto;display:flex;align-items:flex-end"><button class="btn-sm btn2" onclick="delEx(${bi},${ei})" style="color:var(--bad)">🗑 quitar</button></div></div></div>`;
+    });
+    html+=`<button class="btn-sm btn2" style="margin-top:8px" onclick="addEx(${bi})">+ ejercicio a este bloque</button></div>`;
+  });
+  html+=`<button class="btn" style="margin-top:14px" onclick="closeModal();renderRoutines()">✓ Hecho</button>`;
+  openModal(html);
+}
+function editExField(bi,ei,f,v){const r=DB.routines.find(x=>x.id===window._editRid);if(!r)return;const e=r.blocks[bi].exercises[ei];if(f==='sets'||f==='kg'||f==='rest')e[f]=+v||0;else e[f]=v;save();}
+function addEx(bi){const r=DB.routines.find(x=>x.id===window._editRid);if(!r)return;r.blocks[bi].exercises.push({name:'Nuevo ejercicio',sets:3,reps:'10-12',kg:0,rest:60});save();renderRoutineEditor();}
+function delEx(bi,ei){const r=DB.routines.find(x=>x.id===window._editRid);if(!r)return;r.blocks[bi].exercises.splice(ei,1);save();renderRoutineEditor();}
+function saveRoutineName(){const r=DB.routines.find(x=>x.id===window._editRid);if(r){const v=document.getElementById('erName').value;if(v)r.name=v;save();}}
 function showSubs(name){const subs=SUBS[name];if(!subs){toast('Sin sustituciones para este');return;}openModal(`<h3>⇄ Sustituciones</h3><p class="mini" style="margin-bottom:10px">Alternativas para <b>${name}</b> si el material está ocupado, hay molestia, o quieres variar:</p>${subs.map(s=>`<div class="sub-opt"><span>${s}</span><span class="mini">${s.includes('KB')?'kettlebell':s.includes('mancuerna')?'mancuerna':s.includes('máquina')?'máquina':'equivalente'}</span></div>`).join('')}<p class="mini" style="margin-top:8px">Durante la sesión, toca el nombre del ejercicio para cambiarlo en caliente.</p>`);}
 function swapExercise(bi,ei){const ex=DB.session.blocks[bi].exercises[ei];const subs=SUBS[ex.name]||[];
   openModal(`<h3>⇄ Cambiar ejercicio</h3><p class="mini" style="margin-bottom:10px">¿Máquina ocupada o molestia? Cambia <b>${ex.name}</b> por una alternativa. Tus series ya anotadas se conservan.</p>${subs.length?subs.map(s=>`<div class="sub-opt" style="cursor:pointer" onclick="doSwap(${bi},${ei},'${s.replace(/'/g,"")}')"><span>${s}</span><span class="vgo" style="color:var(--acc2)">→</span></div>`).join(''):'<p class="empty">Sin alternativas predefinidas.</p>'}<hr><label>O escribe otro</label><input id="swapCustom" placeholder="Nombre del ejercicio"><button class="btn" style="margin-top:10px" onclick="doSwapCustom(${bi},${ei})">Cambiar</button>`);}
@@ -392,6 +449,7 @@ function doSwapCustom(bi,ei){const v=document.getElementById('swapCustom').value
 /* ===================== BOXEO GUIADO (rounds + vídeo + campana) ===================== */
 let BX={round:0,phase:'idle',sec:0,id:null,running:false};
 function startBoxSession(){BX={round:0,phase:'work',sec:BOX_SESSION.workSec,id:null,running:false};renderBoxSession();document.getElementById('boxSessionCard')&&document.getElementById('boxSessionCard').scrollIntoView({behavior:'smooth'});}
+function showExVideo(id,name){openModal(`<h3>🎬 ${name}</h3><div class="video-wrap"><iframe src="https://www.youtube.com/embed/${id}?rel=0&playsinline=1" title="técnica" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><p class="mini" style="margin-top:10px">Vídeo de referencia para la técnica. Necesita conexión a internet.</p>`);}
 function renderBoxSession(){
   let card=document.getElementById('boxSessionCard');
   if(!card){card=document.createElement('div');card.id='boxSessionCard';card.className='card';document.getElementById('train-rutinas').appendChild(card);}
@@ -427,8 +485,12 @@ function renderBodyHistory(){const el=document.getElementById('bodyHistory');if(
 function delMeasure(i){DB.body.splice(i,1);save();renderBody();renderDashboard();}
 
 /* ===================== EXTRA (boxeo/carrera tic) ===================== */
-function renderExtra(){const d=today();const e=DB.extraLog[d]||{};document.getElementById('boxTic').classList.toggle('done',!!e.box);document.getElementById('boxTicTxt').textContent=e.box?'✓ Boxeo hecho hoy':'Hice boxeo hoy';document.getElementById('runTic').classList.toggle('done',!!e.run);document.getElementById('runTicTxt').textContent=e.run?'✓ Carrera hecha hoy':'Hice carrera hoy';}
-function toggleExtra(k){const d=today();DB.extraLog[d]=DB.extraLog[d]||{};DB.extraLog[d][k]=!DB.extraLog[d][k];save();renderExtra();renderDashboard();toast(DB.extraLog[d][k]?(k==='box'?'🥊 Boxeo':'🏃 Carrera')+' registrada':'Quitado');}
+function renderExtra(){const d=today();const e=DB.extraLog[d]||{};const bx=document.getElementById('boxTic'),rn=document.getElementById('runTic');if(bx){bx.classList.toggle('done',!!e.box);document.getElementById('boxTicTxt').textContent=e.box?`✓ Boxeo${e.boxMin?' · '+e.boxMin+' min':''}`:'Hice boxeo hoy';}if(rn){rn.classList.toggle('done',!!e.run);document.getElementById('runTicTxt').textContent=e.run?`✓ Carrera${e.runMin?' · '+e.runMin+' min':''}`:'Hice carrera hoy';}}
+function toggleExtra(k){const d=today();DB.extraLog[d]=DB.extraLog[d]||{};
+  if(DB.extraLog[d][k]){DB.extraLog[d][k]=false;delete DB.extraLog[d][k+'Min'];delete DB.extraLog[d][k+'Int'];save();renderExtra();renderDashboard();toast('Quitado');return;}
+  const isBox=k==='box';
+  openModal(`<h3>${isBox?'🥊 Boxeo':'🏃 Carrera'} de hoy</h3><p class="mini" style="margin-bottom:10px">Opcional: añade duración e intensidad para afinar tu Fat Loss Score. O guarda directo.</p><div class="row"><div><label>Minutos</label><input id="exMin" type="number" inputmode="numeric" placeholder="${isBox?'30':'45'}"></div><div><label>Intensidad</label><select id="exInt"><option>Suave</option><option selected>Media</option><option>Alta</option></select></div></div><button class="btn" style="margin-top:14px" onclick="confirmExtra('${k}')">Guardar</button>`);}
+function confirmExtra(k){const d=today();DB.extraLog[d]=DB.extraLog[d]||{};DB.extraLog[d][k]=true;const min=+document.getElementById('exMin').value;const int=document.getElementById('exInt').value;if(min)DB.extraLog[d][k+'Min']=min;DB.extraLog[d][k+'Int']=int;save();closeModal();renderExtra();renderDashboard();toast((k==='box'?'🥊 Boxeo':'🏃 Carrera')+' registrado');}
 
 /* ===================== MENTE · VÍDEOS GUIADOS ===================== */
 const VIDEO_LIB=[
@@ -509,10 +571,12 @@ function openSettings(){
   <div class="ex-block"><b style="font-family:Anton">💾 Respaldo de datos</b><p class="mini" style="margin:6px 0 10px">Guarda una copia de todo (entrenos, medidas, fotos, hábitos). Impórtala si cambias de móvil o limpias el navegador.</p><div class="row"><button class="btn-acc2" style="flex:1" onclick="exportData()">⬇ Exportar</button><button class="btn2" style="flex:1" onclick="document.getElementById('importFile').click()">⬆ Importar</button></div></div>
   <div class="ex-block"><b style="font-family:Anton">🔤 Tamaño de letra</b><div class="row" style="margin-top:8px"><button class="btn2" onclick="setFont(0.9)">A−</button><button class="btn2" onclick="setFont(1)">A</button><button class="btn2" onclick="setFont(1.15)">A+</button><button class="btn2" onclick="setFont(1.3)">A++</button></div><p class="mini" style="margin-top:6px">Actual: ${Math.round(fs*100)}%</p></div>
   <div class="ex-block"><b style="font-family:Anton">🧮 Calculadora de discos</b><p class="mini" style="margin:6px 0 8px">Qué discos poner por lado para un peso objetivo.</p><button class="btn2" onclick="openPlates()">Abrir calculadora</button></div>
+  <div class="ex-block"><b style="font-family:Anton">⏱️ Cronómetro de intervalos</b><p class="mini" style="margin:6px 0 8px">Para carrera y cardio: trabajo/descanso × rondas (HIIT, sprints).</p><button class="btn2" onclick="openIntervals()">Abrir cronómetro</button></div>
   <div class="ex-block"><b style="font-family:Anton">📱 Pantalla activa</b><p class="mini" style="margin:6px 0 8px">Evita que el móvil se apague durante la sesión.</p><label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px"><input type="checkbox" id="wlChk" ${DB.settings&&DB.settings.wakeLock?'checked':''} onchange="toggleWakeSetting(this.checked)" style="width:20px;height:20px"> Mantener pantalla encendida</label></div>
   <div class="ex-block"><b style="font-family:Anton">⚠️ Datos</b><p class="mini" style="margin:6px 0 8px">Tus datos viven solo en este teléfono. Exporta de vez en cuando como copia de seguridad.</p></div>`);
 }
-function exportData(){try{const data=JSON.stringify(DB);const blob=new Blob([data],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='forja-backup-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);toast('💾 Copia exportada');}catch(e){toast('Error al exportar');}}
+function exportData(){try{DB.lastBackup=today();const data=JSON.stringify(DB);const blob=new Blob([data],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='forja-backup-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);save();toast('💾 Copia exportada');renderBackupReminder();}catch(e){toast('Error al exportar');}}
+function renderBackupReminder(){const el=document.getElementById('backupReminder');if(!el)return;const days=DB.lastBackup?daysBetween(DB.lastBackup,today()):999;if(!DB.lastBackup){el.innerHTML=`<div class="note gold">💾 Aún no has hecho copia de seguridad. Tus datos viven solo en este móvil. <button class="btn-sm btn-gold" style="margin-top:8px;display:block" onclick="exportData()">Exportar ahora</button></div>`;}else if(days>=10){el.innerHTML=`<div class="note gold">💾 Hace ${days} días de tu última copia. Conviene exportar de nuevo. <button class="btn-sm btn-gold" style="margin-top:8px;display:block" onclick="exportData()">Exportar ahora</button></div>`;}else{el.innerHTML=`<p class="mini">💾 Última copia: hace ${days} ${days===1?'día':'días'}. Bien protegido.</p>`;}}
 function importData(inp){const f=inp.files[0];if(!f)return;const rd=new FileReader();rd.onload=e=>{try{const obj=JSON.parse(e.target.result);if(!obj||typeof obj!=='object'||!('routines'in obj)){toast('Archivo no válido');return;}if(confirm('Esto reemplazará TODOS tus datos actuales por los del archivo. ¿Continuar?')){DB=Object.assign(DB,obj);save();closeModal();renderAll();toast('✅ Datos restaurados');}}catch(err){toast('No se pudo leer el archivo');}};rd.readAsText(f);inp.value='';}
 function setFont(s){DB.settings=DB.settings||{};DB.settings.fontScale=s;applyFont();save();openSettings();}
 function applyFont(){const s=DB.settings&&DB.settings.fontScale||1;document.documentElement.style.fontSize=(16*s)+'px';}
@@ -537,6 +601,64 @@ function renderWeeklySummary(){
   const fl=fatLossScore();
   el.innerHTML=`<div class="stat-grid"><div class="stat"><div class="v acc2">${sess.length}</div><div class="l">entrenos</div></div><div class="stat"><div class="v gold">${box}</div><div class="l">boxeos</div></div><div class="stat"><div class="v viol">${run}</div><div class="l">carreras</div></div></div>${fl!=null?`<div class="note" style="margin-top:10px">Fat Loss de la semana: <b>${fl}/100</b></div>`:''}${top.length?`<div style="margin-top:10px"><div class="mini" style="text-transform:uppercase">Mejores marcas</div>${top.map(t=>`<span class="pill" style="border-color:var(--gold);color:var(--gold)">${t.n} ${t.kg}kg</span>`).join('')}</div>`:'<p class="mini" style="margin-top:10px">Entrena esta semana para ver tus marcas aquí.</p>'}`;
 }
+
+/* ===================== PESO OBJETIVO Y PREVISIÓN ===================== */
+function bodyWeightSeries(){return [...DB.body].filter(b=>b.peso).sort((a,b)=>a.date.localeCompare(b.date)).map(b=>({date:b.date,w:b.peso}));}
+function renderGoalProgress(){
+  const el=document.getElementById('goalProgress');if(!el)return;
+  const series=bodyWeightSeries();
+  const start=series.length?series[0].w:DB.profile.weight;
+  const cur=series.length?series[series.length-1].w:DB.profile.weight;
+  const goal=DB.goalWeight||105;
+  const totalToLose=start-goal;
+  const lost=start-cur;
+  const pct=totalToLose>0?Math.max(0,Math.min(100,Math.round(lost/totalToLose*100))):0;
+  let eta='';
+  if(series.length>=2){
+    const first=series[0],last=series[series.length-1];
+    const days=Math.max(1,daysBetween(first.date,last.date));
+    const rate=(first.w-last.w)/days; // kg/día perdidos
+    if(rate>0.005){const remain=cur-goal;const daysLeft=Math.round(remain/rate);if(remain>0){const d=new Date();d.setDate(d.getDate()+daysLeft);eta=`A tu ritmo actual (${(rate*7).toFixed(2)} kg/sem), llegarías sobre <b>${d.toLocaleDateString('es-ES',{month:'long',year:'numeric'})}</b>.`;}else eta='¡Ya estás en tu objetivo o por debajo! 🎯';}
+    else if(rate<=0&&cur>goal)eta='El peso no baja últimamente. Revisa nutrición y sube cardio/finishers.';
+  }else eta='Registra tu peso 2+ veces en Cuerpo para estimar cuándo llegarás.';
+  const col=pct>=66?'var(--ok)':pct>=33?'var(--gold)':'var(--acc)';
+  el.innerHTML=`<div style="display:flex;justify-content:space-between;align-items:baseline"><span style="font-family:Anton;font-size:22px">${cur} kg</span><span class="mini">meta ${goal} kg</span></div>
+    <div class="bar" style="margin-top:8px"><i style="width:${pct}%;background:${col}"></i></div>
+    <div style="display:flex;justify-content:space-between;margin-top:4px"><span class="mini">inicio ${start} kg</span><span class="mini">${pct}% del camino</span></div>
+    ${eta?`<div class="note" style="margin-top:10px">${eta}</div>`:''}
+    <button class="btn2" style="margin-top:10px" onclick="openGoalWeight()">Ajustar meta</button>`;
+}
+function openGoalWeight(){openModal(`<h3>🎯 Peso objetivo</h3><p class="mini" style="margin-bottom:10px">Tu meta de peso. La app calcula el progreso y estima cuándo llegarás según tu ritmo real.</p><label>Meta (kg)</label><input id="gwInput" type="number" inputmode="decimal" value="${DB.goalWeight||105}"><button class="btn" style="margin-top:14px" onclick="saveGoalWeight()">Guardar</button>`);}
+function saveGoalWeight(){const v=+document.getElementById('gwInput').value;if(v>0)DB.goalWeight=v;save();closeModal();renderGoalProgress();toast('🎯 Meta actualizada');}
+
+/* ===================== CALENTAMIENTO GUIADO ===================== */
+const WARMUPS={
+  PUSH:[{d:'Movilidad de hombros: círculos grandes 10 adelante + 10 atrás',sec:40},{d:'Rotaciones de muñeca y codo x10',sec:30},{d:'Band pull-apart o aperturas x15',sec:40},{d:'Flexiones lentas x10 (activación)',sec:40},{d:'Series de aproximación: barra vacía + 50% del peso',sec:60}],
+  PULL:[{d:'Movilidad de hombro y dorsal: colgarse 20s + círculos',sec:40},{d:'Band pull-apart x15',sec:30},{d:'Gato-camello x8 + rotación torácica x8/lado',sec:40},{d:'Remos ligeros con banda x15',sec:40},{d:'Aproximación: dominadas asistidas o jalón ligero x8',sec:60}],
+  LEGS:[{d:'Movilidad de cadera y tobillo: sentadilla profunda asistida 30s',sec:40},{d:'Círculos de cadera x8/lado + balanceos de pierna x10',sec:40},{d:'Sentadilla peso corporal x15',sec:40},{d:'Zancadas x8/pierna',sec:40},{d:'Aproximación: barra vacía + 50% sentadilla',sec:60}]
+};
+let WU={running:false,sec:0,idx:0,id:null,steps:[],name:''};
+function startWarmup(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;const key=r.name.includes('PUSH')||r.name.includes('TORSO')?'PUSH':r.name.includes('PULL')?'PULL':r.name.includes('LEGS')||r.name.includes('PIERNA')||r.name.includes('FULL')?'LEGS':'PUSH';WU={running:false,sec:WARMUPS[key][0].sec,idx:0,id:null,steps:WARMUPS[key],name:r.name};renderWarmup();}
+function renderWarmup(){let card=document.getElementById('warmupCard');if(!card){card=document.createElement('div');card.id='warmupCard';card.className='card';card.style.borderColor='var(--acc2)';document.getElementById('readyCard').after(card);}const s=WU.steps[WU.idx];const m=Math.floor(WU.sec/60),sec=WU.sec%60;card.innerHTML=`<h3>🔥 Calentamiento · ${WU.name} <span class="tag c2">${WU.idx+1}/${WU.steps.length}</span></h3><div class="timer-hero go"><div class="phase">PREPARACIÓN</div><div class="clock">${m}:${String(sec).padStart(2,'0')}</div><div class="sub">${s.d}</div><div class="timer-ctrl">${WU.running?`<button class="btn2" onclick="wuPause()">Pausa</button>`:`<button class="btn-acc2" onclick="wuStart()">Iniciar</button>`}<button class="btn2" onclick="wuNext()">Sig ▶</button><button class="btn2" onclick="wuClose()">Cerrar</button></div></div><div class="mini">${WU.steps.map((x,i)=>`<span class="pill" style="${i===WU.idx?'border-color:var(--acc2);color:var(--acc2)':''}">${i+1}</span>`).join('')}</div>`;card.scrollIntoView({behavior:'smooth'});}
+function wuStart(){WU.running=true;if(WU.id)clearInterval(WU.id);WU.id=setInterval(()=>{WU.sec--;if(WU.sec<=0){beep(1);if(WU.idx<WU.steps.length-1){WU.idx++;WU.sec=WU.steps[WU.idx].sec;}else{wuDone();return;}}renderWarmup();},1000);renderWarmup();}
+function wuPause(){WU.running=false;clearInterval(WU.id);renderWarmup();}
+function wuNext(){if(WU.idx<WU.steps.length-1){WU.idx++;WU.sec=WU.steps[WU.idx].sec;renderWarmup();}else wuDone();}
+function wuDone(){clearInterval(WU.id);beep(2);wuClose();toast('🔥 Calentado. ¡A entrenar!');}
+function wuClose(){clearInterval(WU.id);const c=document.getElementById('warmupCard');if(c)c.remove();WU={running:false,sec:0,idx:0,id:null,steps:[],name:''};}
+
+/* ===================== CRONÓMETRO DE INTERVALOS ===================== */
+let IV={running:false,sec:0,phase:'work',round:1,id:null,cfg:null};
+function openIntervals(){openModal(`<h3>⏱️ Cronómetro de intervalos</h3><p class="mini" style="margin-bottom:10px">Para carrera, sprints o cardio. Define trabajo, descanso y rondas.</p><div class="row"><div><label>Trabajo (s)</label><input id="ivWork" type="number" value="30"></div><div><label>Descanso (s)</label><input id="ivRest" type="number" value="30"></div><div><label>Rondas</label><input id="ivRounds" type="number" value="8"></div></div><button class="btn" style="margin-top:14px" onclick="startIntervals()">Empezar</button><div id="ivLive" style="margin-top:14px"></div>`);}
+function startIntervals(){IV={running:true,sec:+document.getElementById('ivWork').value||30,phase:'work',round:1,id:null,cfg:{work:+document.getElementById('ivWork').value||30,rest:+document.getElementById('ivRest').value||30,rounds:+document.getElementById('ivRounds').value||8}};if(IV.id)clearInterval(IV.id);IV.id=setInterval(ivTick,1000);renderIntervals();}
+function ivTick(){IV.sec--;if(IV.sec<=0){beep(2);if(IV.phase==='work'){IV.phase='rest';IV.sec=IV.cfg.rest;}else{if(IV.round>=IV.cfg.rounds){ivDone();return;}IV.round++;IV.phase='work';IV.sec=IV.cfg.work;}}renderIntervals();}
+function renderIntervals(){const el=document.getElementById('ivLive');if(!el)return;const m=Math.floor(IV.sec/60),s=IV.sec%60;el.innerHTML=`<div class="timer-hero ${IV.phase==='rest'?'rest':'go'}"><div class="phase">${IV.phase==='work'?'🔥 FUERTE':'😮‍💨 SUAVE'} · ronda ${IV.round}/${IV.cfg.rounds}</div><div class="clock">${m}:${String(s).padStart(2,'0')}</div><div class="timer-ctrl">${IV.running?`<button class="btn2" onclick="ivPause()">Pausa</button>`:`<button class="btn-acc2" onclick="ivResume()">Seguir</button>`}<button class="btn2" onclick="ivStop()">Parar</button></div></div>`;}
+function ivPause(){IV.running=false;clearInterval(IV.id);renderIntervals();}
+function ivResume(){IV.running=true;if(IV.id)clearInterval(IV.id);IV.id=setInterval(ivTick,1000);renderIntervals();}
+function ivStop(){clearInterval(IV.id);IV.running=false;const el=document.getElementById('ivLive');if(el)el.innerHTML='<p class="mini">Parado.</p>';}
+function ivDone(){clearInterval(IV.id);IV.running=false;beep(3);const el=document.getElementById('ivLive');if(el)el.innerHTML='<div class="note">✅ ¡Intervalos completados!</div>';const d=today();DB.extraLog[d]=DB.extraLog[d]||{};DB.extraLog[d].run=true;save();renderExtra&&renderExtra();}
+
+/* ===================== CALENDARIO MENSUAL ===================== */
+function renderCalendar(){const el=document.getElementById('calendarView');if(!el)return;const now=new Date();const y=now.getFullYear(),mo=now.getMonth();const first=new Date(y,mo,1);const startDow=(first.getDay()+6)%7;const daysIn=new Date(y,mo+1,0).getDate();let html=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center">${['L','M','X','J','V','S','D'].map(d=>`<div class="mini" style="font-weight:700">${d}</div>`).join('')}`;for(let i=0;i<startDow;i++)html+='<div></div>';for(let d=1;d<=daysIn;d++){const ds=`${y}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const sess=DB.sessions.some(s=>s.date===ds);const e=DB.extraLog[ds]||{};const meas=DB.body.some(b=>b.date===ds);let dots='';if(sess)dots+='<span style="color:var(--acc)">●</span>';if(e.box)dots+='<span style="color:var(--gold)">●</span>';if(e.run)dots+='<span style="color:var(--viol)">●</span>';if(meas)dots+='<span style="color:var(--acc2)">●</span>';const isToday=ds===today();html+=`<div style="aspect-ratio:1;border-radius:8px;border:1px solid ${isToday?'var(--acc)':'var(--line)'};background:var(--bg3);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px"><span class="mini" style="${isToday?'color:var(--acc);font-weight:700':''}">${d}</span><span style="font-size:7px;line-height:1">${dots||'&nbsp;'}</span></div>`;}html+='</div>';html+=`<p class="mini" style="margin-top:10px"><span style="color:var(--acc)">●</span> entreno · <span style="color:var(--gold)">●</span> boxeo · <span style="color:var(--viol)">●</span> carrera · <span style="color:var(--acc2)">●</span> medición</p>`;el.innerHTML=html;}
 
 /* ===================== INIT ===================== */
 function renderAll(){applyFont();document.getElementById('hdrDate').textContent=new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});renderDashboard();renderCycle();renderTodayReady();renderExtra();if(DB.session){document.getElementById('sessionCard').style.display='block';renderSessionHead();renderSessionBody();renderTimerHero();if(DB.settings&&DB.settings.wakeLock)requestWake();}}
