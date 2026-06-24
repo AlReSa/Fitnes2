@@ -244,12 +244,13 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 
 <!-- COMIDA -->
 <section class="view" id="v-food">
-  <div class="tabs"><button class="on" onclick="foodTab('hoy',this)">Hoy</button><button onclick="foodTab('menus',this)">Menús</button><button onclick="foodTab('recetas',this)">Recetas</button></div>
+  <div class="tabs"><button class="on" onclick="foodTab('hoy',this)">Hoy</button><button onclick="foodTab('menus',this)">Menús</button><button onclick="foodTab('desayunos',this)">Des/Mer</button><button onclick="foodTab('recetas',this)">Recetas</button><button onclick="foodTab('compra',this)">Compra</button></div>
   <div id="food-hoy">
     <div class="card"><h3>🍽️ Hoy <span class="tag c2">por raciones</span></h3><div id="foodTarget"></div></div>
+    <div id="foodTip"></div>
     <div class="card"><h3>➕ Registrar comida</h3>
       <label>Comida</label><select id="foodMeal"><option>Desayuno</option><option>Comida</option><option>Merienda</option><option>Cena</option><option>Snack</option></select>
-      <p class="mini" style="margin:10px 0 6px">Toca un alimento para añadir 1 ración. Mantén pulsado el ✎ para ajustar.</p>
+      <p class="mini" style="margin:10px 0 6px">Elige categoría y toca un alimento para añadir 1 ración.</p>
       <div id="foodBank"></div>
       <button class="btn2" style="margin-top:8px" onclick="openCustomFood()">+ Otro alimento</button>
     </div>
@@ -257,10 +258,16 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
     <div class="card" style="border-color:var(--gold)"><h3>🍔 Comida trampa</h3><p class="mini">Una comida libre no arruina nada: forma parte de un plan sostenible. Regístrala sin culpa.</p><button class="btn btn-gold" style="margin-top:10px" onclick="logCheat()">Registrar comida trampa de hoy</button><div id="cheatInfo" style="margin-top:8px"></div></div>
   </div>
   <div id="food-menus" style="display:none">
-    <div class="card"><h3>📅 Menús de definición</h3><p class="mini">Menús completos pensados para tu objetivo (pérdida de grasa con proteína alta). Toca un día para ver el detalle y registrarlo de una vez.</p><div id="menuList" style="margin-top:10px"></div></div>
+    <div class="card"><h3>📅 Menús semanales</h3><p class="mini">Menús completos mediterráneos para definición (proteína alta, comes de todo). Toca un día para registrarlo entero.</p><div id="menuList" style="margin-top:10px"></div></div>
+  </div>
+  <div id="food-desayunos" style="display:none">
+    <div class="card"><h3>🥣 Desayunos y meriendas</h3><p class="mini">El punto débil de muchos. Opciones rápidas y ricas en proteína. Toca para registrar.</p><div id="quickList" style="margin-top:10px"></div></div>
   </div>
   <div id="food-recetas" style="display:none">
-    <div class="card"><h3>👨‍🍳 Recetas <span class="tag">para 4</span></h3><p class="mini">Cocinas para la familia. Cada receta da tu ración en definición + qué añadir a los niños.</p><div id="recipeList" style="margin-top:10px"></div></div>
+    <div class="card"><h3>👨‍🍳 Recetas <span class="tag">para 4</span></h3><p class="mini">Cocinas para la familia. Cada receta da tu ración en definición + qué añadir a los niños. El 🛒 la manda a tu lista de la compra.</p><div id="recipeList" style="margin-top:10px"></div></div>
+  </div>
+  <div id="food-compra" style="display:none">
+    <div class="card"><h3>🛒 Lista de la compra</h3><p class="mini">Organizada por secciones del súper. Añade desde Recetas o a mano. Marca lo que compras.</p><div id="shopView" style="margin-top:10px"></div></div>
   </div>
 </section>
 
