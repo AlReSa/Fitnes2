@@ -14,25 +14,36 @@ const SUBS={
   'Pendlay row':['Remo barra','Remo mancuerna','Gorilla row KB','Dominadas','Remo en máquina'],
   'Sentadilla':['Sentadilla frontal','Trap bar deadlift','Goblet squat KB','Prensa','Búlgara mancuernas'],
   'Sentadilla frontal':['Sentadilla','Goblet squat KB','Prensa','Zancada','Hack squat'],
-  'Trap bar deadlift':['Sentadilla','Peso muerto','KB swing pesado','Prensa','Hip thrust']
+  'Trap bar deadlift':['Sentadilla','Peso muerto','KB swing pesado','Prensa','Hip thrust'],
+  'Press inclinado mancuernas':['Press inclinado','Aperturas inclinadas','Press banca mancuernas','Flexiones declinadas'],
+  'Aperturas / cruce poleas':['Aperturas mancuerna','Press inclinado mancuernas','Pec deck','Flexiones'],
+  'Elevaciones laterales':['Elevaciones con banda','Elevación lateral en polea','Press Arnold','Face pull'],
+  'Tríceps cuerda':['Fondos en banco','Press francés','Extensión tríceps mancuerna','Patada tríceps'],
+  'Remo gorila KB':['Remo mancuerna','Remo barra','Remo en máquina','Remo con banda'],
+  'Curl bíceps barra':['Curl mancuerna','Curl martillo','Curl banda','Curl predicador'],
+  'Face pull':['Face pull banda','Pájaros','Remo al cuello','Band pull-apart'],
+  'Peso muerto rumano':['PM rumano mancuernas','Buenos días','Hip thrust','Curl femoral'],
+  'Zancada KB':['Zancada mancuernas','Búlgara','Prensa','Sentadilla goblet'],
+  'Curl femoral':['Curl femoral sentado','Peso muerto rumano','Puente glúteo','Nórdico'],
+  'Gemelo de pie':['Gemelo sentado','Gemelo en prensa','Saltos a la comba','Gemelo a una pierna']
 };
 /* ----- Rotación del ejercicio principal por día (cada ciclo cambia) ----- */
 const MAIN_ROT={Lunes:['Press banca','Press inclinado','Press militar'],Miércoles:['Dominadas lastradas','Remo barra','Pendlay row'],Sábado:['Sentadilla','Sentadilla frontal','Trap bar deadlift']};
 
 /* ----- Bibliotecas de bloques 3 y 4 (densidad y finishers dinámicos) ----- */
 const DENSITY=[
-  {fmt:'EMOM',label:'EMOM 8 min',desc:'Cada minuto: 10 KB swings. Descansa lo que sobre.',sec:480,timer:'emom'},
-  {fmt:'AMRAP',label:'AMRAP 8 min',desc:'Rondas: 5 goblet squat + 7 push press + 9 swings.',sec:480,timer:'down'},
-  {fmt:'Ladder',label:'Escalera',desc:'Thrusters 1-2-3-4-5-4-3-2-1, sin prisa pero sin pausa.',sec:420,timer:'down'},
-  {fmt:'For Time',label:'Por tiempo',desc:'100 KB swings lo más rápido posible. Apunta el tiempo.',sec:600,timer:'up'},
-  {fmt:'Density',label:'Density Challenge',desc:'Máx clean & press en 5 min. Supera tu marca.',sec:300,timer:'down'}
+  {fmt:'EMOM',label:'EMOM 8 min',desc:'Cada minuto, al empezar, haz 10 KB swings. El tiempo que sobre hasta el siguiente minuto, descansas. 8 minutos = 8 rondas.',sec:480,timer:'emom',q:'EMOM kettlebell swings workout'},
+  {fmt:'AMRAP',label:'AMRAP 8 min',desc:'Máximas rondas en 8 min de: 5 goblet squat + 7 push press + 9 swings. Sin parar, cuenta tus rondas.',sec:480,timer:'down',q:'AMRAP kettlebell workout'},
+  {fmt:'Ladder',label:'Escalera',desc:'Thrusters en escalera: 1 rep, luego 2, 3, 4, 5 y bajas 4, 3, 2, 1. Sin prisa pero sin pausa.',sec:420,timer:'down',q:'kettlebell thruster ladder workout'},
+  {fmt:'For Time',label:'Por tiempo',desc:'100 KB swings lo más rápido posible (parte en series si hace falta). Apunta el tiempo total para batirlo.',sec:600,timer:'up',q:'100 kettlebell swings for time'},
+  {fmt:'Density',label:'Density Challenge',desc:'Máximo clean & press posible en 5 min con buena técnica. Anota las reps y supera tu marca la próxima vez.',sec:300,timer:'down',q:'kettlebell clean and press tutorial'}
 ];
 const FINISHER=[
-  {label:'Complejo Forja',desc:'Clean+front squat+push press+swing ×5, 3 rondas KB.',sec:300,timer:'down'},
-  {label:'Quemador escalera',desc:'10→1 swings + 1→10 goblet squat.',sec:300,timer:'up'},
-  {label:'Farmer + burpee',desc:'40m farmer walk + 10 burpees, 3 rondas.',sec:300,timer:'down'},
-  {label:'Tabata swings',desc:'20s on / 10s off ×8 de KB swings.',sec:240,timer:'tabata'},
-  {label:'Sprint metabólico',desc:'5 series de 30s fuerte / 30s suave (cinta/aire/sombra).',sec:300,timer:'down'}
+  {label:'Complejo Forja',desc:'Sin soltar la KB: clean + front squat + push press + swing, 5 reps de cada = 1 ronda. Haz 3 rondas.',sec:300,timer:'down',q:'kettlebell complex workout'},
+  {label:'Quemador escalera',desc:'KB swings bajando 10→1 (10,9,8...1) y goblet squat subiendo 1→10. Alterna. Encadenado.',sec:300,timer:'up',q:'kettlebell swing goblet squat ladder'},
+  {label:'Farmer + burpee',desc:'40 metros de farmer walk (carga pesada en cada mano) + 10 burpees = 1 ronda. Haz 3 rondas.',sec:300,timer:'down',q:'farmer walk burpee finisher'},
+  {label:'Tabata swings',desc:'8 rondas de: 20 segundos de KB swings a tope + 10 segundos de descanso. Total 4 minutos. La app marca cada intervalo.',sec:240,timer:'tabata',q:'tabata kettlebell swings'},
+  {label:'Sprint metabólico',desc:'5 series de: 30 segundos fuerte + 30 segundos suave. En cinta, bici de aire o boxeo de sombra.',sec:300,timer:'down',q:'30 second sprint intervals workout'}
 ];
 
 function load(){
@@ -64,7 +75,8 @@ let DB={
   body:[],bodyCfg:{everyWeeks:2},
   scores:[], medals:{}, formatPR:{},
   athlete:null, mode:'gym', settings:{fontScale:1,wakeLock:false}, exNotes:{},
-  goalWeight:105, lastBackup:null
+  goalWeight:105, lastBackup:null,
+  foodLog:{}, foodGoals:null, cheatLog:{}, customFoods:[]
 };
 const DEF_HAB=[{id:'h1',ic:'💧',name:'3 L de agua'},{id:'h2',ic:'🌞',name:'Luz natural 10 min'},{id:'h3',ic:'🧠',name:'Ritual de mañana'},{id:'h4',ic:'🥩',name:'Proteína en cada comida'},{id:'h5',ic:'📵',name:'Pausa de pantalla cada hora'},{id:'h6',ic:'😴',name:'Dormir 7-8 h'}];
 const MIND=[{t:'0-2',d:'Respira: 6 respiraciones, inhala 4s / exhala 6s. Suelta hombros y mandíbula.',sec:120},{t:'2-5',d:'Columna: gato-camello x8, rotaciones de tronco x8/lado, círculos de cadera x8.',sec:180},{t:'5-8',d:'Activa: 20 sentadillas + 15 elevaciones de talón + 10 círculos de brazos.',sec:180},{t:'8-11',d:'Tren alto: aperturas de pecho, cuello suave, muñecas (por el teclado) x10.',sec:180},{t:'11-14',d:'Foco: ¿cuál es LA tarea importante de hoy? Visualízate haciéndola.',sec:180},{t:'14-15',d:'Intención: di en voz alta tu objetivo del día y un hábito que cumplirás.',sec:60}];
@@ -146,7 +158,7 @@ const BOX_SESSION={
 };
 
 /* ===== navegación ===== */
-function nav(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));el.classList.add('on');window.scrollTo(0,0);if(v==='home')renderDashboard();if(v==='mind'){renderVideoCats();renderHabits();}if(v==='body')renderBody();if(v==='train'){renderCycle();renderTodayReady();renderExtra();}}
+function nav(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));el.classList.add('on');window.scrollTo(0,0);if(v==='home')renderDashboard();if(v==='mind'){renderVideoCats();renderHabits();}if(v==='body')renderBody();if(v==='food')renderFood();if(v==='train'){renderCycle();renderTodayReady();renderExtra();}}
 function navBtn(i){return document.querySelectorAll('nav button')[i];}
 function trainTab(t,el){['hoy','prog','retos','rutinas'].forEach(x=>document.getElementById('train-'+x).style.display='none');document.getElementById('train-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='prog'){renderProgSelect();renderDensityChart();renderPR();renderHistory();}if(t==='retos'){renderMedals();renderFormatPR();}if(t==='rutinas'){renderRoutines();renderRotation();}if(t==='hoy'){renderCycle();renderTodayReady();renderExtra();}}
 function mindTab(t,el){['video','ritual','habits'].forEach(x=>document.getElementById('mind-'+x).style.display='none');document.getElementById('mind-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='habits'){renderHabits();renderHabitStreak();}else if(t==='ritual'){renderMindSteps();renderMindTimer();}else{renderVideoCats();}}
@@ -191,7 +203,9 @@ function renderDashboard(){
   const fl=fatLossScore();const fn=document.getElementById('fatNum');const fr=document.getElementById('fatRing');
   if(fl!=null){fn.textContent=fl;const col=fl>=66?'var(--ok)':fl>=40?'var(--gold)':'var(--bad)';fr.style.background=`conic-gradient(${col} ${fl*3.6}deg, var(--bg3) 0)`;document.getElementById('fatMsg').textContent=fl>=66?'vas bien':fl>=40?'aceptable':'aprieta';}
   else{fn.textContent='—';fr.style.background='var(--bg3)';document.getElementById('fatMsg').textContent='mide y entrena';}
-  renderWeekChallenge();renderWeeklySummary();renderGoalProgress();renderBackupReminder();renderCalendar();renderExtraHistory();renderTodayDash();renderWeekView();
+  renderWeekChallenge();renderWeeklySummary();renderGoalProgress();renderFoodDash();renderBackupReminder();renderCalendar();renderExtraHistory();renderTodayDash();renderWeekView();
+}
+function renderFoodDash(){const el=document.getElementById('foodDash');if(!el)return;const g=foodGoals();const t=dayTotals();const items=dayFood();const kpct=Math.min(100,Math.round(t.kcal/g.kcal*100));const ppct=Math.min(100,Math.round(t.p/g.prot*100));el.innerHTML=`<div class="stat-grid c2"><div class="stat"><div class="v acc">${Math.round(t.kcal)}</div><div class="l">/ ${g.kcal} kcal</div></div><div class="stat"><div class="v acc2">${Math.round(t.p)}</div><div class="l">/ ${g.prot}g prot</div></div></div><div class="bar" style="margin-top:8px"><i style="width:${ppct}%;background:var(--acc2)"></i></div><p class="mini" style="margin-top:6px">${items.length?items.length+' alimentos registrados hoy':'Aún sin registrar. Toca Comida para empezar.'}${DB.cheatLog[today()]?' · 🍔 trampa':''}</p>`;
 }
 function renderExtraHistory(){const el=document.getElementById('extraHistory');if(!el)return;let html='';for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10);const e=DB.extraLog[ds]||{};const sess=DB.sessions.some(s=>s.date===ds);let bg='var(--bg3)',bd='var(--line)';if(e.box){bg='rgba(255,193,50,.3)';bd='var(--gold)';}else if(sess){bg='rgba(255,64,21,.25)';bd='var(--acc)';}else if(e.run){bg='rgba(156,107,255,.25)';bd='var(--viol)';}html+=`<span class="streak-dot" style="background:${bg};border-color:${bd}" title="${ds}${e.box?' 🥊':''}${e.run?' 🏃':''}${sess?' 💪':''}"></span>`;}
   const wk=weekDates();const totBox=Object.keys(DB.extraLog).filter(d=>DB.extraLog[d].box).length;const totRun=Object.keys(DB.extraLog).filter(d=>DB.extraLog[d].run).length;
@@ -321,7 +335,9 @@ function renderSessionHead(){const s=DB.session;const eIc={fresco:'🔋',normal:
 function renderSessionBody(){const s=DB.session;if(!s)return;let html='';
   s.blocks.forEach((b,bi)=>{
     html+=`<div class="block-title">${b.label}${b.superset?' <span class="bt-tag">superserie · 30s</span>':''}${b._meta?` <span class="bt-tag">${b._meta.label}</span>`:''}</div>`;
-    if(b._meta){html+=`<div class="note ${b.finisher?'gold':''}">${b._meta.desc} <button class="btn-sm btn2" style="margin-top:8px;display:block" onclick="startFormatTimer(${bi})">▶ Cronómetro ${b._meta.timer||''}</button></div>`;
+    if(b._meta){
+      const vidBtn=b._meta.q?`<button class="btn-sm btn2" style="margin-top:8px" onclick="showFormatVideo('${b._meta.q.replace(/'/g,"")}','${b._meta.label.replace(/'/g,"")}')">🎬 Ver cómo se hace</button>`:'';
+      html+=`<div class="note ${b.finisher?'gold':''}"><b>${b._meta.label}</b><br>${b._meta.desc}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn-sm ${b.finisher?'btn-gold':'btn-acc2'}" onclick="startBlockTimer(${bi})">▶ Cronómetro</button>${vidBtn}</div></div><div id="blockTimer_${bi}"></div>`;
       if(b.density){html+=`<div class="ex-block" style="margin-top:8px"><div class="mini">Apunta tu resultado (reps/rondas/tiempo) para batir tu marca:</div><input id="dens_${bi}" placeholder="ej. 8 rondas / 4:30" value="${b.result||''}" oninput="DB.session.blocks[${bi}].result=this.value;save()" style="margin-top:6px"></div>`;}
       return;
     }
@@ -380,20 +396,23 @@ function finishSession(){const s=DB.session;if(!s)return;
 }
 function cancelSession(){DB.session=null;resetT();save();releaseWake();document.getElementById('sessionCard').style.display='none';renderTodayReady();}
 
-/* ===== timers ===== */
-let T={running:false,phase:'idle',sec:0,id:null,elapsed:0};
-function renderTimerHero(){const el=document.getElementById('timerHero');if(!DB.session){el.innerHTML='';return;}const m=Math.floor(T.sec/60),s=T.sec%60;const cls=T.phase==='rest'?'rest':T.phase==='format'?'go':'';const ph=T.phase==='rest'?'⏸ DESCANSO':T.phase==='format'?'🔥 EN MARCHA':'⏱ SESIÓN';const elapsed=DB.session?Math.floor((Date.now()-DB.session.startTs)/60000):0;
-  el.innerHTML=`<div class="timer-hero ${cls}"><div class="phase">${ph} · ${elapsed} min de ~50</div><div class="clock">${m}:${String(s).padStart(2,'0')}</div><div class="sub">${T.phase==='rest'?'Recupera':T.phase==='format'?'Dale a tope':'En curso'}</div><div class="timer-ctrl">${T.running?`<button class="btn2" onclick="pauseT()">Pausa</button>`:`<button class="btn-acc2" onclick="resumeT()">Seguir</button>`}<button class="btn2" onclick="stopT()">Parar</button></div></div>`;}
-function tickRest(){T.sec--;if(T.sec<=0){beep(2);stopT();return;}renderTimerHero();}
-function restT(sec){if(DB.session){DB.session.restTarget+=sec;}T.phase='rest';T.sec=sec;T.running=true;if(T.id)clearInterval(T.id);T.id=setInterval(()=>{if(DB.session)DB.session.restAccum++;tickRest();},1000);renderTimerHero();}
-function startFormatTimer(bi){const meta=DB.session.blocks[bi]._meta;if(!meta)return;T.phase='format';T.running=true;if(T.id)clearInterval(T.id);
-  if(meta.timer==='up'){T.sec=0;T.id=setInterval(()=>{T.sec++;renderTimerHero();},1000);}
-  else{T.sec=meta.sec;T.id=setInterval(()=>{T.sec--;if(T.sec<=0){beep(3);stopT();return;}renderTimerHero();},1000);}
-  renderTimerHero();}
-function pauseT(){T.running=false;clearInterval(T.id);renderTimerHero();}
-function resumeT(){if(T.phase==='idle')return;T.running=true;if(T.id)clearInterval(T.id);if(T.phase==='format'&&T.sec===0){T.id=setInterval(()=>{T.sec++;renderTimerHero();},1000);}else{T.id=setInterval(()=>{if(T.phase==='rest'){if(DB.session)DB.session.restAccum++;tickRest();}else{T.sec--;if(T.sec<=0){beep(3);stopT();return;}renderTimerHero();}},1000);}renderTimerHero();}
-function stopT(){clearInterval(T.id);T={running:false,phase:'idle',sec:0,id:null,elapsed:0};renderTimerHero();}
-function resetT(){clearInterval(T.id);T={running:false,phase:'idle',sec:0,id:null,elapsed:0};}
+/* ===== timers (con barra flotante siempre visible) ===== */
+let T={running:false,phase:'idle',sec:0,id:null,elapsed:0,label:''};
+function renderTimerHero(){renderFloatTimer();const el=document.getElementById('timerHero');if(!DB.session){if(el)el.innerHTML='';return;}const elapsed=DB.session?Math.floor((Date.now()-DB.session.startTs)/60000):0;if(el)el.innerHTML=`<div class="timer-hero"><div class="phase">⏱ SESIÓN · ${elapsed} min de ~50</div><div class="sub" style="margin-top:4px">El cronómetro de descanso y de cada bloque aparece abajo, siempre visible 👇</div></div>`;}
+function renderFloatTimer(){const ft=document.getElementById('floatTimer');if(!ft)return;if(T.phase==='idle'||!T.running&&T.sec===0){ft.classList.remove('on');ft.innerHTML='';return;}const m=Math.floor(T.sec/60),s=T.sec%60;ft.className='on'+(T.phase==='rest'?' rest':'');ft.innerHTML=`<div class="ft-inner"><div class="ft-clock" style="color:${T.phase==='rest'?'var(--acc2)':'var(--acc)'}">${m}:${String(s).padStart(2,'0')}</div><div class="ft-label">${T.phase==='rest'?'descanso':T.label||'en marcha'}</div>${T.running?`<button onclick="pauseT()">⏸</button>`:`<button onclick="resumeT()">▶</button>`}<button onclick="stopT()">✕</button></div>`;}
+function tickRest(){T.sec--;if(T.sec<=0){beep(2);stopT();return;}renderFloatTimer();}
+function restT(sec){if(DB.session){DB.session.restTarget+=sec;}T.phase='rest';T.sec=sec;T.label='descanso';T.running=true;if(T.id)clearInterval(T.id);T.id=setInterval(()=>{if(DB.session)DB.session.restAccum++;tickRest();},1000);renderFloatTimer();}
+function startBlockTimer(bi){const meta=DB.session.blocks[bi]._meta;if(!meta)return;T.phase='format';T.label=meta.label;T.running=true;if(T.id)clearInterval(T.id);
+  if(meta.timer==='up'){T.sec=0;T.id=setInterval(()=>{T.sec++;renderFloatTimer();renderBlockTimerInline(bi);},1000);}
+  else{T.sec=meta.sec;T.id=setInterval(()=>{T.sec--;if(T.sec<=0){beep(3);stopT();renderBlockTimerInline(bi);return;}renderFloatTimer();renderBlockTimerInline(bi);},1000);}
+  renderFloatTimer();renderBlockTimerInline(bi);}
+function renderBlockTimerInline(bi){const el=document.getElementById('blockTimer_'+bi);if(!el)return;if(T.phase!=='format'){el.innerHTML='';return;}const m=Math.floor(T.sec/60),s=T.sec%60;el.innerHTML=`<div class="timer-hero go" style="margin-top:8px"><div class="phase">🔥 EN MARCHA</div><div class="clock">${m}:${String(s).padStart(2,'0')}</div><div class="timer-ctrl">${T.running?`<button class="btn2" onclick="pauseT()">Pausa</button>`:`<button class="btn-acc2" onclick="resumeT()">Seguir</button>`}<button class="btn2" onclick="stopT()">Parar</button></div></div>`;}
+function pauseT(){T.running=false;clearInterval(T.id);renderFloatTimer();}
+function resumeT(){if(T.phase==='idle')return;T.running=true;if(T.id)clearInterval(T.id);if(T.phase==='format'&&T.sec===0){T.id=setInterval(()=>{T.sec++;renderFloatTimer();},1000);}else{T.id=setInterval(()=>{if(T.phase==='rest'){if(DB.session)DB.session.restAccum++;tickRest();}else{T.sec--;if(T.sec<=0){beep(3);stopT();return;}renderFloatTimer();}},1000);}renderFloatTimer();}
+function stopT(){clearInterval(T.id);T={running:false,phase:'idle',sec:0,id:null,elapsed:0,label:''};renderFloatTimer();document.querySelectorAll('[id^="blockTimer_"]').forEach(e=>e.innerHTML='');}
+function resetT(){clearInterval(T.id);T={running:false,phase:'idle',sec:0,id:null,elapsed:0,label:''};const ft=document.getElementById('floatTimer');if(ft){ft.classList.remove('on');ft.innerHTML='';}}
+function showFormatVideo(q,name){openModal(`<h3>🎬 ${name}</h3><p class="mini" style="margin-bottom:10px">Vídeos de cómo se hace este formato. Toca uno para verlo (necesita internet).</p><div id="fvResults"><p class="mini">Buscando…</p></div><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(q)}" target="_blank" style="display:block;margin-top:10px"><button class="btn2" style="width:100%">🔎 Ver más en YouTube</button></a>`);loadFormatVideo(q);}
+function loadFormatVideo(q){const map={'EMOM kettlebell swings workout':'YSxHifyI6s8','AMRAP kettlebell workout':'YSxHifyI6s8','kettlebell thruster ladder workout':'YSxHifyI6s8','100 kettlebell swings for time':'sSESeQAir2M','kettlebell clean and press tutorial':'axaCQqM0R1k','kettlebell complex workout':'axaCQqM0R1k','kettlebell swing goblet squat ladder':'sSESeQAir2M','farmer walk burpee finisher':'8GpQ66AAKU0','tabata kettlebell swings':'YSxHifyI6s8','30 second sprint intervals workout':'8GpQ66AAKU0'};const id=map[q]||'YSxHifyI6s8';const el=document.getElementById('fvResults');if(el)el.innerHTML=`<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${id}?rel=0&playsinline=1" title="${q}" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;}
 
 /* ===================== PROGRESO ===================== */
 function allExerciseNames(){const s=new Set();DB.routines.forEach(r=>r.blocks.forEach(b=>b.exercises.forEach(e=>s.add(e.name))));DB.sessions.forEach(x=>(x.blocks||[]).forEach(b=>b.exercises.forEach(e=>s.add(e.name))));return[...s];}
@@ -491,6 +510,87 @@ function toggleExtra(k){const d=today();DB.extraLog[d]=DB.extraLog[d]||{};
   const isBox=k==='box';
   openModal(`<h3>${isBox?'🥊 Boxeo':'🏃 Carrera'} de hoy</h3><p class="mini" style="margin-bottom:10px">Opcional: añade duración e intensidad para afinar tu Fat Loss Score. O guarda directo.</p><div class="row"><div><label>Minutos</label><input id="exMin" type="number" inputmode="numeric" placeholder="${isBox?'30':'45'}"></div><div><label>Intensidad</label><select id="exInt"><option>Suave</option><option selected>Media</option><option>Alta</option></select></div></div><button class="btn" style="margin-top:14px" onclick="confirmExtra('${k}')">Guardar</button>`);}
 function confirmExtra(k){const d=today();DB.extraLog[d]=DB.extraLog[d]||{};DB.extraLog[d][k]=true;const min=+document.getElementById('exMin').value;const int=document.getElementById('exInt').value;if(min)DB.extraLog[d][k+'Min']=min;DB.extraLog[d][k+'Int']=int;save();closeModal();renderExtra();renderDashboard();toast((k==='box'?'🥊 Boxeo':'🏃 Carrera')+' registrado');}
+
+/* ===================== COMIDA / NUTRICIÓN ===================== */
+/* Base de alimentos por RACIÓN (kcal y proteína g aproximados por ración típica) */
+const FOOD_BANK=[
+  {n:'Pollo a la plancha',ic:'🍗',r:'1 pechuga',kcal:330,p:62},
+  {n:'Atún natural',ic:'🐟',r:'1 lata',kcal:116,p:26},
+  {n:'Huevos',ic:'🥚',r:'2 unidades',kcal:144,p:13},
+  {n:'Claras de huevo',ic:'🥚',r:'1 vaso (6)',kcal:102,p:21},
+  {n:'Salmón',ic:'🐟',r:'1 filete',kcal:280,p:40},
+  {n:'Merluza',ic:'🐟',r:'1 filete',kcal:150,p:31},
+  {n:'Pavo plancha',ic:'🍖',r:'1 filete',kcal:150,p:30},
+  {n:'Ternera magra',ic:'🥩',r:'1 filete',kcal:250,p:36},
+  {n:'Yogur proteico',ic:'🥛',r:'1 unidad',kcal:90,p:15},
+  {n:'Queso fresco batido',ic:'🥛',r:'1 tarrina',kcal:120,p:18},
+  {n:'Batido de proteína',ic:'🥤',r:'1 cazo',kcal:120,p:24},
+  {n:'Arroz cocido',ic:'🍚',r:'1 plato',kcal:200,p:4},
+  {n:'Pasta cocida',ic:'🍝',r:'1 plato',kcal:220,p:8},
+  {n:'Patata cocida',ic:'🥔',r:'1 mediana',kcal:130,p:3},
+  {n:'Pan integral',ic:'🍞',r:'2 rebanadas',kcal:160,p:6},
+  {n:'Avena',ic:'🥣',r:'1 taza',kcal:150,p:5},
+  {n:'Verdura salteada',ic:'🥦',r:'1 plato',kcal:80,p:4},
+  {n:'Ensalada',ic:'🥗',r:'1 bol',kcal:60,p:2},
+  {n:'Fruta',ic:'🍎',r:'1 pieza',kcal:80,p:1},
+  {n:'Almendras',ic:'🥜',r:'1 puñado',kcal:160,p:6},
+  {n:'Aceite de oliva',ic:'🫒',r:'1 cucharada',kcal:120,p:0},
+  {n:'Aguacate',ic:'🥑',r:'1/2 unidad',kcal:160,p:2},
+  {n:'Legumbres cocidas',ic:'🫘',r:'1 plato',kcal:230,p:15}
+];
+function foodKey(){return today();}
+function calcFoodGoals(){
+  // Mifflin-St Jeor con tu perfil, déficit ~500 para definición
+  const p=DB.profile;const w=(DB.body[0]&&DB.body[0].peso)||p.weight;
+  const tmb=10*w+6.25*p.height-5*p.age+5;
+  const kcal=Math.round(tmb*1.5-500);
+  const prot=Math.round(w*1.8); // alto para mantener músculo
+  return {kcal,prot};
+}
+function foodGoals(){return DB.foodGoals||calcFoodGoals();}
+function foodTab(t,el){['hoy','menus','recetas'].forEach(x=>document.getElementById('food-'+x).style.display='none');document.getElementById('food-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='hoy'){renderFoodTarget();renderFoodBank();renderFoodLog();renderCheat();}if(t==='menus')renderMenus();if(t==='recetas')renderRecipes();}
+function renderFood(){renderFoodTarget();renderFoodBank();renderFoodLog();renderCheat();}
+function dayFood(){return DB.foodLog[foodKey()]||[];}
+function dayTotals(){const items=dayFood();return items.reduce((a,i)=>({kcal:a.kcal+i.kcal*i.q,p:a.p+i.p*i.q}),{kcal:0,p:0});}
+function renderFoodTarget(){const el=document.getElementById('foodTarget');if(!el)return;const g=foodGoals();const t=dayTotals();
+  const kpct=Math.min(100,Math.round(t.kcal/g.kcal*100));const ppct=Math.min(100,Math.round(t.p/g.prot*100));
+  el.innerHTML=`<div class="stat-grid c2"><div class="stat"><div class="v acc">${Math.round(t.kcal)}</div><div class="l">de ${g.kcal} kcal</div></div><div class="stat"><div class="v acc2">${Math.round(t.p)}</div><div class="l">de ${g.prot}g proteína</div></div></div>
+  <div class="bar" style="margin-top:10px"><i style="width:${kpct}%;background:var(--acc)"></i></div><div class="mini" style="margin-top:3px">Calorías ${kpct}%</div>
+  <div class="bar" style="margin-top:8px"><i style="width:${ppct}%;background:var(--acc2)"></i></div><div class="mini" style="margin-top:3px">Proteína ${ppct}% ${t.p<g.prot*0.7?'· prioriza proteína, protege músculo':''}</div>
+  <button class="btn2" style="margin-top:10px" onclick="openFoodGoals()">Ajustar objetivo</button>`;}
+function openFoodGoals(){const g=foodGoals();openModal(`<h3>🎯 Objetivo diario</h3><p class="mini" style="margin-bottom:10px">Calculado para tu perfil y pérdida de grasa. Ajústalo si tu nutricionista te marca otro.</p><label>Calorías</label><input id="fgK" type="number" value="${g.kcal}"><label style="margin-top:8px">Proteína (g)</label><input id="fgP" type="number" value="${g.prot}"><button class="btn" style="margin-top:14px" onclick="saveFoodGoals()">Guardar</button><button class="btn2" style="margin-top:8px" onclick="DB.foodGoals=null;save();closeModal();renderFoodTarget();toast('Recalculado automático')">🔄 Recalcular automático</button>`);}
+function saveFoodGoals(){DB.foodGoals={kcal:+document.getElementById('fgK').value||2000,prot:+document.getElementById('fgP').value||180};save();closeModal();renderFoodTarget();toast('🎯 Objetivo guardado');}
+function renderFoodBank(){const el=document.getElementById('foodBank');if(!el)return;const all=FOOD_BANK.concat(DB.customFoods||[]);el.innerHTML=all.map((f,i)=>`<div class="sub-opt" style="cursor:pointer" onclick="addFood(${i})"><span>${f.ic||'🍽️'} ${f.n} <span class="mini">· ${f.r} · ${f.kcal}kcal P${f.p}</span></span><span class="vgo" style="color:var(--acc2)">+</span></div>`).join('');}
+function allFoods(){return FOOD_BANK.concat(DB.customFoods||[]);}
+function addFood(i){const f=allFoods()[i];const meal=document.getElementById('foodMeal').value;const k=foodKey();DB.foodLog[k]=DB.foodLog[k]||[];const ex=DB.foodLog[k].find(x=>x.n===f.n&&x.meal===meal);if(ex)ex.q++;else DB.foodLog[k].push({n:f.n,ic:f.ic,r:f.r,kcal:f.kcal,p:f.p,meal,q:1});save();renderFoodTarget();renderFoodLog();renderDashboard();toast('🍽️ +1 '+f.n);}
+function openCustomFood(){openModal(`<h3>+ Alimento propio</h3><label>Nombre</label><input id="cfN" placeholder="Ej. Tortilla de patata"><label style="margin-top:8px">Ración (descripción)</label><input id="cfR" placeholder="1 porción"><div class="row" style="margin-top:8px"><div><label>kcal</label><input id="cfK" type="number"></div><div><label>Proteína g</label><input id="cfP" type="number"></div></div><label style="display:flex;align-items:center;gap:8px;margin-top:10px;text-transform:none;font-size:14px"><input type="checkbox" id="cfSave" checked style="width:18px;height:18px"> Guardar en mi lista</label><button class="btn" style="margin-top:14px" onclick="saveCustomFood()">Añadir</button>`);}
+function saveCustomFood(){const f={n:document.getElementById('cfN').value||'Alimento',ic:'🍽️',r:document.getElementById('cfR').value||'1 ración',kcal:+document.getElementById('cfK').value||0,p:+document.getElementById('cfP').value||0};if(document.getElementById('cfSave').checked){DB.customFoods=DB.customFoods||[];DB.customFoods.push(f);}const meal=document.getElementById('foodMeal').value;const k=foodKey();DB.foodLog[k]=DB.foodLog[k]||[];DB.foodLog[k].push({...f,meal,q:1});save();closeModal();renderFood();renderDashboard();toast('🍽️ Añadido');}
+function renderFoodLog(){const el=document.getElementById('foodLog');if(!el)return;const items=dayFood();if(!items.length){el.innerHTML='<p class="empty">Aún no has registrado nada hoy.</p>';return;}const meals=['Desayuno','Comida','Merienda','Cena','Snack'];el.innerHTML=meals.filter(m=>items.some(i=>i.meal===m)).map(m=>{const its=items.map((it,idx)=>({...it,idx})).filter(i=>i.meal===m);const sub=its.reduce((a,i)=>a+i.kcal*i.q,0);return `<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between"><b style="font-family:Anton">${m}</b><span class="mini">${Math.round(sub)} kcal</span></div>${its.map(i=>`<div class="sub-opt"><span>${i.ic||'🍽️'} ${i.n}${i.q>1?' ×'+i.q:''} <span class="mini">· ${i.r}</span></span><span style="display:flex;gap:8px;align-items:center"><span class="mini">${Math.round(i.kcal*i.q)}kcal</span><button class="btn-sm btn2" onclick="decFood(${i.idx})" style="padding:4px 9px">−</button></span></div>`).join('')}</div>`;}).join('');}
+function decFood(idx){const k=foodKey();const it=DB.foodLog[k][idx];if(!it)return;it.q--;if(it.q<=0)DB.foodLog[k].splice(idx,1);save();renderFoodTarget();renderFoodLog();renderDashboard();}
+/* comida trampa */
+function renderCheat(){const el=document.getElementById('cheatInfo');if(!el)return;const wk=weekDates();const n=wk.filter(d=>DB.cheatLog[d]).length;const todayC=DB.cheatLog[today()];el.innerHTML=`${todayC?'<div class="note gold">🍔 Comida trampa registrada hoy. Disfrútala, mañana a seguir.</div>':''}<p class="mini" style="margin-top:6px">Esta semana: ${n} ${n===1?'comida trampa':'comidas trampa'}. ${n>=3?'⚠️ Van bastantes; 1-2 por semana encaja mejor en definición.':'Bien encajado.'}</p>`;}
+function logCheat(){const d=today();DB.cheatLog[d]=!DB.cheatLog[d];save();renderCheat();renderDashboard();toast(DB.cheatLog[d]?'🍔 Comida trampa registrada. Sin culpa.':'Quitada');}
+
+/* ===== MENÚS planificados ===== */
+const MENUS=[
+  {n:'Día 1 · Clásico',meals:[['Desayuno','Tortilla de claras (6) + avena + fruta',420,28],['Comida','Pollo a la plancha + arroz + ensalada',590,66],['Merienda','Yogur proteico + almendras',250,21],['Cena','Merluza al horno + verdura salteada',230,35]]},
+  {n:'Día 2 · Pescado',meals:[['Desayuno','Huevos revueltos + pan integral + aguacate',464,19],['Comida','Salmón + patata cocida + ensalada',470,45],['Merienda','Batido de proteína + fruta',200,25],['Cena','Atún + ensalada grande',176,28]]},
+  {n:'Día 3 · Carne magra',meals:[['Desayuno','Queso batido + avena + almendras',430,29],['Comida','Ternera magra + arroz + verdura',530,55],['Merienda','Yogur proteico + fruta',170,16],['Cena','Pavo plancha + ensalada',210,32]]},
+  {n:'Día 4 · Ligero',meals:[['Desayuno','Batido proteína + avena + fruta',350,29],['Comida','Pollo + legumbres + ensalada',620,77],['Merienda','Queso batido + almendras',280,24],['Cena','Merluza + verdura salteada',230,35]]}
+];
+function renderMenus(){const el=document.getElementById('menuList');if(!el)return;el.innerHTML=MENUS.map((m,i)=>{const tk=m.meals.reduce((a,x)=>a+x[2],0),tp=m.meals.reduce((a,x)=>a+x[3],0);return `<div class="ex-block"><div class="ex-head"><span class="nm">${m.n}</span><span class="mini">${tk} kcal · P${tp}</span></div>${m.meals.map(x=>`<div class="mini" style="margin-top:3px"><b style="color:var(--acc)">${x[0]}:</b> ${x[1]}</div>`).join('')}<button class="btn-sm btn-acc2" style="margin-top:8px" onclick="loadMenu(${i})">Registrar este día</button></div>`;}).join('');}
+function loadMenu(i){const m=MENUS[i];const k=foodKey();DB.foodLog[k]=DB.foodLog[k]||[];m.meals.forEach(x=>{DB.foodLog[k].push({n:x[1],ic:'🍽️',r:'1 menú',kcal:x[2],p:x[3],meal:x[0],q:1});});save();renderDashboard();toast('📅 Menú del '+m.n+' registrado');nav('food',document.querySelectorAll('nav button')[2]);foodTab('hoy',document.querySelector('#v-food .tabs button'));}
+
+/* ===== RECETAS familiares ===== */
+const RECIPES=[
+  {n:'Pollo a la plancha con verduras',tipo:'Comida',kcal:430,p:52,ing:['600g pollo','2 calabacines','2 pimientos','1 cebolla','poco aceite'],pasos:'Saltea la verdura con poco aceite y haz el pollo a la plancha. Para los niños: añade arroz o patata.'},
+  {n:'Merluza al horno con brócoli',tipo:'Cena',kcal:340,p:44,ing:['4 lomos merluza','1 brócoli','limón','ajo'],pasos:'Horno 190° 15 min, brócoli al vapor. Niños: con patata cocida.'},
+  {n:'Salmón con espárragos',tipo:'Cena',kcal:480,p:42,ing:['4 lomos salmón','2 manojos espárragos','limón'],pasos:'Salmón a la plancha 4 min por lado. Niños: con arroz.'},
+  {n:'Ternera con arroz y verduras',tipo:'Comida',kcal:520,p:55,ing:['500g ternera magra','arroz','pimientos','cebolla'],pasos:'Saltea la ternera con verduras, sirve tu ración con poco arroz y a los niños con más.'},
+  {n:'Tortilla de claras con pavo',tipo:'Comida',kcal:360,p:46,ing:['12 claras + 2 yemas','300g pavo','lechuga','tomate'],pasos:'Tortilla de claras con pavo + ensalada. Niños: con pan o patatas.'}
+];
+function renderRecipes(){const el=document.getElementById('recipeList');if(!el)return;el.innerHTML=RECIPES.map((r,i)=>`<div class="ex-block"><div class="ex-head"><span class="nm">${r.n}</span><span class="mini">${r.tipo} · ${r.kcal}kcal P${r.p}</span></div><div style="margin-top:6px">${r.ing.map(x=>`<span class="pill">${x}</span>`).join('')}</div><p class="mini" style="margin-top:8px">${r.pasos}</p><button class="btn-sm btn-acc2" style="margin-top:8px" onclick="logRecipe(${i})">+ comer mi ración</button></div>`).join('');}
+function logRecipe(i){const r=RECIPES[i];const k=foodKey();DB.foodLog[k]=DB.foodLog[k]||[];DB.foodLog[k].push({n:r.n,ic:'🍽️',r:'1 ración',kcal:r.kcal,p:r.p,meal:r.tipo,q:1});save();renderDashboard();toast('🍽️ '+r.n+' añadido');}
 
 /* ===================== MENTE · VÍDEOS GUIADOS ===================== */
 const VIDEO_LIB=[
