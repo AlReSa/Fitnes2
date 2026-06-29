@@ -77,7 +77,8 @@ let DB={
   athlete:null, mode:'gym', settings:{fontScale:1,wakeLock:false}, exNotes:{},
   goalWeight:105, lastBackup:null,
   foodLog:{}, foodGoals:null, cheatLog:{}, customFoods:[],
-  foodSetup:false, foodActivity:1.5, foodDeficit:450, foodProtPerKg:1.8, shopList:[]
+  foodSetup:false, foodActivity:1.5, foodDeficit:450, foodProtPerKg:1.8, shopList:[],
+  weekPlan:null, pantry:{}
 };
 const DEF_HAB=[{id:'h1',ic:'💧',name:'3 L de agua'},{id:'h2',ic:'🌞',name:'Luz natural 10 min'},{id:'h3',ic:'🧠',name:'Ritual de mañana'},{id:'h4',ic:'🥩',name:'Proteína en cada comida'},{id:'h5',ic:'📵',name:'Pausa de pantalla cada hora'},{id:'h6',ic:'😴',name:'Dormir 7-8 h'}];
 const MIND=[{t:'0-2',d:'Respira: 6 respiraciones, inhala 4s / exhala 6s. Suelta hombros y mandíbula.',sec:120},{t:'2-5',d:'Columna: gato-camello x8, rotaciones de tronco x8/lado, círculos de cadera x8.',sec:180},{t:'5-8',d:'Activa: 20 sentadillas + 15 elevaciones de talón + 10 círculos de brazos.',sec:180},{t:'8-11',d:'Tren alto: aperturas de pecho, cuello suave, muñecas (por el teclado) x10.',sec:180},{t:'11-14',d:'Foco: ¿cuál es LA tarea importante de hoy? Visualízate haciéndola.',sec:180},{t:'14-15',d:'Intención: di en voz alta tu objetivo del día y un hábito que cumplirás.',sec:60}];
@@ -608,7 +609,7 @@ function calcFoodGoals(){
   return {kcal,prot};
 }
 function foodGoals(){return DB.foodGoals||calcFoodGoals();}
-function foodTab(t,el){['hoy','menus','desayunos','recetas','compra'].forEach(x=>{const e=document.getElementById('food-'+x);if(e)e.style.display='none';});document.getElementById('food-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='hoy'){renderFoodTarget();renderFoodBank();renderFoodLog();renderCheat();renderFoodTip();}if(t==='menus')renderMenus();if(t==='desayunos')renderQuick();if(t==='recetas')renderRecipes();if(t==='compra')renderShopping();}
+function foodTab(t,el){['hoy','plan','recetas','despensa','compra'].forEach(x=>{const e=document.getElementById('food-'+x);if(e)e.style.display='none';});document.getElementById('food-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='hoy'){renderFoodTarget();renderFoodBank();renderFoodLog();renderCheat();renderFoodTip();}if(t==='plan')renderPlan();if(t==='recetas')renderRecipes();if(t==='despensa')renderPantry();if(t==='compra')renderShopping();}
 function renderFood(){if(!DB.foodSetup){renderFoodSetup();return;}renderFoodTarget();renderFoodBank();renderFoodLog();renderCheat();renderFoodTip();}
 /* ----- onboarding 4 toques ----- */
 function renderFoodSetup(){const el=document.getElementById('foodTarget');if(!el)return;el.innerHTML=`<div class="note">Vamos a configurar tu nutrición en unos toques. Calcularé tus calorías y proteína para perder grasa sin perder músculo.</div><button class="btn" style="margin-top:10px" onclick="openFoodSetup()">⚙️ Configurar mi nutrición</button>`;}
@@ -657,94 +658,198 @@ function renderFoodTip(){const el=document.getElementById('foodTip');if(!el)retu
 function renderCheat(){const el=document.getElementById('cheatInfo');if(!el)return;const wk=weekDates();const n=wk.filter(d=>DB.cheatLog[d]).length;const todayC=DB.cheatLog[today()];el.innerHTML=`${todayC?'<div class="note gold">🍔 Comida trampa registrada hoy. Disfrútala, mañana a seguir.</div>':''}<p class="mini" style="margin-top:6px">Esta semana: ${n} ${n===1?'comida trampa':'comidas trampa'}. ${n>=3?'⚠️ Van bastantes; 1-2 por semana encaja mejor.':'Bien encajado: 1-2/semana es perfecto.'}</p><p class="mini" style="margin-top:6px">Truco: el día de trampa, mantén la proteína alta y disfruta el capricho sin culpa. Una comida no decide nada; la semana entera sí.</p>`;}
 function logCheat(){const d=today();DB.cheatLog[d]=!DB.cheatLog[d];save();renderCheat();renderDashboard();toast(DB.cheatLog[d]?'🍔 Comida trampa registrada. Sin culpa.':'Quitada');}
 
-/* ===== MENÚS semanales (2 semanas rotativas, mediterráneo) ===== */
-const WEEK_MENUS=[
- {sem:'Semana A',dias:[
-  {d:'Lunes',meals:[['Desayuno','Tostadas con tomate, aceite y pavo + café',300,18],['Comida','Pollo a la plancha + arroz + ensalada',590,66],['Merienda','Yogur proteico + puñado de almendras',250,21],['Cena','Merluza al horno + verduras salteadas',230,35]]},
-  {d:'Martes',meals:[['Desayuno','Avena con leche, plátano y canela',350,14],['Comida','Lentejas con verduras + un huevo',520,28],['Merienda','Queso batido + fruta',200,19],['Cena','Tortilla francesa (3 huevos) + ensalada',290,22]]},
-  {d:'Miércoles',meals:[['Desayuno','Yogur proteico + frutos rojos + nueces',310,21],['Comida','Salmón + patata cocida + espárragos',520,46],['Merienda','Tostada integral + aguacate',310,8],['Cena','Pollo al horno + pisto',380,42]]},
-  {d:'Jueves',meals:[['Desayuno','Tostadas con tomate y aceite + café con leche',270,9],['Comida','Ternera magra + arroz + ensalada',560,55],['Merienda','Batido de proteína + plátano',225,25],['Cena','Sepia a la plancha + ensalada',250,28]]},
-  {d:'Viernes',meals:[['Desayuno','Huevos revueltos + pan integral',304,19],['Comida','Paella (ración moderada) + ensalada',480,26],['Merienda','Yogur proteico + fruta',170,16],['Cena','Crema de verduras + gambas',300,32]]},
-  {d:'Sábado',meals:[['Desayuno','Tortitas de avena con miel + café',380,16],['Comida','Libre / social: disfruta con cabeza',700,30],['Merienda','Fruta + almendras',240,7],['Cena','Pollo plancha + verduras al horno',380,42]]},
-  {d:'Domingo',meals:[['Desayuno','Yogur proteico + avena + fruta',330,20],['Comida','Conejo al horno + patatas + ensalada',560,40],['Merienda','Tostada + pavo',200,15],['Cena','Crema de calabacín + tortilla francesa',320,20]]}
- ]},
- {sem:'Semana B',dias:[
-  {d:'Lunes',meals:[['Desayuno','Yogur proteico + frutos rojos + avena',330,20],['Comida','Pollo al curry suave + arroz + verdura',590,55],['Merienda','Queso batido + almendras',280,24],['Cena','Merluza + ensalada grande',250,33]]},
-  {d:'Martes',meals:[['Desayuno','Tostada con aguacate y huevo',320,15],['Comida','Garbanzos con espinacas + un huevo',520,24],['Merienda','Yogur proteico + fruta',170,16],['Cena','Lubina al horno + verduras',330,38]]},
-  {d:'Miércoles',meals:[['Desayuno','Avena con leche, manzana y canela',340,13],['Comida','Pavo plancha + quinoa + ensalada',520,48],['Merienda','Batido de proteína',120,24],['Cena','Revuelto de gambas y espárragos',280,30]]},
-  {d:'Jueves',meals:[['Desayuno','Tostadas con tomate, aceite y jamón',330,20],['Comida','Salmón + patata + ensalada',550,46],['Merienda','Fruta + nueces',200,5],['Cena','Pollo plancha + pisto',380,42]]},
-  {d:'Viernes',meals:[['Desayuno','Tortitas de avena + plátano',360,15],['Comida','Arroz con sepia y verduras',490,30],['Merienda','Yogur proteico + almendras',250,21],['Cena','Tortilla de champiñones + ensalada',290,20]]},
-  {d:'Sábado',meals:[['Desayuno','Huevos + pan + café',304,19],['Comida','Libre / social: disfruta con cabeza',700,30],['Merienda','Fruta',80,1],['Cena','Crema de verduras + merluza',300,33]]},
-  {d:'Domingo',meals:[['Desayuno','Yogur proteico + avena + frutos rojos',330,21],['Comida','Ternera + patata asada + ensalada',580,52],['Merienda','Tostada + pavo',200,15],['Cena','Gazpacho + tortilla francesa',290,16]]}
- ]}
+/* ============================================================
+   PLANIFICADOR FAMILIAR · "La cocina manda"
+   La pregunta no es qué come uno, sino qué cocina la familia.
+   ============================================================ */
+
+/* Recetas familiares con COCINA MODULAR: una receta -> 4 platos
+   adultoP = tu ración en definición; pareja; niño 4; bebé 2.
+   raciones = cuántas porciones salen (para batch / sobras).
+   tags para filtros. ingr = ingredientes con cantidad para 4. */
+const FAM_RECIPES=[
+  {id:'f1',n:'Pollo al horno con verduras',cat:'Comida',raciones:6,kcalP:430,p:52,tiempo:50,tags:['horno','niños','proteína','mediterráneo','batch'],
+   ingr:[['Pollo (muslos/pechuga)',1500,'g'],['Patata',800,'g'],['Cebolla',2,'ud'],['Pimiento',2,'ud'],['Calabacín',2,'ud'],['Aceite de oliva',1,'chorro']],
+   tu:'Más pollo y verdura, menos patata. Mucha ensalada al lado.',pareja:'Ración normal.',n4:'Pollo desmenuzado sin piel + patata blanda. Poca sal.',n2:'Pollo muy desmenuzado + verdura triturada o chafada.',
+   sobras:'Con el pollo que sobre: wraps o ensalada al día siguiente.'},
+  {id:'f2',n:'Lasaña de verduras y carne',cat:'Cena',raciones:6,kcalP:480,p:34,tiempo:60,tags:['horno','niños','batch'],
+   ingr:[['Carne picada',600,'g'],['Placas de lasaña',12,'ud'],['Tomate triturado',800,'g'],['Calabacín',2,'ud'],['Zanahoria',2,'ud'],['Bechamel',1,'ud'],['Queso rallado',150,'g']],
+   tu:'Más carne y ensalada, menos pasta y bechamel.',pareja:'Ración normal.',n4:'Más pasta, verdura poco visible dentro de la salsa.',n2:'Porción pequeña, bien blanda y cortada.',
+   sobras:'Aguanta perfecta de un día para otro; ideal tupper.'},
+  {id:'f3',n:'Salmón al horno con espárragos',cat:'Cena',raciones:4,kcalP:480,p:42,tiempo:25,tags:['horno','rápido','proteína','mediterráneo'],
+   ingr:[['Salmón (lomos)',4,'ud'],['Espárragos verdes',2,'manojo'],['Limón',1,'ud'],['Patata',400,'g'],['Aceite de oliva',1,'chorro']],
+   tu:'Salmón + muchos espárragos, poca o nada de patata.',pareja:'Normal con patata.',n4:'Salmón desmigado sin espinas + patata. Comprobar espinas.',n2:'Salmón muy desmigado + patata chafada.',
+   sobras:'El salmón frío va genial en ensalada al día siguiente.'},
+  {id:'f4',n:'Chili con carne',cat:'Comida',raciones:8,kcalP:420,p:34,tiempo:45,tags:['batch','niños','proteína','barato'],
+   ingr:[['Carne picada',800,'g'],['Alubias rojas',800,'g'],['Tomate triturado',800,'g'],['Cebolla',2,'ud'],['Pimiento',2,'ud'],['Arroz',400,'g'],['Comino y pimentón',1,'al gusto']],
+   tu:'Más carne y alubias, menos arroz.',pareja:'Normal con arroz.',n4:'Suave de especias, con arroz y un poco de queso.',n2:'Sin picante, chafado con el arroz.',
+   sobras:'8 raciones: cubre cena + comidas de 2-3 días. Congela bien.'},
+  {id:'f5',n:'Crema de verduras + huevo',cat:'Cena',raciones:6,kcalP:300,p:18,tiempo:35,tags:['rápido','barato','niños','verdura'],
+   ingr:[['Calabacín',3,'ud'],['Zanahoria',3,'ud'],['Puerro',2,'ud'],['Patata',2,'ud'],['Caldo',1,'l'],['Huevo',6,'ud']],
+   tu:'Crema + 2 huevos cocidos o tortilla para subir proteína.',pareja:'Crema + 1 huevo.',n4:'Crema con picatostes y un poco de queso.',n2:'Crema sola, templada.',
+   sobras:'La crema aguanta 3 días en nevera.'},
+  {id:'f6',n:'Pizza casera saludable',cat:'Cena',raciones:4,kcalP:520,p:32,tiempo:40,tags:['horno','niños','findesemana'],
+   ingr:[['Base de pizza integral',2,'ud'],['Tomate triturado',200,'g'],['Pollo o atún',300,'g'],['Verduras variadas',300,'g'],['Mozzarella',150,'g']],
+   tu:'Mucha proteína y verdura encima, base fina. 1/2 pizza + ensalada.',pareja:'Normal.',n4:'Sus trozos con poco picante, más queso.',n2:'Trozo pequeño, bordes blandos.',
+   sobras:'Fría está buena para el almuerzo del día siguiente.'},
+  {id:'f7',n:'Merluza al horno con patata panadera',cat:'Cena',raciones:4,kcalP:340,p:44,tiempo:40,tags:['horno','proteína','mediterráneo'],
+   ingr:[['Merluza (lomos)',4,'ud'],['Patata',500,'g'],['Cebolla',1,'ud'],['Ajo',2,'diente'],['Perejil y limón',1,'al gusto']],
+   tu:'Merluza + ensalada, poca patata.',pareja:'Normal.',n4:'Merluza sin espinas + patata blanda.',n2:'Merluza muy desmigada + patata chafada.',
+   sobras:'Desmigada en croquetas o revuelto.'},
+  {id:'f8',n:'Tacos / fajitas de pollo',cat:'Cena',raciones:4,kcalP:520,p:46,tiempo:30,tags:['rápido','niños','findesemana'],
+   ingr:[['Pollo en tiras',600,'g'],['Tortillas',8,'ud'],['Pimiento',2,'ud'],['Cebolla',1,'ud'],['Maíz',1,'lata'],['Lechuga y tomate',1,'al gusto'],['Queso',100,'g']],
+   tu:'Mucho pollo y verdura, 2 tortillas, mucha ensalada.',pareja:'3 tortillas normales.',n4:'1 tortilla pequeña con pollo y queso.',n2:'Pollo desmenuzado suelto + un poco de tortilla.',
+   sobras:'El pollo aliñado sirve para ensalada al día siguiente.'},
+  {id:'f9',n:'Lentejas estofadas con verduras',cat:'Comida',raciones:6,kcalP:450,p:24,tiempo:50,tags:['batch','barato','niños','invierno'],
+   ingr:[['Lentejas',500,'g'],['Zanahoria',3,'ud'],['Patata',2,'ud'],['Cebolla',1,'ud'],['Pimiento',1,'ud'],['Pimentón',1,'al gusto'],['Chorizo (opcional)',1,'ud']],
+   tu:'Plato de lentejas + un huevo duro. Sin chorizo en tu ración.',pareja:'Normal.',n4:'Lentejas algo chafadas, con zanahoria y patata.',n2:'Lentejas trituradas tipo puré.',
+   sobras:'Mejoran al día siguiente. Congelan perfecto.'},
+  {id:'f10',n:'Ternera salteada con arroz y verduras',cat:'Comida',raciones:6,kcalP:520,p:50,tiempo:35,tags:['batch','proteína','rápido'],
+   ingr:[['Ternera en tiras',700,'g'],['Arroz',400,'g'],['Brócoli',1,'ud'],['Pimiento',2,'ud'],['Zanahoria',2,'ud'],['Salsa de soja',1,'chorro']],
+   tu:'Mucha ternera y verdura, poco arroz.',pareja:'Normal.',n4:'Ternera bien cortada + arroz, verdura suave.',n2:'Ternera muy picada + arroz blando.',
+   sobras:'Salteado va genial en tupper para 2 días.'},
+  {id:'f11',n:'Tortilla de patata + ensalada',cat:'Cena',raciones:4,kcalP:300,p:12,tiempo:30,tags:['rápido','barato','niños'],
+   ingr:[['Huevo',6,'ud'],['Patata',4,'ud'],['Cebolla',1,'ud'],['Aceite de oliva',1,'chorro'],['Ensalada',1,'al gusto']],
+   tu:'Porción moderada + ensalada grande con atún para subir proteína.',pareja:'Normal.',n4:'Su porción con poca cebolla.',n2:'Trozo pequeño bien blando.',
+   sobras:'Fría en bocadillo para el almuerzo.'},
+  {id:'f12',n:'Garbanzos con espinacas',cat:'Comida',raciones:6,kcalP:430,p:22,tiempo:30,tags:['batch','barato','rápido','invierno'],
+   ingr:[['Garbanzos cocidos',800,'g'],['Espinacas',400,'g'],['Ajo',3,'diente'],['Tomate',2,'ud'],['Pimentón',1,'al gusto'],['Huevo',4,'ud']],
+   tu:'Plato + 1-2 huevos para proteína.',pareja:'Normal.',n4:'Garbanzos chafados con poco ajo.',n2:'Triturado tipo puré con espinaca.',
+   sobras:'Aguantan 3 días, mejoran de sabor.'},
+  {id:'f13',n:'Hamburguesas caseras + boniato',cat:'Cena',raciones:4,kcalP:520,p:40,tiempo:35,tags:['horno','niños','findesemana','proteína'],
+   ingr:[['Carne picada',600,'g'],['Pan de hamburguesa',4,'ud'],['Boniato',500,'g'],['Lechuga y tomate',1,'al gusto'],['Queso',4,'loncha']],
+   tu:'Burger sin pan (o medio) + mucha ensalada + poco boniato.',pareja:'Normal con pan.',n4:'Mini burger con pan y queso.',n2:'Carne desmenuzada + boniato chafado.',
+   sobras:'La carne cocinada sirve para pasta boloñesa rápida.'},
+  {id:'f14',n:'Pasta boloñesa de pavo',cat:'Comida',raciones:6,kcalP:480,p:38,tiempo:35,tags:['niños','rápido','batch'],
+   ingr:[['Pavo picado',600,'g'],['Pasta',500,'g'],['Tomate triturado',800,'g'],['Cebolla',1,'ud'],['Zanahoria',2,'ud']],
+   tu:'Más carne, menos pasta, con queso fresco rallado.',pareja:'Normal.',n4:'Más pasta, salsa suave.',n2:'Pasta cortada pequeña con salsa.',
+   sobras:'Perfecta de tupper; congela bien la salsa.'},
+  {id:'f15',n:'Revuelto de gambas y verduras',cat:'Cena',raciones:4,kcalP:280,p:30,tiempo:20,tags:['rápido','proteína','mediterráneo'],
+   ingr:[['Gambas peladas',400,'g'],['Huevo',6,'ud'],['Espárragos',1,'manojo'],['Ajetes',1,'manojo'],['Aceite de oliva',1,'chorro']],
+   tu:'Revuelto generoso + ensalada.',pareja:'Normal con pan.',n4:'Revuelto suave, gambas bien cortadas.',n2:'Huevo revuelto blando con gamba muy picada.',
+   sobras:'Mejor recién hecho, no guarda bien.'}
 ];
-let _menuSem=0;
-function renderMenus(){const el=document.getElementById('menuList');if(!el)return;const m=WEEK_MENUS[_menuSem];
-  const sw=`<div class="tabs" style="margin-bottom:10px">${WEEK_MENUS.map((x,i)=>`<button class="${i===_menuSem?'on':''}" onclick="setMenuSem(${i})">${x.sem}</button>`).join('')}</div>`;
-  el.innerHTML=sw+m.dias.map((dia,di)=>{const tk=dia.meals.reduce((a,x)=>a+x[2],0),tp=dia.meals.reduce((a,x)=>a+x[3],0);return `<div class="ex-block"><div class="ex-head"><span class="nm">${dia.d}</span><span class="mini">${tk} kcal · P${tp}</span></div>${dia.meals.map(x=>`<div class="mini" style="margin-top:3px"><b style="color:var(--acc)">${x[0]}:</b> ${x[1]}</div>`).join('')}<button class="btn-sm btn-acc2" style="margin-top:8px" onclick="loadDayMenu(${_menuSem},${di})">Registrar este día</button></div>`;}).join('');}
-function setMenuSem(i){_menuSem=i;renderMenus();}
-function loadDayMenu(si,di){const dia=WEEK_MENUS[si].dias[di];const k=foodKey();DB.foodLog[k]=DB.foodLog[k]||[];dia.meals.forEach(x=>{DB.foodLog[k].push({n:x[1],ic:'🍽️',r:'1 menú',kcal:x[2],p:x[3],meal:x[0],q:1});});save();renderDashboard();toast('📅 '+dia.d+' registrado');foodTab('hoy',document.querySelector('#v-food .tabs button'));}
+/* básicos de despensa que NO se añaden a la compra salvo que falten */
+const PANTRY_BASICS=['Aceite de oliva','Sal','Pimienta','Especias','Pimentón','Comino','Salsa de soja','Ajo'];
+/* secciones de súper por palabra clave */
+const SECTION_MAP={'pollo':'Carnicería','pavo':'Carnicería','ternera':'Carnicería','carne':'Carnicería','chorizo':'Carnicería','hamburguesa':'Carnicería','jamón':'Charcutería','merluza':'Pescadería','salmón':'Pescadería','gambas':'Pescadería','pescado':'Pescadería','huevo':'Huevos y lácteos','queso':'Huevos y lácteos','leche':'Huevos y lácteos','yogur':'Huevos y lácteos','bechamel':'Huevos y lácteos','mozzarella':'Huevos y lácteos','patata':'Verdulería','boniato':'Verdulería','cebolla':'Verdulería','pimiento':'Verdulería','calabacín':'Verdulería','zanahoria':'Verdulería','brócoli':'Verdulería','espárragos':'Verdulería','puerro':'Verdulería','espinacas':'Verdulería','lechuga':'Verdulería','tomate':'Verdulería','ajetes':'Verdulería','ajo':'Verdulería','limón':'Verdulería','verduras':'Verdulería','ensalada':'Verdulería','maíz':'Conservas','atún':'Conservas','alubias':'Conservas','garbanzos':'Conservas','lentejas':'Despensa','arroz':'Despensa','pasta':'Despensa','placas de lasaña':'Despensa','tortillas':'Despensa','pan':'Panadería','base de pizza':'Panadería','caldo':'Despensa'};
+function sectionOf(name){const l=name.toLowerCase();for(const k in SECTION_MAP){if(l.includes(k))return SECTION_MAP[k];}return 'Otros';}
 
-/* ===== DESAYUNOS y MERIENDAS ===== */
-const QUICK={
- Desayunos:[
-  {n:'Tostadas con tomate, aceite y jamón',kcal:330,p:20},
-  {n:'Huevos revueltos + pan integral',kcal:304,p:19},
-  {n:'Avena con leche, plátano y canela',kcal:350,p:14},
-  {n:'Yogur proteico + frutos rojos + nueces',kcal:310,p:21},
-  {n:'Tortitas de avena con miel',kcal:360,p:15},
-  {n:'Tostada con aguacate y huevo',kcal:320,p:15},
-  {n:'Batido: leche, avena, plátano y proteína',kcal:380,p:32},
-  {n:'Requesón con miel y nueces',kcal:300,p:22},
-  {n:'Café con leche + tostada con pavo',kcal:260,p:16},
-  {n:'Bol de yogur, fruta y granola',kcal:340,p:16}
- ],
- Meriendas:[
-  {n:'Yogur proteico + puñado de almendras',kcal:250,p:21},
-  {n:'Queso batido + fruta',kcal:200,p:19},
-  {n:'Batido de proteína + plátano',kcal:225,p:25},
-  {n:'Tostada integral + aguacate',kcal:310,p:8},
-  {n:'Fruta + puñado de nueces',kcal:200,p:5},
-  {n:'Tortitas de arroz + pavo',kcal:180,p:15},
-  {n:'Requesón con frutos rojos',kcal:170,p:18},
-  {n:'Onzas de chocolate negro + nueces',kcal:220,p:6},
-  {n:'Zanahoria/pepino + hummus',kcal:180,p:6},
-  {n:'Café + tostada con tomate y aceite',kcal:210,p:5}
- ]
-};
-function renderQuick(){const el=document.getElementById('quickList');if(!el)return;el.innerHTML=Object.entries(QUICK).map(([cat,arr])=>`<div style="margin-bottom:14px"><b style="font-family:Anton;font-size:15px;color:var(--acc)">${cat}</b>${arr.map((q,i)=>`<div class="sub-opt" style="cursor:pointer" onclick="logQuick('${cat}',${i})"><span>${q.n} <span class="mini">· ${q.kcal}kcal P${q.p}</span></span><span class="vgo" style="color:var(--acc2)">+</span></div>`).join('')}</div>`).join('');}
-function logQuick(cat,i){const q=QUICK[cat][i];const meal=cat==='Desayunos'?'Desayuno':'Merienda';const k=foodKey();DB.foodLog[k]=DB.foodLog[k]||[];DB.foodLog[k].push({n:q.n,ic:cat==='Desayunos'?'🥣':'🍎',r:'1 ración',kcal:q.kcal,p:q.p,meal,q:1});save();renderDashboard();toast('🍽️ '+q.n+' añadido');}
+let _recFilter=[];
+function renderRecipes(){
+  const el=document.getElementById('recipeList');if(!el)return;
+  const allTags=['rápido','batch','niños','barato','proteína','horno','mediterráneo','verdura','findesemana','invierno'];
+  const chips=`<div style="margin-bottom:10px">${allTags.map(t=>`<span class="pill" style="cursor:pointer;${_recFilter.includes(t)?'border-color:var(--acc);color:var(--acc);font-weight:700':''}" onclick="toggleRecFilter('${t}')">${t}</span>`).join('')}</div>`;
+  let list=FAM_RECIPES;
+  if(_recFilter.length)list=list.filter(r=>_recFilter.every(t=>r.tags.includes(t)));
+  el.innerHTML=chips+(list.length?list.map(r=>`<div class="ex-block"><div class="ex-head"><span class="nm">${r.n}</span><span class="mini">${r.tiempo}min · ${r.raciones} rac · ${r.kcalP}kcal P${r.p}</span></div><div style="margin-top:4px">${r.tags.map(t=>`<span class="pill" style="font-size:10px">${t}</span>`).join('')}</div><div class="row" style="margin-top:8px"><button class="btn-sm btn-acc2" onclick="openRecipe('${r.id}')">Ver receta familiar</button><button class="btn-sm btn2" onclick="logFamRecipe('${r.id}')">+ mi ración</button></div></div>`).join(''):'<p class="empty">Ninguna receta con todos esos filtros. Quita alguno.</p>');
+}
+function toggleRecFilter(t){if(_recFilter.includes(t))_recFilter=_recFilter.filter(x=>x!==t);else _recFilter.push(t);renderRecipes();}
+function openRecipe(id){const r=FAM_RECIPES.find(x=>x.id===id);if(!r)return;
+  openModal(`<h3>${r.n}</h3><div class="mini" style="margin-bottom:10px">${r.tiempo} min · salen ${r.raciones} raciones · ${r.cat}</div>
+  <b style="font-family:Anton;color:var(--acc)">🛒 Ingredientes (para 4)</b><div style="margin:6px 0">${r.ingr.map(i=>`<span class="pill">${i[1]} ${i[2]} ${i[0]}</span>`).join('')}</div>
+  <hr><b style="font-family:Anton;color:var(--acc2)">🍽️ Cocina modular — un plato, cuatro raciones</b>
+  <div class="ex-block" style="margin-top:8px"><b>👨 Tú (definición)</b><div class="mini" style="color:var(--txt)">${r.tu}</div></div>
+  <div class="ex-block"><b>👩 Pareja</b><div class="mini" style="color:var(--txt)">${r.pareja}</div></div>
+  <div class="ex-block"><b>👧 Niño 4 años</b><div class="mini" style="color:var(--txt)">${r.n4}</div></div>
+  <div class="ex-block"><b>👶 Bebé 2 años</b><div class="mini" style="color:var(--txt)">${r.n2}</div></div>
+  ${r.sobras?`<div class="note">♻️ Aprovechamiento: ${r.sobras}</div>`:''}
+  <div class="row" style="margin-top:12px"><button class="btn btn-acc2" onclick="logFamRecipe('${r.id}');closeModal()">+ Registrar mi ración</button><button class="btn2" onclick="addRecipeToShopSmart('${r.id}')">🛒 A la compra</button></div>`);
+}
+function logFamRecipe(id){const r=FAM_RECIPES.find(x=>x.id===id);const k=foodKey();DB.foodLog[k]=DB.foodLog[k]||[];DB.foodLog[k].push({n:r.n,ic:'🍽️',r:'1 ración',kcal:r.kcalP,p:r.p,meal:r.cat,q:1});save();renderDashboard();toast('🍽️ '+r.n+' añadido');}
 
-/* ===== RECETAS familiares (para 4) ===== */
-const RECIPES=[
-  {n:'Pollo a la plancha con verduras',tipo:'Comida',kcal:430,p:52,ing:['600g pollo','2 calabacines','2 pimientos','1 cebolla','aceite de oliva'],pasos:'Saltea la verdura con poco aceite y haz el pollo a la plancha. Niños: añade arroz o patata.'},
-  {n:'Merluza al horno con brócoli',tipo:'Cena',kcal:340,p:44,ing:['4 lomos merluza','1 brócoli','limón','ajo','aceite'],pasos:'Horno 190° 15 min, brócoli al vapor. Niños: con patata cocida.'},
-  {n:'Salmón con espárragos',tipo:'Cena',kcal:480,p:42,ing:['4 lomos salmón','2 manojos espárragos','limón','aceite'],pasos:'Salmón a la plancha 4 min por lado. Niños: con arroz.'},
-  {n:'Ternera con arroz y verduras',tipo:'Comida',kcal:520,p:55,ing:['500g ternera magra','arroz','pimientos','cebolla','aceite'],pasos:'Saltea la ternera con verduras. Tu ración con poco arroz, niños con más.'},
-  {n:'Lentejas con verduras',tipo:'Comida',kcal:450,p:24,ing:['400g lentejas','2 zanahorias','1 cebolla','1 pimiento','pimentón'],pasos:'Guiso tradicional de lentejas con verduras. Plato completo para toda la familia.'},
-  {n:'Paella de marisco',tipo:'Comida',kcal:480,p:28,ing:['arroz','gambas','mejillones','sepia','caldo','azafrán','pimiento'],pasos:'Sofríe, añade arroz y caldo. Tu ración moderada + mucha ensalada. Niños: ración normal.'},
-  {n:'Tortilla de patata',tipo:'Cena',kcal:300,p:12,ing:['6 huevos','4 patatas','1 cebolla','aceite'],pasos:'Clásica tortilla. Acompaña con ensalada grande para tu ración.'},
-  {n:'Pavo al horno con verduras',tipo:'Comida',kcal:400,p:50,ing:['600g pavo','calabacín','berenjena','cebolla','pimiento'],pasos:'Todo al horno con poco aceite. Niños: con patatas panaderas.'},
-  {n:'Garbanzos con espinacas',tipo:'Comida',kcal:430,p:20,ing:['400g garbanzos cocidos','espinacas','ajo','pimentón','un huevo'],pasos:'Potaje rápido. Añade un huevo duro para subir proteína.'},
-  {n:'Sepia con verduras y arroz',tipo:'Comida',kcal:460,p:32,ing:['600g sepia','arroz','pimientos','cebolla','ajo'],pasos:'Sepia a la plancha o guisada con verduras y arroz. Niños: más arroz.'}
-];
-function renderRecipes(){const el=document.getElementById('recipeList');if(!el)return;el.innerHTML=RECIPES.map((r,i)=>`<div class="ex-block"><div class="ex-head"><span class="nm">${r.n}</span><span class="mini">${r.tipo} · ${r.kcal}kcal P${r.p}</span></div><div style="margin-top:6px">${r.ing.map(x=>`<span class="pill">${x}</span>`).join('')}</div><p class="mini" style="margin-top:8px">${r.pasos}</p><div class="row" style="margin-top:8px"><button class="btn-sm btn-acc2" onclick="logRecipe(${i})">+ comer mi ración</button><button class="btn-sm btn2" onclick="addRecipeToShop(${i})">🛒 a la compra</button></div></div>`).join('');}
-function logRecipe(i){const r=RECIPES[i];const k=foodKey();DB.foodLog[k]=DB.foodLog[k]||[];DB.foodLog[k].push({n:r.n,ic:'🍽️',r:'1 ración',kcal:r.kcal,p:r.p,meal:r.tipo,q:1});save();renderDashboard();toast('🍽️ '+r.n+' añadido');}
+/* ===== DESPENSA / "¿Qué hay en la nevera?" ===== */
+function renderPantry(){
+  const el=document.getElementById('pantryView');if(!el)return;
+  DB.pantry=DB.pantry||{};
+  const groups={'Congelador':['Pollo','Merluza','Salmón','Gambas','Verduras congeladas','Carne picada'],'Nevera':['Huevos','Leche','Yogur','Queso','Verduras frescas','Tomate'],'Despensa':['Arroz','Pasta','Lentejas','Garbanzos','Alubias','Atún','Tomate triturado']};
+  el.innerHTML=Object.entries(groups).map(([g,items])=>`<div style="margin-bottom:12px"><b style="font-family:Anton;font-size:14px;color:var(--acc)">${g}</b>${items.map(it=>`<div class="sub-opt" style="cursor:pointer" onclick="togglePantry('${it.replace(/'/g,"")}')"><span>${DB.pantry[it]?'✅':'⬜'} ${it}</span></div>`).join('')}</div>`).join('')+`<div class="row" style="margin-top:8px"><input id="pantryNew" placeholder="Añadir lo que tengas"><button class="btn2 btn-sm" onclick="addPantry()">+</button></div><p class="mini" style="margin-top:8px">Marca lo que ya tienes. El planificador y la lista de la compra lo tendrán en cuenta para no comprar de más y reducir desperdicio.</p>`;
+  // extras personalizados
+  const extras=Object.keys(DB.pantry).filter(k=>!Object.values(groups).flat().includes(k)&&DB.pantry[k]);
+  if(extras.length){el.innerHTML+=`<div style="margin-top:10px"><b style="font-family:Anton;font-size:14px;color:var(--acc)">Otros que tienes</b>${extras.map(it=>`<div class="sub-opt"><span onclick="togglePantry('${it.replace(/'/g,"")}')" style="cursor:pointer">✅ ${it}</span><button class="btn-sm btn2" onclick="togglePantry('${it.replace(/'/g,"")}')" style="color:var(--bad);padding:4px 9px">✕</button></div>`).join('')}</div>`;}
+}
+function togglePantry(it){DB.pantry=DB.pantry||{};DB.pantry[it]=!DB.pantry[it];save();renderPantry();}
+function addPantry(){const v=document.getElementById('pantryNew').value.trim();if(!v)return;DB.pantry=DB.pantry||{};DB.pantry[v]=true;save();renderPantry();}
+function havePantry(ing){if(!DB.pantry)return false;const l=ing.toLowerCase();return Object.keys(DB.pantry).some(k=>DB.pantry[k]&&(l.includes(k.toLowerCase())||k.toLowerCase().includes(l)));}
 
-/* ===== LISTA DE LA COMPRA ===== */
-const SHOP_SECTION={'pollo':'Carnicería','pavo':'Carnicería','ternera':'Carnicería','conejo':'Carnicería','cerdo':'Carnicería','jamón':'Charcutería','merluza':'Pescadería','salmón':'Pescadería','lubina':'Pescadería','gambas':'Pescadería','mejillones':'Pescadería','sepia':'Pescadería','atún':'Conservas','huevo':'Huevos y lácteos','yogur':'Huevos y lácteos','queso':'Huevos y lácteos','leche':'Huevos y lácteos','requesón':'Huevos y lácteos','arroz':'Despensa','pasta':'Despensa','patata':'Verdulería','lenteja':'Despensa','garbanzo':'Despensa','quinoa':'Despensa','pan':'Panadería','avena':'Despensa','calabacín':'Verdulería','pimiento':'Verdulería','cebolla':'Verdulería','brócoli':'Verdulería','espárrago':'Verdulería','berenjena':'Verdulería','zanahoria':'Verdulería','espinaca':'Verdulería','tomate':'Verdulería','aguacate':'Verdulería','limón':'Verdulería','fruta':'Frutería','plátano':'Frutería','almendra':'Frutos secos','nueces':'Frutos secos','aceite':'Despensa','ajo':'Verdulería','azafrán':'Especias','pimentón':'Especias','caldo':'Despensa','miel':'Despensa','canela':'Especias','hummus':'Despensa'};
-function shopSection(ing){const l=ing.toLowerCase();for(const k in SHOP_SECTION){if(l.includes(k))return SHOP_SECTION[k];}return 'Otros';}
-function addRecipeToShop(i){const r=RECIPES[i];DB.shopList=DB.shopList||[];r.ing.forEach(ing=>{if(!DB.shopList.find(x=>x.n===ing))DB.shopList.push({n:ing,sec:shopSection(ing),done:false});});save();toast('🛒 Añadido a la compra');}
-function renderShopping(){const el=document.getElementById('shopView');if(!el)return;const list=DB.shopList||[];if(!list.length){el.innerHTML='<p class="empty">Tu lista está vacía. Añade ingredientes desde Recetas (🛒) o uno a uno abajo.</p>'+shopAddBox();return;}
+/* ===== PLANIFICADOR SEMANAL ===== */
+function openPlanner(){
+  openModal(`<h3>🗓️ Planificar la semana</h3><p class="mini" style="margin-bottom:10px">Responde y genero el plan de cenas + comidas + lista de la compra, priorizando lo que ya tienes.</p>
+  <label>¿Cuántos días cocinarás?</label><select id="plDays"><option>3</option><option>4</option><option selected>5</option><option>6</option><option>7</option></select>
+  <label style="margin-top:8px">Tiempo por día</label><select id="plTime"><option value="30">Rápido (≤30 min)</option><option value="60" selected>Normal (≤60 min)</option><option value="999">Sin prisa</option></select>
+  <label style="margin-top:8px">Prioriza</label><select id="plPrio"><option value="">Variado</option><option value="batch">Batch cooking (cocinar menos días)</option><option value="barato">Barato</option><option value="proteína">Alto en proteína</option><option value="niños">Fácil para los niños</option></select>
+  <label style="margin-top:8px">¿Algún día comen fuera / coméis fuera?</label><select id="plOut"><option value="0">No</option><option value="1">1 día</option><option value="2">2 días</option></select>
+  <button class="btn" style="margin-top:14px" onclick="generatePlan()">Generar plan semanal</button>`);
+}
+function generatePlan(){
+  const days=+document.getElementById('plDays').value;
+  const time=+document.getElementById('plTime').value;
+  const prio=document.getElementById('plPrio').value;
+  const out=+document.getElementById('plOut').value;
+  let pool=FAM_RECIPES.filter(r=>r.tiempo<=time);
+  if(prio)pool=pool.filter(r=>r.tags.includes(prio)).concat(pool.filter(r=>!r.tags.includes(prio)));
+  // priorizar recetas que usan lo que hay en despensa
+  pool.sort((a,b)=>{const av=a.ingr.filter(i=>havePantry(i[0])).length;const bv=b.ingr.filter(i=>havePantry(i[0])).length;return bv-av;});
+  // elegir 'days' recetas sin repetir
+  const chosen=[];const seen=new Set();
+  for(const r of pool){if(chosen.length>=days)break;if(!seen.has(r.id)){chosen.push(r);seen.add(r.id);}}
+  const dayNames=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  const plan=[];let di=0;
+  for(let i=0;i<days+out;i++){
+    if(out>0&&i>=days){plan.push({day:dayNames[i],rec:null,fuera:true});continue;}
+    const r=chosen[di%chosen.length];di++;
+    plan.push({day:dayNames[i],rec:r});
+  }
+  DB.weekPlan={created:today(),plan:plan.map(p=>({day:p.day,recId:p.rec?p.rec.id:null,fuera:!!p.fuera}))};
+  // batch: si una receta tiene >=6 raciones, marcar que cubre comidas extra
+  save();closeModal();foodTab('plan',document.querySelector('#v-food .tabs button'));renderPlan();toast('🗓️ Plan generado');
+}
+function renderPlan(){
+  const el=document.getElementById('planView');if(!el)return;
+  if(!DB.weekPlan){el.innerHTML='<p class="empty">Aún no has generado un plan. Pulsa el botón de abajo para que la app organice tu semana de cocina.</p><button class="btn" style="margin-top:10px" onclick="openPlanner()">🗓️ Planificar mi semana</button>';return;}
+  const wp=DB.weekPlan;
+  let html=`<div class="mini" style="margin-bottom:10px">Plan creado el ${fd(wp.created)}. La cocina manda: esto es lo que cocináis en casa.</div>`;
+  html+=wp.plan.map((p,i)=>{
+    if(p.fuera)return `<div class="ex-block"><div class="ex-head"><span class="nm">${p.day}</span><span class="pill" style="border-color:var(--gold);color:var(--gold)">comer fuera</span></div></div>`;
+    const r=FAM_RECIPES.find(x=>x.id===p.recId);if(!r)return '';
+    const batch=r.raciones>=6;
+    return `<div class="ex-block"><div class="ex-head"><span class="nm">${p.day}</span><span class="mini">${r.tiempo}min</span></div><div style="font-family:Anton;font-size:15px;margin:4px 0">${r.n}</div>${batch?`<div class="note" style="padding:7px 10px">♻️ Cocina ${r.raciones} raciones: cubre esta cena + comidas/tuppers de los próximos días.</div>`:''}<div class="row" style="margin-top:8px"><button class="btn-sm btn-acc2" onclick="openRecipe('${r.id}')">Ver receta</button><button class="btn-sm btn2" onclick="swapPlanDay(${i})">🔄 Cambiar</button></div></div>`;
+  }).join('');
+  html+=`<div class="row" style="margin-top:10px"><button class="btn" onclick="planToShopping()">🛒 Generar lista de la compra</button></div><div class="row" style="margin-top:8px"><button class="btn2" onclick="openPlanner()">↺ Replanificar</button></div>`;
+  el.innerHTML=html;
+}
+function swapPlanDay(i){const used=new Set(DB.weekPlan.plan.map(p=>p.recId));const alt=FAM_RECIPES.find(r=>!used.has(r.id));if(!alt){toast('Sin más recetas disponibles');return;}DB.weekPlan.plan[i].recId=alt.id;DB.weekPlan.plan[i].fuera=false;save();renderPlan();toast('🔄 Cambiado a '+alt.n);}
+
+/* ===== LISTA DE COMPRA INTELIGENTE ===== */
+function planToShopping(){
+  if(!DB.weekPlan){toast('Genera un plan primero');return;}
+  const agg={}; // nombre -> {qty, unit}
+  DB.weekPlan.plan.forEach(p=>{if(p.fuera||!p.recId)return;const r=FAM_RECIPES.find(x=>x.id===p.recId);if(!r)return;
+    r.ingr.forEach(([name,qty,unit])=>{
+      if(PANTRY_BASICS.some(b=>name.toLowerCase().includes(b.toLowerCase())))return; // básicos no
+      if(havePantry(name))return; // ya lo tienes
+      const key=name;if(!agg[key])agg[key]={qty:0,unit,name};
+      if(typeof qty==='number')agg[key].qty+=qty;else agg[key].qty=qty;
+    });
+  });
+  DB.shopList=Object.values(agg).map(x=>({n:`${typeof x.qty==='number'?x.qty+' '+x.unit:''} ${x.name}`.trim(),sec:sectionOf(x.name),done:false}));
+  save();foodTab('compra',document.querySelectorAll('#v-food .tabs button')[4]);renderShopping();toast('🛒 Lista creada desde tu plan');
+}
+function addRecipeToShopSmart(id){const r=FAM_RECIPES.find(x=>x.id===id);if(!r)return;DB.shopList=DB.shopList||[];r.ingr.forEach(([name,qty,unit])=>{if(PANTRY_BASICS.some(b=>name.toLowerCase().includes(b.toLowerCase())))return;if(havePantry(name))return;const label=`${typeof qty==='number'?qty+' '+unit:''} ${name}`.trim();if(!DB.shopList.find(x=>x.n===label))DB.shopList.push({n:label,sec:sectionOf(name),done:false});});save();toast('🛒 Añadido (sin lo que ya tienes)');closeModal();}
+function renderShopping(){const el=document.getElementById('shopView');if(!el)return;const list=DB.shopList||[];
+  if(!list.length){el.innerHTML='<p class="empty">Lista vacía. Genérala desde tu Plan semanal o añade desde una receta.</p>'+shopAddBox();return;}
   const bySec={};list.forEach((it,idx)=>{(bySec[it.sec]=bySec[it.sec]||[]).push({...it,idx});});
-  el.innerHTML=Object.keys(bySec).sort().map(sec=>`<div style="margin-bottom:12px"><b style="font-family:Anton;font-size:14px;color:var(--acc)">${sec}</b>${bySec[sec].map(it=>`<div class="sub-opt" style="${it.done?'opacity:.5':''}"><span onclick="toggleShop(${it.idx})" style="cursor:pointer">${it.done?'✅':'⬜'} ${it.n}</span><button class="btn-sm btn2" onclick="delShop(${it.idx})" style="padding:4px 9px;color:var(--bad)">✕</button></div>`).join('')}</div>`).join('')+shopAddBox()+`<button class="btn2" style="margin-top:10px" onclick="clearShopDone()">Quitar comprados</button> <button class="btn2" style="margin-top:10px" onclick="clearShopAll()">Vaciar lista</button>`;}
+  const order=['Verdulería','Carnicería','Pescadería','Charcutería','Huevos y lácteos','Conservas','Despensa','Panadería','Otros'];
+  const secs=Object.keys(bySec).sort((a,b)=>order.indexOf(a)-order.indexOf(b));
+  el.innerHTML=secs.map(sec=>`<div style="margin-bottom:12px"><b style="font-family:Anton;font-size:14px;color:var(--acc)">${sec}</b>${bySec[sec].map(it=>`<div class="sub-opt" style="${it.done?'opacity:.5':''}"><span onclick="toggleShop(${it.idx})" style="cursor:pointer">${it.done?'✅':'⬜'} ${it.n}</span><button class="btn-sm btn2" onclick="delShop(${it.idx})" style="padding:4px 9px;color:var(--bad)">✕</button></div>`).join('')}</div>`).join('')+shopAddBox()+`<div class="row" style="margin-top:10px"><button class="btn2" onclick="clearShopDone()">Quitar comprados</button><button class="btn2" onclick="clearShopAll()">Vaciar</button></div>`;}
 function shopAddBox(){return `<div class="row" style="margin-top:10px"><input id="shopNew" placeholder="Añadir producto"><button class="btn2 btn-sm" onclick="addShopItem()">+</button></div>`;}
-function addShopItem(){const v=document.getElementById('shopNew').value.trim();if(!v)return;DB.shopList=DB.shopList||[];DB.shopList.push({n:v,sec:shopSection(v),done:false});save();renderShopping();}
+function addShopItem(){const v=document.getElementById('shopNew').value.trim();if(!v)return;DB.shopList=DB.shopList||[];DB.shopList.push({n:v,sec:sectionOf(v),done:false});save();renderShopping();}
 function toggleShop(i){DB.shopList[i].done=!DB.shopList[i].done;save();renderShopping();}
 function delShop(i){DB.shopList.splice(i,1);save();renderShopping();}
 function clearShopDone(){DB.shopList=(DB.shopList||[]).filter(x=>!x.done);save();renderShopping();toast('Comprados quitados');}
-function clearShopAll(){if(confirm('¿Vaciar toda la lista de la compra?')){DB.shopList=[];save();renderShopping();}}
+function clearShopAll(){if(confirm('¿Vaciar toda la lista?')){DB.shopList=[];save();renderShopping();}}
 
+/* ===================== MENTE · VÍDEOS GUIADOS ===================== */
 /* ===================== MENTE · VÍDEOS GUIADOS ===================== */
 const VIDEO_LIB=[
   {cat:'Movilidad',ic:'🤸',sub:'Despierta el cuerpo · 10 min',vids:[

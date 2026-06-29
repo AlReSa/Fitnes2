@@ -244,7 +244,7 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 
 <!-- COMIDA -->
 <section class="view" id="v-food">
-  <div class="tabs"><button class="on" onclick="foodTab('hoy',this)">Hoy</button><button onclick="foodTab('menus',this)">Menús</button><button onclick="foodTab('desayunos',this)">Des/Mer</button><button onclick="foodTab('recetas',this)">Recetas</button><button onclick="foodTab('compra',this)">Compra</button></div>
+  <div class="tabs"><button class="on" onclick="foodTab('hoy',this)">Hoy</button><button onclick="foodTab('plan',this)">Plan</button><button onclick="foodTab('recetas',this)">Recetas</button><button onclick="foodTab('despensa',this)">Despensa</button><button onclick="foodTab('compra',this)">Compra</button></div>
   <div id="food-hoy">
     <div class="card"><h3>🍽️ Hoy <span class="tag c2">por raciones</span></h3><div id="foodTarget"></div></div>
     <div id="foodTip"></div>
@@ -255,19 +255,19 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
       <button class="btn2" style="margin-top:8px" onclick="openCustomFood()">+ Otro alimento</button>
     </div>
     <div class="card"><h3>📋 Lo que llevas hoy</h3><div id="foodLog"></div></div>
-    <div class="card" style="border-color:var(--gold)"><h3>🍔 Comida trampa</h3><p class="mini">Una comida libre no arruina nada: forma parte de un plan sostenible. Regístrala sin culpa.</p><button class="btn btn-gold" style="margin-top:10px" onclick="logCheat()">Registrar comida trampa de hoy</button><div id="cheatInfo" style="margin-top:8px"></div></div>
+    <div class="card" style="border-color:var(--gold)"><h3>🍔 Comida fuera / trampa</h3><p class="mini">Sales con los niños, comes fuera, te das un capricho. No pasa nada: una comida no decide nada, la semana entera sí. Regístrala sin culpa.</p><button class="btn btn-gold" style="margin-top:10px" onclick="logCheat()">Registrar comida libre de hoy</button><div id="cheatInfo" style="margin-top:8px"></div></div>
   </div>
-  <div id="food-menus" style="display:none">
-    <div class="card"><h3>📅 Menús semanales</h3><p class="mini">Menús completos mediterráneos para definición (proteína alta, comes de todo). Toca un día para registrarlo entero.</p><div id="menuList" style="margin-top:10px"></div></div>
-  </div>
-  <div id="food-desayunos" style="display:none">
-    <div class="card"><h3>🥣 Desayunos y meriendas</h3><p class="mini">El punto débil de muchos. Opciones rápidas y ricas en proteína. Toca para registrar.</p><div id="quickList" style="margin-top:10px"></div></div>
+  <div id="food-plan" style="display:none">
+    <div class="card"><h3>🗓️ Planificador familiar <span class="tag c2">la cocina manda</span></h3><p class="mini">No "qué comes tú", sino qué cocináis en casa esta semana. De cada receta salen 4 raciones adaptadas (tú, pareja, niños) y la lista de la compra.</p><div id="planView" style="margin-top:10px"></div></div>
   </div>
   <div id="food-recetas" style="display:none">
-    <div class="card"><h3>👨‍🍳 Recetas <span class="tag">para 4</span></h3><p class="mini">Cocinas para la familia. Cada receta da tu ración en definición + qué añadir a los niños. El 🛒 la manda a tu lista de la compra.</p><div id="recipeList" style="margin-top:10px"></div></div>
+    <div class="card"><h3>👨‍🍳 Recetas familiares <span class="tag">cocina modular</span></h3><p class="mini">Una receta, cuatro platos: tu ración de definición + pareja + niño 4 años + bebé 2 años. Filtra por lo que necesites esta semana.</p><div id="recipeList" style="margin-top:10px"></div></div>
+  </div>
+  <div id="food-despensa" style="display:none">
+    <div class="card"><h3>🧊 Despensa · ¿qué hay en casa?</h3><div id="pantryView"></div></div>
   </div>
   <div id="food-compra" style="display:none">
-    <div class="card"><h3>🛒 Lista de la compra</h3><p class="mini">Organizada por secciones del súper. Añade desde Recetas o a mano. Marca lo que compras.</p><div id="shopView" style="margin-top:10px"></div></div>
+    <div class="card"><h3>🛒 Lista de la compra</h3><p class="mini">Por secciones del súper, con cantidades, descontando lo que ya tienes en la despensa y los básicos. Genérala desde tu Plan.</p><div id="shopView" style="margin-top:10px"></div></div>
   </div>
 </section>
 
