@@ -172,7 +172,6 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
     <div class="stat"><div class="v viol" id="dRun">0</div><div class="l">carreras sem</div></div>
   </div></div>
   <div class="card"><h3>🎯 Camino a tu meta</h3><div id="goalProgress"></div></div>
-  <div class="card"><h3>🍽️ Comida de hoy</h3><div id="foodDash"></div></div>
   <div class="card"><h3>🎯 Reto de la semana</h3><div id="weekChallenge"></div></div>
   <div class="card"><h3>📅 Resumen semanal</h3><div id="weeklySummary"></div></div>
   <div id="backupReminder"></div>
@@ -242,40 +241,12 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
   </div>
 </section>
 
-<!-- COMIDA -->
-<section class="view" id="v-food">
-  <div class="tabs"><button class="on" onclick="foodTab('hoy',this)">Hoy</button><button onclick="foodTab('plan',this)">Plan</button><button onclick="foodTab('recetas',this)">Recetas</button><button onclick="foodTab('despensa',this)">Despensa</button><button onclick="foodTab('compra',this)">Compra</button></div>
-  <div id="food-hoy">
-    <div class="card"><h3>🍽️ Hoy <span class="tag c2">por raciones</span></h3><div id="foodTarget"></div></div>
-    <div id="foodTip"></div>
-    <div class="card"><h3>➕ Registrar comida</h3>
-      <label>Comida</label><select id="foodMeal"><option>Desayuno</option><option>Comida</option><option>Merienda</option><option>Cena</option><option>Snack</option></select>
-      <p class="mini" style="margin:10px 0 6px">Elige categoría y toca un alimento para añadir 1 ración.</p>
-      <div id="foodBank"></div>
-      <button class="btn2" style="margin-top:8px" onclick="openCustomFood()">+ Otro alimento</button>
-    </div>
-    <div class="card"><h3>📋 Lo que llevas hoy</h3><div id="foodLog"></div></div>
-    <div class="card" style="border-color:var(--gold)"><h3>🍔 Comida fuera / trampa</h3><p class="mini">Sales con los niños, comes fuera, te das un capricho. No pasa nada: una comida no decide nada, la semana entera sí. Regístrala sin culpa.</p><button class="btn btn-gold" style="margin-top:10px" onclick="logCheat()">Registrar comida libre de hoy</button><div id="cheatInfo" style="margin-top:8px"></div></div>
-  </div>
-  <div id="food-plan" style="display:none">
-    <div class="card"><h3>🗓️ Planificador familiar <span class="tag c2">la cocina manda</span></h3><p class="mini">No "qué comes tú", sino qué cocináis en casa esta semana. De cada receta salen 4 raciones adaptadas (tú, pareja, niños) y la lista de la compra.</p><div id="planView" style="margin-top:10px"></div></div>
-  </div>
-  <div id="food-recetas" style="display:none">
-    <div class="card"><h3>👨‍🍳 Recetas familiares <span class="tag">cocina modular</span></h3><p class="mini">Una receta, cuatro platos: tu ración de definición + pareja + niño 4 años + bebé 2 años. Filtra por lo que necesites esta semana.</p><div id="recipeList" style="margin-top:10px"></div></div>
-  </div>
-  <div id="food-despensa" style="display:none">
-    <div class="card"><h3>🧊 Despensa · ¿qué hay en casa?</h3><div id="pantryView"></div></div>
-  </div>
-  <div id="food-compra" style="display:none">
-    <div class="card"><h3>🛒 Lista de la compra</h3><p class="mini">Por secciones del súper, con cantidades, descontando lo que ya tienes en la despensa y los básicos. Genérala desde tu Plan.</p><div id="shopView" style="margin-top:10px"></div></div>
-  </div>
-</section>
+
 
 </main>
 <nav>
   <button class="on" onclick="nav('home',this)"><span class="ic">📊</span>Panel</button>
   <button onclick="nav('train',this)"><span class="ic">💪</span>Entreno</button>
-  <button onclick="nav('food',this)"><span class="ic">🍽️</span>Comida</button>
   <button onclick="nav('body',this)"><span class="ic">📏</span>Cuerpo</button>
   <button onclick="nav('mind',this)"><span class="ic">🧠</span>Mente</button>
 </nav>
