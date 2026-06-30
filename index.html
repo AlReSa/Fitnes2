@@ -171,6 +171,8 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
     <div class="stat"><div class="v gold" id="dBox">0</div><div class="l">boxeos sem</div></div>
     <div class="stat"><div class="v viol" id="dRun">0</div><div class="l">carreras sem</div></div>
   </div></div>
+  <div id="coachCard"></div>
+  <div class="card"><h3>🔋 Recovery Score</h3><div id="recoveryView"></div></div>
   <div class="card"><h3>🎯 Camino a tu meta</h3><div id="goalProgress"></div></div>
   <div class="card"><h3>🎯 Reto de la semana</h3><div id="weekChallenge"></div></div>
   <div class="card"><h3>📅 Resumen semanal</h3><div id="weeklySummary"></div></div>
@@ -194,12 +196,18 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
     <div class="card" id="sessionCard" style="display:none"><div id="sessionHead"></div><div id="timerHero"></div><div id="sessionBody"></div><div class="row" style="margin-top:8px"><button class="btn-acc2" style="flex:1" onclick="finishSession()">Finalizar y guardar</button><button class="btn2 btn-sm" onclick="cancelSession()">Cancelar</button></div></div>
   </div>
   <div id="train-prog" style="display:none">
+    <div class="card" style="border-color:var(--gold)"><h3>🪶 Descarga (deload)</h3><div id="deloadView"></div></div>
+    <div class="card"><h3>⚠️ Estancamientos</h3><div id="stagnationView"></div></div>
+    <div class="card"><h3>💪 Volumen por músculo <span class="tag c2">esta semana</span></h3><div id="volumeView"></div></div>
+    <div class="card"><h3>🏋️ Fuerza estimada (1RM)</h3><div id="e1rmView"></div></div>
+    <div class="card"><h3>🔁 Comparativa de ciclos</h3><div id="cycleCompareView"></div></div>
     <div class="card"><h3>📈 Progresión por ejercicio</h3><label>Ejercicio</label><select id="progSelect" onchange="renderProgChart()"></select><div id="progChart"></div><div id="progStats" style="margin-top:24px"></div></div>
     <div class="card"><h3>⚡ Density Score · sesiones</h3><div id="densityChart"></div></div>
     <div class="card"><h3>🏆 Récords (máx peso)</h3><div id="prList"></div></div>
     <div class="card"><h3>📚 Últimas sesiones</h3><div id="historyList"></div></div>
   </div>
   <div id="train-retos" style="display:none">
+    <div class="card" style="border-color:var(--acc)"><h3>🎯 Mis objetivos</h3><div id="goalsView"></div></div>
     <div class="card"><h3>🎖️ Hitos</h3><div id="medalList"></div></div>
     <div class="card"><h3>🔥 Récords de formato</h3><div id="formatPR"></div></div>
   </div>
@@ -212,6 +220,9 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 <!-- CUERPO -->
 <section class="view" id="v-body">
   <div class="card"><h3>📏 Control corporal <span class="tag c2">cada 2 sem</span></h3><div id="bodyAlert"></div><div id="bodyLatest"></div><button class="btn" style="margin-top:12px" onclick="openMeasure()">+ Registrar medición de hoy</button></div>
+  <div class="card"><h3>📊 Tendencia de peso <span class="tag c2">media 7 días</span></h3><div id="weightTrend"></div></div>
+  <div class="card"><h3>🔬 Composición estimada</h3><div id="bodyComp"></div></div>
+  <div class="card"><h3>🎉 Logros de medidas</h3><div id="measHighlight"></div></div>
   <div class="card"><h3>📉 Evolución</h3><label>Métrica</label><select id="bodySelect" onchange="renderBodyChart()"></select><div id="bodyChart"></div><div id="bodyDelta" style="margin-top:24px"></div></div>
   <div class="card"><h3>📸 Fotos de progreso</h3><div id="bodyPhotos"></div></div>
   <div class="card"><h3>🗂️ Historial</h3><div id="bodyHistory"></div></div>
@@ -219,7 +230,11 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 
 <!-- MENTE -->
 <section class="view" id="v-mind">
-  <div class="tabs"><button class="on" onclick="mindTab('video',this)">Guiado</button><button onclick="mindTab('ritual',this)">Ritual rápido</button><button onclick="mindTab('habits',this)">Hábitos</button></div>
+  <div class="tabs"><button class="on" onclick="mindTab('video',this)">Guiado</button><button onclick="mindTab('checkin',this)">Check-in</button><button onclick="mindTab('ritual',this)">Ritual</button><button onclick="mindTab('habits',this)">Hábitos</button></div>
+  <div id="mind-checkin" style="display:none">
+    <div class="card" style="border-color:var(--viol)"><h3>📝 Check-in diario <span class="tag v">30 segundos</span></h3><p class="mini">Cómo te encuentras hoy. Sin escribir, solo tocar. Ayuda a la app a cuidar tu recuperación.</p><div id="checkinView" style="margin-top:10px"></div></div>
+    <div class="card"><h3>📈 Tu semana de ánimo</h3><div id="checkinTrend"></div></div>
+  </div>
   <div id="mind-video">
     <div class="card" style="border-color:var(--viol)"><h3>🎬 Activación guiada <span class="tag v">en vídeo</span></h3>
       <p class="mini">Elige cómo arrancar el día y sigue el vídeo. Cada día propone uno distinto para no aburrir. Al terminar, marca completado.</p>
@@ -236,6 +251,7 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
     <div class="card" style="border-color:var(--viol)"><h3>🧠 Ritual rápido 15 min</h3><p class="mini">Sin vídeo, guiado por pasos cronometrados. Útil si prefieres hacerlo a tu aire.</p><div id="mindTimer"></div><div id="mindSteps" style="margin-top:12px"></div><button class="btn btn-viol" style="margin-top:10px" onclick="completeMind()">✓ Marcar completado hoy</button></div>
   </div>
   <div id="mind-habits" style="display:none">
+    <div class="card" style="border-color:var(--acc2)"><h3>💯 Health Score de hoy</h3><div id="healthScore"></div></div>
     <div class="card"><h3>✅ Hábitos de hoy</h3><div class="note viol">No busques el 100%. La clave es <b>no fallar dos días seguidos</b>.</div><div id="habitList" style="margin-top:10px"></div><details style="margin-top:8px"><summary style="cursor:pointer;color:var(--acc2);font-size:13px;font-weight:600">+ Editar hábitos</summary><div id="habitEdit" style="margin-top:8px"></div></details></div>
     <div class="card"><h3>🔥 Cadena · 30 días</h3><div id="habitStreak"></div><p class="mini" style="margin-top:10px" id="habitStreakTxt"></p></div>
   </div>
