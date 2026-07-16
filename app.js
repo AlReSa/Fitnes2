@@ -25,7 +25,20 @@ const SUBS={
   'Peso muerto rumano':['PM rumano mancuernas','Buenos días','Hip thrust','Curl femoral'],
   'Zancada KB':['Zancada mancuernas','Búlgara','Prensa','Sentadilla goblet'],
   'Curl femoral':['Curl femoral sentado','Peso muerto rumano','Puente glúteo','Nórdico'],
-  'Gemelo de pie':['Gemelo sentado','Gemelo en prensa','Saltos a la comba','Gemelo a una pierna']
+  'Gemelo de pie':['Gemelo sentado','Gemelo en prensa','Saltos a la comba','Gemelo a una pierna'],
+  'Press militar de pie':['Press militar sentado','Push press','Press mancuernas de pie','Press Arnold'],
+  'Farmer walk':['Farmer con mancuernas','Farmer con kettlebells','Paseo del granjero en trap bar','Carry en rack'],
+  'Farmer walk pesado':['Farmer mancuernas pesado','Yoke walk','Trap bar carry','Zercher carry'],
+  'Zercher carry o arrastre':['Zercher carry','Arrastre de trineo','Farmer walk','Peso muerto con pausa'],
+  'Sentadilla frontal':['Sentadilla goblet','Sentadilla trasera','Zercher squat','Prensa'],
+  'Remo pendlay':['Remo con barra','Remo mancuerna','Remo en máquina','Remo gorila KB'],
+  'Press banca tempo 3-1-1':['Press banca','Press mancuernas','Flexiones lastradas','Press inclinado'],
+  'Fondos lastrados':['Fondos','Press cerrado','Fondos en máquina','Flexiones diamante'],
+  'Dominadas lastradas':['Dominadas','Jalón al pecho','Dominadas asistidas','Remo invertido'],
+  'Zancada caminando':['Zancada estática','Búlgara','Prensa a una pierna','Step-up'],
+  'Peso muerto rumano tempo':['Peso muerto rumano','Buenos días','Curl femoral','Hip thrust'],
+  'Dominadas':['Dominadas con goma','Jalón al pecho','Remo invertido','Dominadas negativas'],
+  'Fondos':['Fondos con goma','Fondos en banco','Press cerrado','Flexiones diamante']
 };
 /* ----- Rotación del ejercicio principal por día (cada ciclo cambia) ----- */
 const MAIN_ROT={Lunes:['Press banca','Press inclinado','Press militar'],Miércoles:['Dominadas lastradas','Remo barra','Pendlay row'],Sábado:['Sentadilla','Sentadilla frontal','Trap bar deadlift']};
@@ -43,7 +56,9 @@ const FINISHER=[
   {label:'Quemador escalera',desc:'KB swings bajando 10→1 (10,9,8...1) y goblet squat subiendo 1→10. Alterna. Encadenado.',sec:300,timer:'up',q:'kettlebell swing goblet squat ladder'},
   {label:'Farmer + burpee',desc:'40 metros de farmer walk (carga pesada en cada mano) + 10 burpees = 1 ronda. Haz 3 rondas.',sec:300,timer:'down',q:'farmer walk burpee finisher'},
   {label:'Tabata swings',desc:'8 rondas de: 20 segundos de KB swings a tope + 10 segundos de descanso. Total 4 minutos. La app marca cada intervalo.',sec:240,timer:'tabata',q:'tabata kettlebell swings'},
-  {label:'Sprint metabólico',desc:'5 series de: 30 segundos fuerte + 30 segundos suave. En cinta, bici de aire o boxeo de sombra.',sec:300,timer:'down',q:'30 second sprint intervals workout'}
+  {label:'Sprint metabólico',desc:'5 series de: 30 segundos fuerte + 30 segundos suave. En cinta, bici de aire o boxeo de sombra.',sec:300,timer:'down',q:'30 second sprint intervals workout'},
+  {label:'Carry strongman',desc:'Farmer walk pesado: 4 recorridos de 40 m con 90s de descanso. Distancia larga = tiempo bajo tensión alto (40-70s), ideal para espalda, core y agarre.',sec:360,timer:'down',q:'farmer carry strongman technique'},
+  {label:'Complejo de barra TUT',desc:'Sin soltar la barra: peso muerto + remo + power clean + press + sentadilla, 6 reps de cada, controlado. 3-4 rondas. Cada ronda dura 40-70s bajo tensión.',sec:360,timer:'down',q:'barbell complex workout'}
 ];
 
 function load(){
@@ -112,18 +127,6 @@ function seed(){
 
 /* ===== RUTINAS DE VIAJE (sin gimnasio) ===== */
 /* Material: peso corporal, comba, bandas elásticas (10kg c/u) + barra modulable, espacio para correr */
-const TRAVEL_VID={
-  'Press banca con bandas (barra)':'wsCJgGmpHWk',
-  'Remo con banda':'xQrKtybGD7w',
-  'Press hombro con banda':'oKw3i0K8eAk',
-  'Sentadilla con banda':'YaXPRqUwItQ',
-  'Peso muerto rumano banda':'2SHsk9AzdjA',
-  'Curl banda + press banda':'xQrKtybGD7w',
-  'Comba EMOM':'dqrU2-xlouY','Comba AMRAP':'dqrU2-xlouY',
-  'Flexiones (pies elevados)':'4dF1DOWzf20','Flexiones':'4dF1DOWzf20',
-  'Sentadilla búlgara (banda/mochila)':'2C-uNgKwPLE',
-  'Intervalos carrera':'',
-};
 function travelRoutines(){
   return [
     {id:'t1',name:'TORSO VIAJE',day:'Lunes',travel:true,blocks:[
@@ -273,7 +276,7 @@ function renderDashboard(){
   const fl=fatLossScore();const fn=document.getElementById('fatNum');const fr=document.getElementById('fatRing');
   if(fl!=null){fn.textContent=fl;const col=fl>=66?'var(--ok)':fl>=40?'var(--gold)':'var(--bad)';fr.style.background=`conic-gradient(${col} ${fl*3.6}deg, var(--bg3) 0)`;document.getElementById('fatMsg').textContent=fl>=66?'vas bien':fl>=40?'aceptable':'aprieta';}
   else{fn.textContent='—';fr.style.background='var(--bg3)';document.getElementById('fatMsg').textContent='mide y entrena';}
-  renderWeekChallenge();renderWeeklySummary();renderCoach();renderRecovery();renderGoalProgress();renderBackupReminder();renderCalendar();renderExtraHistory();renderTodayDash();renderWeekView();
+  renderWeekChallenge();renderWeeklySummary();renderCoach();renderRecovery();renderGoalProgress();renderBackupReminder();renderCalendar();renderExtraHistory();renderTodayDash();renderWeekView();applyCollapsed();
 }
 function renderExtraHistory(){const el=document.getElementById('extraHistory');if(!el)return;let html='';for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10);const e=DB.extraLog[ds]||{};const sess=DB.sessions.some(s=>s.date===ds);let bg='var(--bg3)',bd='var(--line)';if(e.box){bg='rgba(255,193,50,.3)';bd='var(--gold)';}else if(sess){bg='rgba(255,64,21,.25)';bd='var(--acc)';}else if(e.run){bg='rgba(156,107,255,.25)';bd='var(--viol)';}html+=`<span class="streak-dot" style="background:${bg};border-color:${bd}" title="${ds}${e.box?' 🥊':''}${e.run?' 🏃':''}${sess?' 💪':''}"></span>`;}
   const wk=weekDates();const totBox=Object.keys(DB.extraLog).filter(d=>DB.extraLog[d].box).length;const totRun=Object.keys(DB.extraLog).filter(d=>DB.extraLog[d].run).length;
@@ -285,7 +288,7 @@ function renderTodayDash(){const td=DAYS[(new Date().getDay()+6)%7];const r=DB.r
 function renderWeekView(){const plan={'Lunes':'💪 PUSH','Martes':'🏃 Cardio/boxeo','Miércoles':'💪 PULL','Jueves':'🏃 Cardio suave','Viernes':'😴 Descanso','Sábado':'💪 LEGS','Domingo':'😴 Descanso'};document.getElementById('weekView').innerHTML=DAYS.map(d=>`<div class="day-row"><div class="dd">${d.slice(0,3)}</div><div class="di">${plan[d]}</div></div>`).join('');}
 
 /* ===================== SCORES ===================== */
-function sessionVolume(s){let v=0;(s.blocks||[]).forEach(b=>b.exercises.forEach(e=>(e.sets||[]).forEach(st=>v+=(+st.kg||0)*(+st.reps||0))));return v;}
+function sessionVolume(s){let v=0;(s.blocks||[]).forEach(b=>b.exercises.forEach(e=>(e.sets||[]).forEach(st=>v+=Math.max(0,+st.kg||0)*(+st.reps||0))));return v;}
 function avgDensity(){const ds=DB.sessions.filter(s=>s.density!=null).slice(0,4);if(!ds.length)return 0;return Math.round(ds.reduce((a,s)=>a+s.density,0)/ds.length);}
 function computeDensity(s){const vol=sessionVolume(s);const min=Math.max(s.duration||1,1);const restFactor=s.restFactor||1;return Math.round((vol/min)*restFactor);}
 function fatLossScore(){
@@ -366,11 +369,12 @@ function renderRotation(){const idx=(DB.cycle.rotIndex||0);document.getElementBy
 /* ===================== MODO ATLETA + FLUJO SESIÓN ===================== */
 function renderTodayReady(){const td=DAYS[(new Date().getDay()+6)%7];const r=DB.routines.find(x=>x.day===td);const el=document.getElementById('todayReady');document.getElementById('readyTitle').textContent='📅 '+td;
   if(DB.session){el.innerHTML='<p class="mini">Sesión en curso abajo 👇</p>';return;}
-  if(r)el.innerHTML=`<div class="day-row"><div class="dd">💪</div><div class="di"><b>${r.name}</b><div class="mini">4 bloques · Fuerza · Hipertrofia · Densidad · Finisher</div></div><button class="btn-sm btn-acc2" onclick="startFlow('${r.id}')">Empezar</button></div><button class="btn2" style="margin-top:8px" onclick="startWarmup('${r.id}')">🔥 Calentamiento guiado primero</button>`;
+  if(r){const hasLast=!!lastSessionFor(r.id);el.innerHTML=`<div class="day-row"><div class="dd">💪</div><div class="di"><b>${r.name}</b><div class="mini">4 bloques · Fuerza · Hipertrofia · Densidad · Finisher</div></div><button class="btn-sm btn-acc2" onclick="startFlow('${r.id}')">Empezar</button></div><div class="row" style="margin-top:8px"><button class="btn2" style="flex:1" onclick="startWarmup('${r.id}')">🔥 Calentamiento</button>${hasLast?`<button class="btn2" style="flex:1" onclick="repeatLast('${r.id}')">↺ Repetir última</button>`:''}</div>`;}
   else el.innerHTML=`<p class="mini">Hoy (${td}) sin rutina. Descanso o empieza una manual:</p><div style="margin-top:8px">${DB.routines.map(x=>`<button class="btn-sm btn2" style="margin:2px" onclick="startFlow('${x.id}')">${x.name}</button>`).join('')}</div>`;
 }
 function startFlow(rid){window._pendingRid=rid;openModal(`<h3>Modo Atleta</h3><p class="mini" style="margin-bottom:6px">¿Cómo llegas hoy? La sesión se ajusta a tu estado.</p><div class="athlete-opt"><button class="fresco" onclick="pickAthlete('fresco')"><span class="e">🔋</span>Fresco</button><button class="normal" onclick="pickAthlete('normal')"><span class="e">⚡</span>Normal</button><button class="fatigado" onclick="pickAthlete('fatigado')"><span class="e">🪫</span>Fatigado</button></div><p class="mini" style="margin-top:10px">Fresco: +volumen e intensidad · Normal: plan estándar · Fatigado: menos volumen, más descanso, finisher suave.</p>`);}
 function pickAthlete(state){DB.athlete=state;closeModal();startSession(window._pendingRid,state);}
+function repeatLast(rid){startSession(rid,'normal');toast('↺ Sesión cargada con tus marcas anteriores. A superarlas.');}
 function lastSessionFor(rid){return DB.sessions.find(s=>s.routineId===rid);}
 function adjustForAthlete(blocks,state){
   return blocks.map(b=>{const nb=JSON.parse(JSON.stringify(b));
@@ -399,7 +403,11 @@ function startSession(rid,state){const r=DB.routines.find(x=>x.id===rid);if(!r)r
   DB.session={routineId:rid,name:r.name,date:today(),athlete:state,startTs:Date.now(),restAccum:0,restTarget:0,blocks};
   save();resetT();document.getElementById('sessionCard').style.display='block';renderSessionHead();renderSessionBody();renderTimerHero();renderTodayReady();document.getElementById('sessionCard').scrollIntoView({behavior:'smooth'});if(DB.settings&&DB.settings.wakeLock)requestWake();
 }
-function renderSessionHead(){const s=DB.session;const eIc={fresco:'🔋',normal:'⚡',fatigado:'🪫'}[s.athlete]||'';document.getElementById('sessionHead').innerHTML=`<h3>💪 ${s.name} <span class="tag">${eIc} ${s.athlete||''}</span></h3>`;}
+function renderSessionHead(){const s=DB.session;const eIc={fresco:'🔋',normal:'⚡',fatigado:'🪫'}[s.athlete]||'';
+  const vol=sessionVolume(s);const last=lastSessionFor(s.routineId);const lastVol=last?sessionVolume(last):0;
+  let volTxt='';
+  if(vol>0){const diff=lastVol>0?Math.round((vol/lastVol-1)*100):null;volTxt=`<div class="mini" style="margin-top:4px">📦 Volumen: <b style="color:var(--acc2)">${vol.toLocaleString('es-ES')} kg</b>${diff!=null?` · ${diff>=0?'+':''}${diff}% vs última (${lastVol.toLocaleString('es-ES')} kg)`:''}</div>`;}
+  document.getElementById('sessionHead').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h3>💪 ${s.name} <span class="tag">${eIc} ${s.athlete||''}</span></h3><button class="btn-sm btn2" onclick="openPlates()" style="padding:6px 10px">🧮 discos</button></div>${volTxt}`;}
 function renderSessionBody(){const s=DB.session;if(!s)return;let html='';
   s.blocks.forEach((b,bi)=>{
     html+=`<div class="block-title">${b.label}${b.superset?' <span class="bt-tag">superserie · 30s</span>':''}${b._meta?` <span class="bt-tag">${b._meta.label}</span>`:''}</div>`;
@@ -416,14 +424,19 @@ function renderSessionBody(){const s=DB.session;if(!s)return;let html='';
       let sugTxt=sug?`<div class="prev" style="color:var(--gold)">🎯 Sugerencia: ${sug}</div>`:'';
       const noteVal=DB.exNotes&&DB.exNotes[ex.name]||'';
       const noteTxt=`<input value="${noteVal.replace(/"/g,'&quot;')}" placeholder="📝 nota (agarre, molestia...)" oninput="setExNote('${ex.name.replace(/'/g,"")}',this.value)" style="font-size:12px;padding:7px 10px;margin-top:6px;background:var(--bg)">`;
-      const vid=TRAVEL_VID[ex.name];
-      const vidBtn=vid?`<button class="btn-sm btn2" style="margin-top:6px" onclick="showExVideo('${vid}','${ex.name.replace(/'/g,"")}')">🎬 Ver técnica</button>`:'';
-      html+=`<div class="ex-block ${b.superset?'super':''}"><div class="ex-head"><span class="nm" onclick="swapExercise(${bi},${ei})" style="cursor:pointer">${ex.name} ${SUBS[ex.name]?'<span style="color:var(--acc2);font-size:13px">⇄</span>':''}</span><span style="display:flex;gap:4px;align-items:center"><button class="btn-sm btn2" style="padding:4px 8px" onclick="moveEx(${bi},${ei},-1)">↑</button><button class="btn-sm btn2" style="padding:4px 8px" onclick="moveEx(${bi},${ei},1)">↓</button></span></div><div class="mini" style="margin:-4px 0 6px">${ex.reps} ${b.type==='fuerza'?'· RPE '+(ex.rpe||8):''} ${ex.rest?'· ⏸'+ex.rest+'s':''}</div>${prevTxt}${sugTxt}<div class="set-head"><span>#</span><span>Kg</span><span>Reps</span><span>${showRpe?'RPE':''}</span><span>✓</span></div>${ex.sets.map((st,j)=>`<div class="set-row"><span class="n">${j+1}</span><input type="number" inputmode="decimal" value="${st.kg}" placeholder="kg" oninput="setVal(${bi},${ei},${j},'kg',this.value)"><input type="number" inputmode="numeric" value="${st.reps}" placeholder="reps" oninput="setVal(${bi},${ei},${j},'reps',this.value)"><input type="number" inputmode="numeric" value="${st.rpe||''}" placeholder="${showRpe?'rpe':'-'}" ${showRpe?'':'disabled style=opacity:.3'} oninput="setVal(${bi},${ei},${j},'rpe',this.value)" style="grid-column:span 1"><button class="ok ${st.done?'on':''}" onclick="toggleSet(${bi},${ei},${j})">✓</button></div>`).join('')}${vidBtn}${noteTxt}<button class="btn-sm btn2" style="margin-top:6px" onclick="addSet(${bi},${ei})">+ serie</button></div>`;
+      const vidBtn=`<button class="btn-sm btn2" style="margin-top:6px" onclick="showExVideo('${ex.name.replace(/'/g,"")}')">🎬 Técnica</button>`;
+      const bw=/dominada|fondo|flexi|muscle.?up/i.test(ex.name);
+      const bwHint=bw?`<div class="mini" style="margin:-2px 0 6px;color:var(--acc2)">💡 ¿Con goma? Apunta la ayuda en negativo: -15 = la goma te quita ~15 kg. Progresar = menos goma o más reps.</div>`:'';
+      html+=`<div class="ex-block ${b.superset?'super':''}"><div class="ex-head"><span class="nm" onclick="swapExercise(${bi},${ei})" style="cursor:pointer">${ex.name} ${SUBS[ex.name]?'<span style="color:var(--acc2);font-size:13px">⇄</span>':''}</span><span style="display:flex;gap:4px;align-items:center"><button class="btn-sm btn2" style="padding:4px 8px" onclick="moveEx(${bi},${ei},-1)">↑</button><button class="btn-sm btn2" style="padding:4px 8px" onclick="moveEx(${bi},${ei},1)">↓</button></span></div><div class="mini" style="margin:-4px 0 6px">${ex.reps} ${b.type==='fuerza'?'· RPE '+(ex.rpe||8):''} ${ex.rest?'· ⏸'+ex.rest+'s':''}</div>${bwHint}${prevTxt}${sugTxt}<div class="set-head"><span>#</span><span>Kg</span><span>Reps</span><span>${showRpe?'RPE':''}</span><span>✓</span></div>${ex.sets.map((st,j)=>{
+        const pv=ex.prev&&ex.prev[j]?ex.prev[j]:null;
+        const beat=pv&&(+st.reps||0)>0&&(((+st.kg||0)>0&&(+st.kg)*(+st.reps)>(+pv.kg||0)*(+pv.reps||0))||((+pv.kg||0)<0&&(+st.kg||0)>(+pv.kg)&&(+st.reps)>=(+pv.reps||0)));
+        const goal=pv&&(+pv.kg||+pv.reps)?`<span class="mini" style="display:block;font-size:9px;color:${beat?'var(--ok)':'var(--dim)'}">${beat?'✔':'↑'}${pv.kg||0}×${pv.reps||0}</span>`:'';
+        return `<div class="set-row"><span class="n" style="${beat?'color:var(--ok)':''}">${j+1}${goal}</span><input type="number" inputmode="decimal" value="${st.kg}" placeholder="${pv&&pv.kg?pv.kg:'kg'}" oninput="setVal(${bi},${ei},${j},'kg',this.value)" ${beat?'style="border-color:var(--ok)"':''}><input type="number" inputmode="numeric" value="${st.reps}" placeholder="${pv&&pv.reps?pv.reps:'reps'}" oninput="setVal(${bi},${ei},${j},'reps',this.value)" ${beat?'style="border-color:var(--ok)"':''}><input type="number" inputmode="numeric" value="${st.rpe||''}" placeholder="${showRpe?'rpe':'-'}" ${showRpe?'':'disabled style=opacity:.3'} oninput="setVal(${bi},${ei},${j},'rpe',this.value)" style="grid-column:span 1"><button class="ok ${st.done?'on':''}" onclick="toggleSet(${bi},${ei},${j})">✓</button></div>`;}).join('')}${vidBtn}${noteTxt}<button class="btn-sm btn2" style="margin-top:6px" onclick="addSet(${bi},${ei})">+ serie</button></div>`;
     });
   });
   document.getElementById('sessionBody').innerHTML=html;
 }
-function setVal(bi,ei,j,f,v){DB.session.blocks[bi].exercises[ei].sets[j][f]=v;save();}
+function setVal(bi,ei,j,f,v){DB.session.blocks[bi].exercises[ei].sets[j][f]=v;save();renderSessionHead();}
 function setExNote(name,v){DB.exNotes=DB.exNotes||{};if(v.trim())DB.exNotes[name]=v;else delete DB.exNotes[name];save();}
 function rpeSuggestion(name){
   // busca la última sesión con datos de fuerza (kg+rpe) de este ejercicio
@@ -441,7 +454,16 @@ function rpeSuggestion(name){
 }
 function addSet(bi,ei){const ss=DB.session.blocks[bi].exercises[ei].sets;ss.push({kg:ss.length?ss[ss.length-1].kg:'',reps:'',done:false,rpe:''});renderSessionBody();}
 function moveEx(bi,ei,dir){const arr=DB.session.blocks[bi].exercises;const ni=ei+dir;if(ni<0||ni>=arr.length)return;const t=arr[ei];arr[ei]=arr[ni];arr[ni]=t;save();renderSessionBody();}
-function toggleSet(bi,ei,j){const st=DB.session.blocks[bi].exercises[ei].sets[j];st.done=!st.done;if(st.done){const ex=DB.session.blocks[bi].exercises[ei];if(ex.rest){restT(adjRest(ex.rest));}else if(DB.session.blocks[bi].superset){restT(30);}beep(1);}save();renderSessionBody();}
+function toggleSet(bi,ei,j){const ex=DB.session.blocks[bi].exercises[ei];const st=ex.sets[j];st.done=!st.done;
+  if(st.done){
+    // autocompletar: si no tecleaste nada, asume que repetiste lo de la última vez
+    const pv=ex.prev&&ex.prev[j]?ex.prev[j]:null;
+    if(!st.kg&&pv&&pv.kg)st.kg=pv.kg;
+    if(!st.reps&&pv&&pv.reps)st.reps=pv.reps;
+    if(ex.rest){restT(adjRest(ex.rest));}else if(DB.session.blocks[bi].superset){restT(30);}
+    beep(1);
+  }
+  save();renderSessionBody();renderSessionHead();}
 function adjRest(r){return DB.session&&DB.session.athlete==='fatigado'?r+20:r;}
 function finishSession(){const s=DB.session;if(!s)return;
   // validar que haya algo
@@ -465,9 +487,12 @@ function doFinishSession(){const s=DB.session;if(!s)return;
   let np=[];blocks.forEach(b=>b.exercises.forEach(e=>e.sets.forEach(st=>{const k=+st.kg||0;if(k>0&&k>(pr[e.name]||0)&&!np.includes(e.name))np.push(e.name);})));
   blocks.forEach(b=>{if(b.result&&b.meta){const key=b.meta;if(!DB.formatPR[key]||b.result>DB.formatPR[key])DB.formatPR[key]=b.result;}});
   ['Press banca','Sentadilla','Trap bar deadlift'].forEach(n=>{const m=Math.max(maxKg(n),(function(){let mm=0;blocks.forEach(b=>b.exercises.forEach(e=>{if(e.name===n)e.sets.forEach(st=>{if(+st.kg>mm)mm=+st.kg;});}));return mm;})());if(n==='Press banca'&&m>DB.profile.bench)DB.profile.bench=m;if(n==='Sentadilla'&&m>DB.profile.squat)DB.profile.squat=m;});
+  const lastPrev=DB.sessions.find(x=>x.routineId===rec.routineId);
   DB.sessions.unshift(rec);DB.session=null;resetT();save();releaseWake();_sessFeel='normal';
   closeModal();document.getElementById('sessionCard').style.display='none';renderTodayReady();renderCycle();renderDashboard();
-  toast(np.length?`🏆 ¡RÉCORD en ${np[0]}! · Density ${rec.density}`:`💪 Guardado · Density ${rec.density}`);
+  const volNow=sessionVolume(rec);const volPrev=lastPrev?sessionVolume(lastPrev):0;
+  const volMsg=volPrev>0&&volNow>0?` · Vol ${volNow>volPrev?'+':''}${Math.round((volNow/volPrev-1)*100)}%`:'';
+  toast(np.length?`🏆 ¡RÉCORD en ${np[0]}! · Density ${rec.density}${volMsg}`:`💪 Guardado · Density ${rec.density}${volMsg}`);
 }
 function cancelSession(){DB.session=null;resetT();save();releaseWake();document.getElementById('sessionCard').style.display='none';renderTodayReady();}
 
@@ -486,8 +511,7 @@ function pauseT(){T.running=false;clearInterval(T.id);renderFloatTimer();}
 function resumeT(){if(T.phase==='idle')return;T.running=true;if(T.id)clearInterval(T.id);if(T.phase==='format'&&T.sec===0){T.id=setInterval(()=>{T.sec++;renderFloatTimer();},1000);}else{T.id=setInterval(()=>{if(T.phase==='rest'){if(DB.session)DB.session.restAccum++;tickRest();}else{T.sec--;if(T.sec<=0){beep(3);stopT();return;}renderFloatTimer();}},1000);}renderFloatTimer();}
 function stopT(){clearInterval(T.id);T={running:false,phase:'idle',sec:0,id:null,elapsed:0,label:''};renderFloatTimer();document.querySelectorAll('[id^="blockTimer_"]').forEach(e=>e.innerHTML='');}
 function resetT(){clearInterval(T.id);T={running:false,phase:'idle',sec:0,id:null,elapsed:0,label:''};const ft=document.getElementById('floatTimer');if(ft){ft.classList.remove('on');ft.innerHTML='';}}
-function showFormatVideo(q,name){openModal(`<h3>🎬 ${name}</h3><p class="mini" style="margin-bottom:10px">Vídeos de cómo se hace este formato. Toca uno para verlo (necesita internet).</p><div id="fvResults"><p class="mini">Buscando…</p></div><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(q)}" target="_blank" style="display:block;margin-top:10px"><button class="btn2" style="width:100%">🔎 Ver más en YouTube</button></a>`);loadFormatVideo(q);}
-function loadFormatVideo(q){const map={'EMOM kettlebell swings workout':'YSxHifyI6s8','AMRAP kettlebell workout':'YSxHifyI6s8','kettlebell thruster ladder workout':'YSxHifyI6s8','100 kettlebell swings for time':'sSESeQAir2M','kettlebell clean and press tutorial':'axaCQqM0R1k','kettlebell complex workout':'axaCQqM0R1k','kettlebell swing goblet squat ladder':'sSESeQAir2M','farmer walk burpee finisher':'8GpQ66AAKU0','tabata kettlebell swings':'YSxHifyI6s8','30 second sprint intervals workout':'8GpQ66AAKU0'};const id=map[q]||'YSxHifyI6s8';const el=document.getElementById('fvResults');if(el)el.innerHTML=`<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${id}?rel=0&playsinline=1" title="${q}" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`;}
+function showFormatVideo(q,name){openModal(`<h3>🎬 ${name}</h3><p class="mini" style="margin-bottom:12px">Te llevo a la búsqueda exacta en YouTube para ver cómo se hace este formato, con varios vídeos correctos para elegir.</p><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(q)}" target="_blank" style="display:block"><button class="btn btn-acc2" style="width:100%">▶ Ver cómo se hace</button></a><p class="mini" style="margin-top:10px">Necesita conexión a internet.</p>`);}
 
 /* ===================== PROGRESO ===================== */
 function allExerciseNames(){const s=new Set();DB.routines.forEach(r=>r.blocks.forEach(b=>b.exercises.forEach(e=>s.add(e.name))));DB.sessions.forEach(x=>(x.blocks||[]).forEach(b=>b.exercises.forEach(e=>s.add(e.name))));return[...s];}
@@ -499,22 +523,50 @@ function renderPR(){const pr={};DB.sessions.forEach(s=>(s.blocks||[]).forEach(b=
 function renderHistory(){const el=document.getElementById('historyList');el.innerHTML=DB.sessions.length?DB.sessions.slice(0,20).map(s=>`<div class="log-item"><div class="d">${fd(s.date)} · ${s.duration||'?'} min · ⚡${s.density||'—'}</div><div class="t">${s.name} <span class="mini" style="font-family:Barlow">${s.athlete||''}</span></div><details><summary style="cursor:pointer;color:var(--acc2);font-size:12px">ver bloques</summary>${(s.blocks||[]).map(b=>`<div style="margin-top:4px;font-size:13px"><b style="font-family:Anton">${b.label||b.type}</b>${b.result?` · ${b.result}`:''}<br>${b.exercises.map(e=>`${e.name}: ${(e.sets||[]).map(st=>`${st.kg||0}×${st.reps||0}`).join(', ')}`).join('<br>')}</div>`).join('')}</details><button class="btn-sm btn2" style="margin-top:8px" onclick="delSession('${s.id}')">Eliminar</button></div>`).join(''):'<p class="empty">Sin sesiones aún.</p>';}
 function delSession(id){DB.sessions=DB.sessions.filter(s=>s.id!==id);save();renderHistory();renderPR();renderProgChart();renderDensityChart();renderDashboard();}
 
+/* ===================== RUTINAS STRONGMAN (adaptadas a tu nivel) ===================== */
+/* Conceptos: full-body, compuestos primero, carries, TUT 40-70s, sobrecarga progresiva.
+   Adaptado a definición y material de gym normal + kettlebells. NADA de dopaje ni prácticas extremas. */
+function strongRoutines(){
+  return [
+    {id:'s1',name:'STRONGMAN A · Empuje+Acarreo',day:'Lunes',strong:true,blocks:[
+      {type:'fuerza',label:'Bloque 1 · Fuerza compuesta',exercises:[{name:'Press militar de pie',sets:4,reps:'6-8',rest:150,rpe:8,kg:40,note:'Compuesto primero. 65-75% aprox. Técnica estricta.'}]},
+      {type:'hipertrofia',label:'Bloque 2 · Hipertrofia TUT (40-70s)',superset:true,rest:60,exercises:[{name:'Press banca tempo 3-1-1',sets:3,reps:'8-10',kg:60,note:'Baja en 3s: alarga el tiempo bajo tensión.'},{name:'Fondos lastrados',sets:3,reps:'8-12',kg:0}]},
+      {type:'densidad',label:'Bloque 3 · Carry (agarre+core)',density:true,exercises:[{name:'Farmer walk',sets:1,reps:'4x40m',kg:0}]},
+      {type:'finisher',label:'Bloque 4 · Finisher strongman',finisher:true,exercises:[{name:'Finisher',sets:1,reps:'5 min',kg:0}]}
+    ]},
+    {id:'s2',name:'STRONGMAN B · Tracción+Espalda',day:'Miércoles',strong:true,blocks:[
+      {type:'fuerza',label:'Bloque 1 · Fuerza compuesta',exercises:[{name:'Peso muerto',sets:4,reps:'5-6',rest:180,rpe:8,kg:150,note:'Rey del posterior. Progresa 2,5kg cuando cierres las 4 series.'}]},
+      {type:'hipertrofia',label:'Bloque 2 · Hipertrofia TUT',superset:true,rest:60,exercises:[{name:'Remo pendlay',sets:4,reps:'8-10',kg:70,note:'Explosivo arriba, controlado abajo.'},{name:'Dominadas lastradas',sets:3,reps:'6-10',kg:0}]},
+      {type:'densidad',label:'Bloque 3 · Arrastre/Zercher',density:true,exercises:[{name:'Zercher carry o arrastre',sets:1,reps:'4x30m',kg:0}]},
+      {type:'finisher',label:'Bloque 4 · Finisher',finisher:true,exercises:[{name:'Finisher',sets:1,reps:'5 min',kg:0}]}
+    ]},
+    {id:'s3',name:'STRONGMAN C · Pierna+Full',day:'Sábado',strong:true,blocks:[
+      {type:'fuerza',label:'Bloque 1 · Fuerza compuesta',exercises:[{name:'Sentadilla frontal',sets:4,reps:'6-8',rest:150,rpe:8,kg:90,note:'Más torso erguido, brutal para core y cuádriceps.'}]},
+      {type:'hipertrofia',label:'Bloque 2 · Hipertrofia TUT',superset:true,rest:60,exercises:[{name:'Zancada caminando',sets:3,reps:'10-12/pierna',kg:20},{name:'Peso muerto rumano tempo',sets:3,reps:'10-12',kg:70,note:'3s en la bajada.'}]},
+      {type:'densidad',label:'Bloque 3 · Yoke/Farmer pesado',density:true,exercises:[{name:'Farmer walk pesado',sets:1,reps:'3x30m',kg:0}]},
+      {type:'finisher',label:'Bloque 4 · Finisher',finisher:true,exercises:[{name:'Finisher',sets:1,reps:'5 min',kg:0}]}
+    ]}
+  ];
+}
+
 /* ===================== RUTINAS (visual, con sustituciones) ===================== */
 function renderRoutines(){const el=document.getElementById('routineList');if(!el)return;
-  const isT=DB.mode==='travel';
-  let head=`<div class="row" style="margin-bottom:12px"><button class="btn-sm ${!isT?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('gym')">🏋️ Gym</button><button class="btn-sm ${isT?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('travel')">✈️ Viaje</button></div>`;
+  const isT=DB.mode==='travel',isS=DB.mode==='strong';
+  let head=`<div class="row" style="margin-bottom:12px"><button class="btn-sm ${DB.mode==='gym'?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('gym')">🏋️ Gym</button><button class="btn-sm ${isS?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('strong')">🪨 Strong</button><button class="btn-sm ${isT?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('travel')">✈️ Viaje</button></div>`;
   if(isT)head+=`<div class="note" style="margin-bottom:10px">Modo viaje: rutinas sin gimnasio con peso corporal, comba, bandas + barra y carrera. Ideal para vacaciones.</div>`;
+  if(isS)head+=`<div class="note" style="margin-bottom:10px">Modo strongman adaptado a tu nivel: compuestos pesados primero, hipertrofia con tiempo bajo tensión (baja lento) y acarreos (farmer walk, zercher). Full-body, gran gasto y músculo funcional. Progresa 2,5 kg cuando cierres todas las series.</div>`;
   const list=DB.routines.map(r=>`<div class="ex-block"><div class="ex-head"><span class="nm">${r.name} <span class="split-tag">${r.day}</span></span><span><button class="btn-sm btn2" onclick="editRoutine('${r.id}')">✎</button> <button class="btn-sm btn2" onclick="changeDay('${r.id}')">📅</button> <button class="btn-sm btn2" onclick="startFlow('${r.id}')">▶</button></span></div>${r.blocks.map(b=>`<div class="mini" style="margin-top:4px"><b style="color:var(--acc)">${b.label.replace('Bloque','B').replace(' · ',': ')}</b> ${b.exercises.map(e=>e.name+(SUBS[e.name]?` <span style="color:var(--acc2);cursor:pointer" onclick="showSubs('${e.name.replace(/'/g,"")}')">⇄</span>`:'')).join(' · ')}</div>`).join('')}</div>`).join('');
   const box=`<div class="ex-block" style="border-color:var(--gold);margin-top:6px"><div class="ex-head"><span class="nm">🥊 BOXEO TÉCNICA <span class="split-tag" style="color:var(--gold)">guiado</span></span><button class="btn-sm btn-gold" onclick="startBoxSession()">▶ Empezar</button></div><div class="mini" style="margin-top:4px">5 rounds de 3 min con descanso de 1 min. Sombra, drills 1-2, combate imaginario y ráfagas, con vídeo y campana en cada round. Como tener un entrenador.</div></div>`;
   el.innerHTML=head+list+box;
 }
-function setMode(m){if(DB.mode===m){renderRoutines();return;}
+function setMode(m){if(DB.mode==='strong')DB.strongRoutinesSaved=DB.routines;if(DB.mode===m){renderRoutines();return;}
   // guardar las rutinas actuales en su cajón antes de cambiar
   if(DB.mode==='travel')DB.travelRoutinesSaved=DB.routines;else DB.gymRoutinesSaved=DB.routines;
   DB.mode=m;
   if(m==='travel')DB.routines=DB.travelRoutinesSaved&&DB.travelRoutinesSaved.length?DB.travelRoutinesSaved:travelRoutines();
+  else if(m==='strong')DB.routines=DB.strongRoutinesSaved&&DB.strongRoutinesSaved.length?DB.strongRoutinesSaved:strongRoutines();
   else DB.routines=DB.gymRoutinesSaved&&DB.gymRoutinesSaved.length?DB.gymRoutinesSaved:buildRoutines(DB.cycle.rotIndex||0);
-  save();renderRoutines();renderTodayReady();renderDashboard();toast(m==='travel'?'✈️ Modo viaje activado':'🏋️ Modo gym activado');}
+  save();renderRoutines();renderTodayReady();renderDashboard();toast(m==='travel'?'✈️ Modo viaje activado':m==='strong'?'🪨 Modo strongman activado':'🏋️ Modo gym activado');}
 function changeDay(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;openModal(`<h3>Cambiar día de ${r.name}</h3><p class="mini" style="margin-bottom:10px">Elige el día que mejor te encaje. Si coincide con otra rutina, podrás tenerlas el mismo día sin problema.</p><label>Día</label><select id="cdDay">${DAYS.map(d=>`<option ${d===r.day?'selected':''}>${d}</option>`).join('')}</select><button class="btn" style="margin-top:14px" onclick="saveDay('${rid}')">Guardar</button>`);}
 function saveDay(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;r.day=document.getElementById('cdDay').value;save();closeModal();renderRoutines();renderTodayReady();renderDashboard();toast('📅 Día actualizado');}
 function editRoutine(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;window._editRid=rid;renderRoutineEditor();}
@@ -543,7 +595,7 @@ function doSwapCustom(bi,ei){const v=document.getElementById('swapCustom').value
 /* ===================== BOXEO GUIADO (rounds + vídeo + campana) ===================== */
 let BX={round:0,phase:'idle',sec:0,id:null,running:false};
 function startBoxSession(){BX={round:0,phase:'work',sec:BOX_SESSION.workSec,id:null,running:false};renderBoxSession();document.getElementById('boxSessionCard')&&document.getElementById('boxSessionCard').scrollIntoView({behavior:'smooth'});}
-function showExVideo(id,name){openModal(`<h3>🎬 ${name}</h3><div class="video-wrap"><iframe src="https://www.youtube.com/embed/${id}?rel=0&playsinline=1" title="técnica" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><p class="mini" style="margin-top:10px">Vídeo de referencia para la técnica. Necesita conexión a internet.</p>`);}
+function showExVideo(name){const q=encodeURIComponent(name+' técnica ejercicio');openModal(`<h3>🎬 ${name}</h3><p class="mini" style="margin-bottom:12px">Te llevo a la búsqueda exacta en YouTube: verás varios vídeos correctos de este movimiento y eliges el que más te guste.</p><a href="https://www.youtube.com/results?search_query=${q}" target="_blank" style="display:block"><button class="btn btn-acc2" style="width:100%">▶ Ver vídeos de ${name}</button></a><p class="mini" style="margin-top:10px">Necesita conexión a internet.</p>`);}
 function renderBoxSession(){
   let card=document.getElementById('boxSessionCard');
   if(!card){card=document.createElement('div');card.id='boxSessionCard';card.className='card';document.getElementById('train-rutinas').appendChild(card);}
@@ -552,7 +604,7 @@ function renderBoxSession(){
   card.innerHTML=`<h3>🥊 ${BOX_SESSION.name} <span class="tag gold">round ${BX.round+1}/${BOX_SESSION.rounds.length}</span></h3>
     <div class="timer-hero ${isRest?'rest':'go'}"><div class="phase">${isRest?'😮‍💨 DESCANSO':'🥊 '+r.label}</div><div class="clock">${m}:${String(s).padStart(2,'0')}</div><div class="sub">${isRest?'Recupera y respira':r.desc}</div>
     <div class="timer-ctrl">${BX.running?`<button class="btn2" onclick="bxPause()">Pausa</button>`:`<button class="btn-gold" onclick="bxStart()">${BX.sec<BOX_SESSION.workSec&&BX.round===0&&BX.phase==='work'?'Iniciar':'Seguir'}</button>`}<button class="btn2" onclick="bxSkip()">Sig ▶</button><button class="btn2" onclick="bxStop()">Salir</button></div></div>
-    ${!isRest?`<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${r.vid}?rel=0&playsinline=1" title="drill" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div>`:''}
+    ${!isRest?`<div class="video-wrap"><iframe src="https://www.youtube.com/embed/${r.vid}?rel=0&playsinline=1" title="drill" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe></div><a href="https://www.youtube.com/results?search_query=${encodeURIComponent('boxeo '+r.label)}" target="_blank" class="mini" style="display:block;margin-top:4px;color:var(--acc2)">¿El vídeo no corresponde? Buscar otros →</a>`:''}
     <div class="mini" style="margin-top:8px">Rounds: ${BOX_SESSION.rounds.map((x,i)=>`<span class="pill" style="${i===BX.round?'border-color:var(--gold);color:var(--gold)':''}">${i+1}. ${x.label.split('·')[0].trim()}</span>`).join('')}</div>`;
 }
 function bxTick(){BX.sec--;if(BX.sec<=0){beep(3);if(BX.phase==='work'){if(BX.round<BOX_SESSION.rounds.length-1){BX.phase='rest';BX.sec=BOX_SESSION.restSec;}else{bxFinish();return;}}else{BX.round++;BX.phase='work';BX.sec=BOX_SESSION.workSec;}}renderBoxSession();}
@@ -757,12 +809,14 @@ function renderBodyHistory(){const el=document.getElementById('bodyHistory');if(
 function delMeasure(i){DB.body.splice(i,1);save();renderBody();renderDashboard();}
 
 /* ===================== EXTRA (boxeo/carrera tic) ===================== */
-function renderExtra(){const d=today();const e=DB.extraLog[d]||{};const bx=document.getElementById('boxTic'),rn=document.getElementById('runTic');if(bx){bx.classList.toggle('done',!!e.box);document.getElementById('boxTicTxt').textContent=e.box?`✓ Boxeo${e.boxMin?' · '+e.boxMin+' min':''}`:'Hice boxeo hoy';}if(rn){rn.classList.toggle('done',!!e.run);document.getElementById('runTicTxt').textContent=e.run?`✓ Carrera${e.runMin?' · '+e.runMin+' min':''}`:'Hice carrera hoy';}}
+function renderExtra(){const d=today();const e=DB.extraLog[d]||{};const bx=document.getElementById('boxTic'),rn=document.getElementById('runTic');if(bx){bx.classList.toggle('done',!!e.box);document.getElementById('boxTicTxt').textContent=e.box?`✓ Boxeo${e.boxMin?' · '+e.boxMin+' min':''}`:'Hice boxeo hoy';}if(rn){rn.classList.toggle('done',!!e.run);document.getElementById('runTicTxt').textContent=e.run?`✓ Carrera${e.runKm?' · '+e.runKm+' km':''}${e.runMin?' · '+e.runMin+' min':''}${e.runKm&&e.runMin?' · '+(e.runMin/e.runKm).toFixed(1)+' min/km':''}`:'Hice carrera hoy';}}
 function toggleExtra(k){const d=today();DB.extraLog[d]=DB.extraLog[d]||{};
-  if(DB.extraLog[d][k]){DB.extraLog[d][k]=false;delete DB.extraLog[d][k+'Min'];delete DB.extraLog[d][k+'Int'];save();renderExtra();renderDashboard();toast('Quitado');return;}
+  if(DB.extraLog[d][k]){DB.extraLog[d][k]=false;delete DB.extraLog[d][k+'Min'];delete DB.extraLog[d][k+'Int'];delete DB.extraLog[d][k+'Km'];save();renderExtra();renderDashboard();toast('Quitado');return;}
   const isBox=k==='box';
-  openModal(`<h3>${isBox?'🥊 Boxeo':'🏃 Carrera'} de hoy</h3><p class="mini" style="margin-bottom:10px">Opcional: añade duración e intensidad para afinar tu Fat Loss Score. O guarda directo.</p><div class="row"><div><label>Minutos</label><input id="exMin" type="number" inputmode="numeric" placeholder="${isBox?'30':'45'}"></div><div><label>Intensidad</label><select id="exInt"><option>Suave</option><option selected>Media</option><option>Alta</option></select></div></div><button class="btn" style="margin-top:14px" onclick="confirmExtra('${k}')">Guardar</button>`);}
-function confirmExtra(k){const d=today();DB.extraLog[d]=DB.extraLog[d]||{};DB.extraLog[d][k]=true;const min=+document.getElementById('exMin').value;const int=document.getElementById('exInt').value;if(min)DB.extraLog[d][k+'Min']=min;DB.extraLog[d][k+'Int']=int;save();closeModal();renderExtra();renderDashboard();toast((k==='box'?'🥊 Boxeo':'🏃 Carrera')+' registrado');}
+  openModal(`<h3>${isBox?'🥊 Boxeo':'🏃 Carrera'} de hoy</h3><p class="mini" style="margin-bottom:10px">${isBox?'Opcional: duración e intensidad.':'Apunta los kilómetros y minutos: la app calcula tu ritmo y guarda tu histórico.'}</p><div class="row">${isBox?'':'<div><label>Km</label><input id="exKm" type="number" inputmode="decimal" step="0.1" placeholder="8"></div>'}<div><label>Minutos</label><input id="exMin" type="number" inputmode="numeric" placeholder="${isBox?'30':'45'}"></div><div><label>Intensidad</label><select id="exInt"><option>Suave</option><option selected>Media</option><option>Alta</option></select></div></div><button class="btn" style="margin-top:14px" onclick="confirmExtra('${k}')">Guardar</button>`);}
+function confirmExtra(k){const d=today();DB.extraLog[d]=DB.extraLog[d]||{};DB.extraLog[d][k]=true;const min=+document.getElementById('exMin').value;const int=document.getElementById('exInt').value;const kmEl=document.getElementById('exKm');const km=kmEl?+kmEl.value:0;if(min)DB.extraLog[d][k+'Min']=min;if(km)DB.extraLog[d][k+'Km']=km;DB.extraLog[d][k+'Int']=int;save();closeModal();renderExtra();renderDashboard();
+  const pace=km&&min?` · ${(min/km).toFixed(1)} min/km`:'';
+  toast((k==='box'?'🥊 Boxeo':'🏃 Carrera')+' registrado'+(km?` · ${km} km${pace}`:''));}
 
 /* ===================== CHECK-IN DIARIO · HEALTH SCORE ===================== */
 const CHECKIN_Q=[
@@ -886,6 +940,7 @@ function openSettings(){
   <div class="ex-block"><b style="font-family:Anton">🔤 Tamaño de letra</b><div class="row" style="margin-top:8px"><button class="btn2" onclick="setFont(0.9)">A−</button><button class="btn2" onclick="setFont(1)">A</button><button class="btn2" onclick="setFont(1.15)">A+</button><button class="btn2" onclick="setFont(1.3)">A++</button></div><p class="mini" style="margin-top:6px">Actual: ${Math.round(fs*100)}%</p></div>
   <div class="ex-block"><b style="font-family:Anton">🧮 Calculadora de discos</b><p class="mini" style="margin:6px 0 8px">Qué discos poner por lado para un peso objetivo.</p><button class="btn2" onclick="openPlates()">Abrir calculadora</button></div>
   <div class="ex-block"><b style="font-family:Anton">⏱️ Cronómetro de intervalos</b><p class="mini" style="margin:6px 0 8px">Para carrera y cardio: trabajo/descanso × rondas (HIIT, sprints).</p><button class="btn2" onclick="openIntervals()">Abrir cronómetro</button></div>
+  <div class="ex-block"><b style="font-family:Anton">🐢 Tiempo bajo tensión (TUT)</b><p class="mini" style="margin:6px 0 8px">Cuenta los segundos de una serie. El rango óptimo para hipertrofia es 40-70s. Útil en el modo Strongman.</p><button class="btn2" onclick="openTUT()">Abrir contador TUT</button></div>
   <div class="ex-block"><b style="font-family:Anton">📱 Pantalla activa</b><p class="mini" style="margin:6px 0 8px">Evita que el móvil se apague durante la sesión.</p><label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px"><input type="checkbox" id="wlChk" ${DB.settings&&DB.settings.wakeLock?'checked':''} onchange="toggleWakeSetting(this.checked)" style="width:20px;height:20px"> Mantener pantalla encendida</label></div>
   <div class="ex-block"><b style="font-family:Anton">⚠️ Datos</b><p class="mini" style="margin:6px 0 8px">Tus datos viven solo en este teléfono. Exporta de vez en cuando como copia de seguridad.</p></div>`);
 }
@@ -909,11 +964,12 @@ function renderWeeklySummary(){
   const wk=weekDates();const sess=DB.sessions.filter(s=>wk.includes(s.date));
   const box=wk.filter(d=>DB.extraLog[d]&&DB.extraLog[d].box).length;
   const run=wk.filter(d=>DB.extraLog[d]&&DB.extraLog[d].run).length;
+  const kmWeek=wk.reduce((a,d)=>a+((DB.extraLog[d]&&DB.extraLog[d].runKm)||0),0);
   // mejores marcas de la semana
   const prs=[];sess.forEach(s=>(s.blocks||[]).forEach(b=>b.exercises.forEach(e=>{let mx=0;(e.sets||[]).forEach(st=>{if(+st.kg>mx)mx=+st.kg;});if(mx>0)prs.push({n:e.name,kg:mx});})));
   const top=Object.values(prs.reduce((a,p)=>{if(!a[p.n]||p.kg>a[p.n].kg)a[p.n]=p;return a;},{})).sort((a,b)=>b.kg-a.kg).slice(0,3);
   const fl=fatLossScore();
-  el.innerHTML=`<div class="stat-grid"><div class="stat"><div class="v acc2">${sess.length}</div><div class="l">entrenos</div></div><div class="stat"><div class="v gold">${box}</div><div class="l">boxeos</div></div><div class="stat"><div class="v viol">${run}</div><div class="l">carreras</div></div></div>${fl!=null?`<div class="note" style="margin-top:10px">Fat Loss de la semana: <b>${fl}/100</b></div>`:''}${top.length?`<div style="margin-top:10px"><div class="mini" style="text-transform:uppercase">Mejores marcas</div>${top.map(t=>`<span class="pill" style="border-color:var(--gold);color:var(--gold)">${t.n} ${t.kg}kg</span>`).join('')}</div>`:'<p class="mini" style="margin-top:10px">Entrena esta semana para ver tus marcas aquí.</p>'}`;
+  el.innerHTML=`<div class="stat-grid"><div class="stat"><div class="v acc2">${sess.length}</div><div class="l">entrenos</div></div><div class="stat"><div class="v gold">${box}</div><div class="l">boxeos</div></div><div class="stat"><div class="v viol">${run}</div><div class="l">carreras${kmWeek?' · '+kmWeek.toFixed(1)+' km':''}</div></div></div>${fl!=null?`<div class="note" style="margin-top:10px">Fat Loss de la semana: <b>${fl}/100</b></div>`:''}${top.length?`<div style="margin-top:10px"><div class="mini" style="text-transform:uppercase">Mejores marcas</div>${top.map(t=>`<span class="pill" style="border-color:var(--gold);color:var(--gold)">${t.n} ${t.kg}kg</span>`).join('')}</div>`:'<p class="mini" style="margin-top:10px">Entrena esta semana para ver tus marcas aquí.</p>'}`;
 }
 
 /* ===================== PESO OBJETIVO Y PREVISIÓN ===================== */
@@ -970,11 +1026,21 @@ function ivPause(){IV.running=false;clearInterval(IV.id);renderIntervals();}
 function ivResume(){IV.running=true;if(IV.id)clearInterval(IV.id);IV.id=setInterval(ivTick,1000);renderIntervals();}
 function ivStop(){clearInterval(IV.id);IV.running=false;const el=document.getElementById('ivLive');if(el)el.innerHTML='<p class="mini">Parado.</p>';}
 function ivDone(){clearInterval(IV.id);IV.running=false;beep(3);const el=document.getElementById('ivLive');if(el)el.innerHTML='<div class="note">✅ ¡Intervalos completados!</div>';const d=today();DB.extraLog[d]=DB.extraLog[d]||{};DB.extraLog[d].run=true;save();renderExtra&&renderExtra();}
+let TUT={sec:0,id:null};
+function openTUT(){TUT={sec:0,id:null};openModal(`<h3>🐢 Tiempo bajo tensión</h3><p class="mini" style="margin-bottom:10px">Pulsa Iniciar al empezar la serie y Parar al acabar. Objetivo hipertrofia: 40-70s por serie.</p><div id="tutLive"><div class="timer-hero go"><div class="clock" id="tutClock">0s</div><div class="sub" id="tutMsg">Listo para empezar</div><div class="timer-ctrl"><button class="btn-acc2" onclick="tutStart()">Iniciar</button><button class="btn2" onclick="tutStop()">Parar</button></div></div></div>`);}
+function tutStart(){TUT.sec=0;if(TUT.id)clearInterval(TUT.id);TUT.id=setInterval(()=>{TUT.sec++;const c=document.getElementById('tutClock'),m=document.getElementById('tutMsg');if(c)c.textContent=TUT.sec+'s';if(m){if(TUT.sec<40)m.textContent='Sigue... (objetivo 40-70s)';else if(TUT.sec<=70)m.textContent='✅ En rango óptimo de hipertrofia';else m.textContent='Muy largo: baja el peso o corta la serie';}},1000);}
+function tutStop(){if(TUT.id)clearInterval(TUT.id);const m=document.getElementById('tutMsg');beep(1);if(m)m.textContent=`Serie de ${TUT.sec}s. ${TUT.sec>=40&&TUT.sec<=70?'Rango ideal 💪':TUT.sec<40?'Corta: prioriza más reps o tempo lento':'Larga: baja peso'}`;}
 
 /* ===================== CALENDARIO MENSUAL ===================== */
 function renderCalendar(){const el=document.getElementById('calendarView');if(!el)return;const now=new Date();const y=now.getFullYear(),mo=now.getMonth();const first=new Date(y,mo,1);const startDow=(first.getDay()+6)%7;const daysIn=new Date(y,mo+1,0).getDate();let html=`<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;text-align:center">${['L','M','X','J','V','S','D'].map(d=>`<div class="mini" style="font-weight:700">${d}</div>`).join('')}`;for(let i=0;i<startDow;i++)html+='<div></div>';for(let d=1;d<=daysIn;d++){const ds=`${y}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;const sess=DB.sessions.some(s=>s.date===ds);const e=DB.extraLog[ds]||{};const meas=DB.body.some(b=>b.date===ds);let dots='';if(sess)dots+='<span style="color:var(--acc)">●</span>';if(e.box)dots+='<span style="color:var(--gold)">●</span>';if(e.run)dots+='<span style="color:var(--viol)">●</span>';if(meas)dots+='<span style="color:var(--acc2)">●</span>';const isToday=ds===today();html+=`<div style="aspect-ratio:1;border-radius:8px;border:1px solid ${isToday?'var(--acc)':'var(--line)'};background:var(--bg3);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:2px"><span class="mini" style="${isToday?'color:var(--acc);font-weight:700':''}">${d}</span><span style="font-size:7px;line-height:1">${dots||'&nbsp;'}</span></div>`;}html+='</div>';html+=`<p class="mini" style="margin-top:10px"><span style="color:var(--acc)">●</span> entreno · <span style="color:var(--gold)">●</span> boxeo · <span style="color:var(--viol)">●</span> carrera · <span style="color:var(--acc2)">●</span> medición</p>`;el.innerHTML=html;}
 
 /* ===================== INIT ===================== */
-function renderAll(){applyFont();document.getElementById('hdrDate').textContent=new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});renderDashboard();renderCycle();renderTodayReady();renderExtra();if(DB.session){document.getElementById('sessionCard').style.display='block';renderSessionHead();renderSessionBody();renderTimerHero();if(DB.settings&&DB.settings.wakeLock)requestWake();}}
+/* tarjetas plegables: toca el título para plegar/desplegar; se recuerda tu elección */
+const DEFAULT_COLLAPSED=['reto-de-la','resumen-semanal','calendario-del-mes','constancia-días','semana','descarga-deload','estancamientos','fuerza-estimada-rm','comparativa-de-ciclos','density-score-sesiones','récords-máx-peso','últimas-sesiones','logros-de-medidas','fotos-de-progreso','historial'];
+function cardSlug(h3){return h3.textContent.toLowerCase().replace(/[^a-záéíóúñü\s]/g,'').trim().split(/\s+/).slice(0,3).join('-');}
+function isCollapsed(slug){const c=DB.settings&&DB.settings.collapsedCards;if(c&&slug in c)return c[slug];return DEFAULT_COLLAPSED.includes(slug);}
+function applyCollapsed(){document.querySelectorAll('.card>h3').forEach(h3=>{const card=h3.parentElement;if(card.id==='sessionCard')return;card.classList.toggle('collapsed',isCollapsed(cardSlug(h3)));});}
+document.addEventListener('click',e=>{const h3=e.target.closest('.card>h3');if(!h3)return;if(e.target.closest('button,a,input,select'))return;const card=h3.parentElement;if(card.id==='sessionCard')return;const slug=cardSlug(h3);DB.settings=DB.settings||{};DB.settings.collapsedCards=DB.settings.collapsedCards||{};DB.settings.collapsedCards[slug]=!card.classList.contains('collapsed');card.classList.toggle('collapsed');save();});
+function renderAll(){applyFont();document.getElementById('hdrDate').textContent=new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'});renderDashboard();renderCycle();renderTodayReady();renderExtra();if(DB.session){document.getElementById('sessionCard').style.display='block';renderSessionHead();renderSessionBody();renderTimerHero();if(DB.settings&&DB.settings.wakeLock)requestWake();}applyCollapsed();}
 if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});});}
 load();
