@@ -45,20 +45,20 @@ const MAIN_ROT={Lunes:['Press banca','Press inclinado','Press militar'],Miércol
 
 /* ----- Bibliotecas de bloques 3 y 4 (densidad y finishers dinámicos) ----- */
 const DENSITY=[
-  {fmt:'EMOM',label:'EMOM 8 min',desc:'Cada minuto, al empezar, haz 10 KB swings. El tiempo que sobre hasta el siguiente minuto, descansas. 8 minutos = 8 rondas.',sec:480,timer:'emom',q:'EMOM kettlebell swings workout'},
-  {fmt:'AMRAP',label:'AMRAP 8 min',desc:'Máximas rondas en 8 min de: 5 goblet squat + 7 push press + 9 swings. Sin parar, cuenta tus rondas.',sec:480,timer:'down',q:'AMRAP kettlebell workout'},
-  {fmt:'Ladder',label:'Escalera',desc:'Thrusters en escalera: 1 rep, luego 2, 3, 4, 5 y bajas 4, 3, 2, 1. Sin prisa pero sin pausa.',sec:420,timer:'down',q:'kettlebell thruster ladder workout'},
-  {fmt:'For Time',label:'Por tiempo',desc:'100 KB swings lo más rápido posible (parte en series si hace falta). Apunta el tiempo total para batirlo.',sec:600,timer:'up',q:'100 kettlebell swings for time'},
-  {fmt:'Density',label:'Density Challenge',desc:'Máximo clean & press posible en 5 min con buena técnica. Anota las reps y supera tu marca la próxima vez.',sec:300,timer:'down',q:'kettlebell clean and press tutorial'}
+  {fmt:'EMOM',label:'EMOM 8 min',desc:'Cada minuto, al empezar, haz 10 KB swings. El tiempo que sobre hasta el siguiente minuto, descansas. 8 minutos = 8 rondas.',sec:480,timer:'emom',proto:{kind:'emom',rounds:8,minSec:60,workName:'10 swings'},q:'EMOM kettlebell swings workout'},
+  {fmt:'AMRAP',label:'AMRAP 8 min',desc:'Máximas rondas en 8 min de: 5 goblet squat + 7 push press + 9 swings. Sin parar, cuenta tus rondas.',sec:480,timer:'down',proto:{kind:'amrap',totalSec:480},q:'AMRAP kettlebell workout'},
+  {fmt:'Ladder',label:'Escalera',desc:'Thrusters en escalera: 1 rep, luego 2, 3, 4, 5 y bajas 4, 3, 2, 1. Sin prisa pero sin pausa.',sec:420,timer:'down',proto:{kind:'timer',totalSec:420,direction:'down'},q:'kettlebell thruster ladder workout'},
+  {fmt:'For Time',label:'Por tiempo',desc:'100 KB swings lo más rápido posible (parte en series si hace falta). Apunta el tiempo total para batirlo.',sec:600,timer:'up',proto:{kind:'timer',totalSec:600,direction:'up'},q:'100 kettlebell swings for time'},
+  {fmt:'Density',label:'Density Challenge',desc:'Máximo clean & press posible en 5 min con buena técnica. Anota las reps y supera tu marca la próxima vez.',sec:300,timer:'down',proto:{kind:'timer',totalSec:300,direction:'down'},q:'kettlebell clean and press tutorial'}
 ];
 const FINISHER=[
-  {label:'Complejo Forja',desc:'Sin soltar la KB: clean + front squat + push press + swing, 5 reps de cada = 1 ronda. Haz 3 rondas.',sec:300,timer:'down',q:'kettlebell complex workout'},
-  {label:'Quemador escalera',desc:'KB swings bajando 10→1 (10,9,8...1) y goblet squat subiendo 1→10. Alterna. Encadenado.',sec:300,timer:'up',q:'kettlebell swing goblet squat ladder'},
-  {label:'Farmer + burpee',desc:'40 metros de farmer walk (carga pesada en cada mano) + 10 burpees = 1 ronda. Haz 3 rondas.',sec:300,timer:'down',q:'farmer walk burpee finisher'},
-  {label:'Tabata swings',desc:'8 rondas de: 20 segundos de KB swings a tope + 10 segundos de descanso. Total 4 minutos. La app marca cada intervalo.',sec:240,timer:'tabata',q:'tabata kettlebell swings'},
-  {label:'Sprint metabólico',desc:'5 series de: 30 segundos fuerte + 30 segundos suave. En cinta, bici de aire o boxeo de sombra.',sec:300,timer:'down',q:'30 second sprint intervals workout'},
-  {label:'Carry strongman',desc:'Farmer walk pesado: 4 recorridos de 40 m con 90s de descanso. Distancia larga = tiempo bajo tensión alto (40-70s), ideal para espalda, core y agarre.',sec:360,timer:'down',q:'farmer carry strongman technique'},
-  {label:'Complejo de barra TUT',desc:'Sin soltar la barra: peso muerto + remo + power clean + press + sentadilla, 6 reps de cada, controlado. 3-4 rondas. Cada ronda dura 40-70s bajo tensión.',sec:360,timer:'down',q:'barbell complex workout'}
+  {label:'Complejo Forja',desc:'Sin soltar la KB: clean + front squat + push press + swing, 5 reps de cada = 1 ronda. Haz 3 rondas.',sec:300,timer:'down',proto:{kind:'timer',totalSec:300,direction:'down'},q:'kettlebell complex workout'},
+  {label:'Quemador escalera',desc:'KB swings bajando 10→1 (10,9,8...1) y goblet squat subiendo 1→10. Alterna. Encadenado.',sec:300,timer:'up',proto:{kind:'timer',totalSec:300,direction:'up'},q:'kettlebell swing goblet squat ladder'},
+  {label:'Farmer + burpee',desc:'40 metros de farmer walk (carga pesada en cada mano) + 10 burpees = 1 ronda. Haz 3 rondas.',sec:300,timer:'down',proto:{kind:'timer',totalSec:300,direction:'down'},q:'farmer walk burpee finisher'},
+  {label:'Tabata swings',desc:'8 rondas de: 20 segundos de KB swings a tope + 10 segundos de descanso. Total 4 minutos. La app te va a marcar cada cambio.',sec:240,timer:'tabata',proto:{kind:'intervals',work:20,rest:10,rounds:8,workName:'KB swings a tope',restName:'Descanso'},q:'tabata kettlebell swings'},
+  {label:'Sprint metabólico',desc:'5 series de: 30 segundos fuerte + 30 segundos suave. En cinta, bici de aire o boxeo de sombra.',sec:300,timer:'down',proto:{kind:'intervals',work:30,rest:30,rounds:5,workName:'FUERTE',restName:'SUAVE'},q:'30 second sprint intervals workout'},
+  {label:'Carry strongman',desc:'Farmer walk pesado: 4 recorridos de 40 m con 90s de descanso. Distancia larga = tiempo bajo tensión alto (40-70s), ideal para espalda, core y agarre.',sec:360,timer:'down',proto:{kind:'intervals',work:60,rest:90,rounds:4,workName:'Farmer walk',restName:'Descanso'},q:'farmer carry strongman technique'},
+  {label:'Complejo de barra TUT',desc:'Sin soltar la barra: peso muerto + remo + power clean + press + sentadilla, 6 reps de cada, controlado. 3-4 rondas. Cada ronda dura 40-70s bajo tensión.',sec:360,timer:'down',proto:{kind:'timer',totalSec:360,direction:'down'},q:'barbell complex workout'}
 ];
 
 function load(){
@@ -91,7 +91,8 @@ let DB={
   scores:[], medals:{}, formatPR:{},
   athlete:null, mode:'gym', settings:{fontScale:1,wakeLock:false}, exNotes:{},
   goalWeight:105, lastBackup:null,
-  goals:[], checkins:{}
+  goals:[], checkins:{},
+  running:{setup:false,target:'10K',daysWeek:2,history:[],currentPlan:null,activeSession:null}
 };
 const DEF_HAB=[{id:'h1',ic:'💧',name:'3 L de agua'},{id:'h2',ic:'🌞',name:'Luz natural 10 min'},{id:'h3',ic:'🧠',name:'Ritual de mañana'},{id:'h4',ic:'🥩',name:'Proteína en cada comida'},{id:'h5',ic:'📵',name:'Pausa de pantalla cada hora'},{id:'h6',ic:'😴',name:'Dormir 7-8 h'}];
 const MIND=[{t:'0-2',d:'Respira: 6 respiraciones, inhala 4s / exhala 6s. Suelta hombros y mandíbula.',sec:120},{t:'2-5',d:'Columna: gato-camello x8, rotaciones de tronco x8/lado, círculos de cadera x8.',sec:180},{t:'5-8',d:'Activa: 20 sentadillas + 15 elevaciones de talón + 10 círculos de brazos.',sec:180},{t:'8-11',d:'Tren alto: aperturas de pecho, cuello suave, muñecas (por el teclado) x10.',sec:180},{t:'11-14',d:'Foco: ¿cuál es LA tarea importante de hoy? Visualízate haciéndola.',sec:180},{t:'14-15',d:'Intención: di en voz alta tu objetivo del día y un hábito que cumplirás.',sec:60}];
@@ -101,28 +102,35 @@ function buildRoutines(rotIdx){
   const pick=(arr)=>arr[rotIdx%arr.length];
   return [
     {id:'r1',name:'PUSH',day:'Lunes',blocks:[
-      {type:'fuerza',label:'Bloque 1 · Fuerza',exercises:[{name:pick(MAIN_ROT.Lunes),sets:4,reps:'3-5',rest:150,rpe:8,kg:DB.profile.bench}]},
-      {type:'hipertrofia',label:'Bloque 2 · Hipertrofia densa',superset:true,rest:30,exercises:[{name:'Press inclinado mancuernas',sets:3,reps:'10-12',kg:24},{name:'Aperturas / cruce poleas',sets:3,reps:'12-15',kg:12},{name:'Elevaciones laterales',sets:3,reps:'15',kg:10}]},
-      {type:'densidad',label:'Bloque 3 · Densidad',density:true,exercises:[{name:'Push press KB',sets:1,reps:'AMRAP',kg:20}]},
-      {type:'finisher',label:'Bloque 4 · Finisher',finisher:true,exercises:[{name:'Finisher dinámico',sets:1,reps:'5 min',kg:0}]}
+      {type:'fuerza',label:'💪 Bloque 1 · FUERZA',exercises:[{name:pick(MAIN_ROT.Lunes),sets:4,reps:'3-5',rest:150,rpe:8,kg:DB.profile.bench}]},
+      {type:'hipertrofia',label:'🎯 Bloque 2 · ACCESORIOS',superset:true,rest:30,exercises:[{name:'Press inclinado mancuernas',sets:3,reps:'10-12',kg:24},{name:'Aperturas / cruce poleas',sets:3,reps:'12-15',kg:12},{name:'Elevaciones laterales',sets:3,reps:'15',kg:10}]},
+      {type:'densidad',label:'⚡ Bloque 3 · DENSIDAD',density:true,exercises:[{name:'Push press KB',sets:1,reps:'AMRAP',kg:20}]},
+      {type:'finisher',label:'🔥 Bloque 4 · FINISHER',finisher:true,exercises:[{name:'Finisher dinámico',sets:1,reps:'5 min',kg:0}]}
     ]},
     {id:'r2',name:'PULL',day:'Miércoles',blocks:[
-      {type:'fuerza',label:'Bloque 1 · Fuerza',exercises:[{name:pick(MAIN_ROT.Miércoles),sets:4,reps:'4-6',rest:150,rpe:8,kg:0}]},
-      {type:'hipertrofia',label:'Bloque 2 · Hipertrofia densa',superset:true,rest:30,exercises:[{name:'Remo gorila KB',sets:3,reps:'10-12',kg:26},{name:'Curl bíceps barra',sets:3,reps:'12',kg:30},{name:'Face pull',sets:3,reps:'15-20',kg:25}]},
-      {type:'densidad',label:'Bloque 3 · Densidad',density:true,exercises:[{name:'KB swings',sets:1,reps:'EMOM',kg:24}]},
-      {type:'finisher',label:'Bloque 4 · Finisher',finisher:true,exercises:[{name:'Finisher dinámico',sets:1,reps:'5 min',kg:0}]}
+      {type:'fuerza',label:'💪 Bloque 1 · FUERZA',exercises:[{name:pick(MAIN_ROT.Miércoles),sets:4,reps:'4-6',rest:150,rpe:8,kg:0}]},
+      {type:'hipertrofia',label:'🎯 Bloque 2 · ACCESORIOS',superset:true,rest:30,exercises:[{name:'Remo gorila KB',sets:3,reps:'10-12',kg:26},{name:'Curl bíceps barra',sets:3,reps:'12',kg:30},{name:'Face pull',sets:3,reps:'15-20',kg:25}]},
+      {type:'densidad',label:'⚡ Bloque 3 · DENSIDAD',density:true,exercises:[{name:'KB swings',sets:1,reps:'EMOM',kg:24}]},
+      {type:'finisher',label:'🔥 Bloque 4 · FINISHER',finisher:true,exercises:[{name:'Finisher dinámico',sets:1,reps:'5 min',kg:0}]}
     ]},
     {id:'r3',name:'LEGS',day:'Sábado',blocks:[
-      {type:'fuerza',label:'Bloque 1 · Fuerza',exercises:[{name:pick(MAIN_ROT.Sábado),sets:4,reps:'3-5',rest:180,rpe:8,kg:DB.profile.squat}]},
-      {type:'hipertrofia',label:'Bloque 2 · Hipertrofia densa',superset:true,rest:30,exercises:[{name:'Peso muerto rumano',sets:3,reps:'8-10',kg:90},{name:'Zancada KB',sets:3,reps:'10/pierna',kg:20},{name:'Curl femoral',sets:3,reps:'12-15',kg:45}]},
-      {type:'densidad',label:'Bloque 3 · Densidad',density:true,exercises:[{name:'Goblet squat KB',sets:1,reps:'Ladder',kg:24}]},
-      {type:'finisher',label:'Bloque 4 · Finisher',finisher:true,exercises:[{name:'Finisher dinámico',sets:1,reps:'5 min',kg:0}]}
+      {type:'fuerza',label:'💪 Bloque 1 · FUERZA',exercises:[{name:pick(MAIN_ROT.Sábado),sets:4,reps:'3-5',rest:180,rpe:8,kg:DB.profile.squat}]},
+      {type:'hipertrofia',label:'🎯 Bloque 2 · ACCESORIOS',superset:true,rest:30,exercises:[{name:'Peso muerto rumano',sets:3,reps:'8-10',kg:90},{name:'Zancada KB',sets:3,reps:'10/pierna',kg:20},{name:'Curl femoral',sets:3,reps:'12-15',kg:45}]},
+      {type:'densidad',label:'⚡ Bloque 3 · DENSIDAD',density:true,exercises:[{name:'Goblet squat KB',sets:1,reps:'Ladder',kg:24}]},
+      {type:'finisher',label:'🔥 Bloque 4 · FINISHER',finisher:true,exercises:[{name:'Finisher dinámico',sets:1,reps:'5 min',kg:0}]}
     ]}
   ];
+}
+function migrateRoutineLabels(){
+  // renombrar etiquetas sin borrar rutinas ya guardadas del usuario
+  if(!DB.routines)return;
+  const NEW={fuerza:'💪 Bloque 1 · FUERZA',hipertrofia:'🎯 Bloque 2 · ACCESORIOS',densidad:'⚡ Bloque 3 · DENSIDAD',finisher:'🔥 Bloque 4 · FINISHER'};
+  DB.routines.forEach(r=>(r.blocks||[]).forEach(b=>{if(NEW[b.type])b.label=NEW[b.type];}));
 }
 function seed(){
   if(DB.habits.length===0)DB.habits=JSON.parse(JSON.stringify(DEF_HAB));
   if(DB.routines.length===0)DB.routines=buildRoutines(DB.cycle.rotIndex||0);
+  migrateRoutineLabels();
 }
 
 /* ===== RUTINAS DE VIAJE (sin gimnasio) ===== */
@@ -163,7 +171,7 @@ const BOX_SESSION={
 /* ===== navegación ===== */
 function nav(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));el.classList.add('on');window.scrollTo(0,0);if(v==='home')renderDashboard();if(v==='mind'){renderVideoCats();renderHabits();}if(v==='body')renderBody();if(v==='train'){renderCycle();renderTodayReady();renderExtra();}}
 function navBtn(i){return document.querySelectorAll('nav button')[i];}
-function trainTab(t,el){['hoy','prog','retos','rutinas'].forEach(x=>document.getElementById('train-'+x).style.display='none');document.getElementById('train-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='prog'){renderDeload();renderStagnation();renderProgSelect();renderVolume();renderE1RM();renderCycleCompare();renderDensityChart();renderPR();renderHistory();}if(t==='retos'){renderGoals();renderMedals();renderFormatPR();}if(t==='rutinas'){renderRoutines();renderRotation();}if(t==='hoy'){renderCycle();renderTodayReady();renderExtra();}}
+function trainTab(t,el){['hoy','carrera','prog','retos','rutinas'].forEach(x=>{const e=document.getElementById('train-'+x);if(e)e.style.display='none';});document.getElementById('train-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='prog'){renderDeload();renderStagnation();renderProgSelect();renderVolume();renderE1RM();renderCycleCompare();renderDensityChart();renderPR();renderHistory();}if(t==='retos'){renderGoals();renderMedals();renderFormatPR();}if(t==='rutinas'){renderRoutines();renderRotation();}if(t==='hoy'){renderCycle();renderTodayReady();renderExtra();}if(t==='carrera'){renderRunView();renderRunLive();}}
 function mindTab(t,el){['video','checkin','ritual','habits'].forEach(x=>{const e=document.getElementById('mind-'+x);if(e)e.style.display='none';});document.getElementById('mind-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='habits'){renderHabits();renderHabitStreak();renderHealthScore();}else if(t==='ritual'){renderMindSteps();renderMindTimer();}else if(t==='checkin'){renderCheckin();renderCheckinTrend();}else{renderVideoCats();}}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400);}
 function closeModal(){document.getElementById('modalBg').classList.remove('on');}
@@ -394,9 +402,15 @@ function startSession(rid,state){const r=DB.routines.find(x=>x.id===rid);if(!r)r
     if(b.density){b._meta=dens;b.exercises[0].name=dens.label+' · '+dens.exercises?.[0]?.name;b.exercises=[{name:dens.fmt+' · KB',sets:1,reps:dens.fmt,kg:b.exercises[0].kg||20}];}
     if(b.finisher){b._meta=fin;b.exercises=[{name:fin.label,sets:1,reps:'5 min',kg:0}];}
     b.exercises=b.exercises.map(e=>{
-      let prev=null;if(last){(last.blocks||[]).forEach(lb=>{const le=lb.exercises.find(x=>x.name===e.name);if(le)prev=le.sets;});}
+      // buscar en TODO el histórico, no solo la última sesión de esta rutina.
+      // así si moviste un accesorio de PUSH a otro día, sigue recordándolo.
+      let prev=null;
+      for(const s of DB.sessions){for(const lb of (s.blocks||[])){const le=lb.exercises.find(x=>x.name===e.name);if(le&&le.sets&&le.sets.length){prev=le.sets;break;}}if(prev)break;}
       const baseKg=prev&&prev[0]?prev[0].kg:(e.kg||'');
-      return Object.assign({},e,{prev,sets:Array.from({length:e.sets},(_,i)=>({kg:prev&&prev[i]?prev[i].kg:baseKg,reps:'',done:false,rpe:''}))});
+      return Object.assign({},e,{prev,sets:Array.from({length:e.sets},(_,i)=>{
+        const p=prev&&prev[i];
+        return {kg:p?p.kg:baseKg,reps:p?p.reps||'':'',done:false,rpe:p?p.rpe||'':''};
+      })});
     });
     return b;
   });
@@ -409,8 +423,10 @@ function renderSessionHead(){const s=DB.session;const eIc={fresco:'🔋',normal:
   if(vol>0){const diff=lastVol>0?Math.round((vol/lastVol-1)*100):null;volTxt=`<div class="mini" style="margin-top:4px">📦 Volumen: <b style="color:var(--acc2)">${vol.toLocaleString('es-ES')} kg</b>${diff!=null?` · ${diff>=0?'+':''}${diff}% vs última (${lastVol.toLocaleString('es-ES')} kg)`:''}</div>`;}
   document.getElementById('sessionHead').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h3>💪 ${s.name} <span class="tag">${eIc} ${s.athlete||''}</span></h3><button class="btn-sm btn2" onclick="openPlates()" style="padding:6px 10px">🧮 discos</button></div>${volTxt}`;}
 function renderSessionBody(){const s=DB.session;if(!s)return;let html='';
+  const BLOCK_SUB={fuerza:'Ejercicios principales · sobrecarga progresiva',hipertrofia:'Accesorios y aislamiento',densidad:'Cardio-fuerza · un ejercicio a tope',finisher:'Cierre metabólico'};
   s.blocks.forEach((b,bi)=>{
-    html+=`<div class="block-title">${b.label}${b.superset?' <span class="bt-tag">superserie · 30s</span>':''}${b._meta?` <span class="bt-tag">${b._meta.label}</span>`:''}</div>`;
+    const sub=BLOCK_SUB[b.type]||'';
+    html+=`<div class="block-head b-${b.type}">${b.label}${sub?`<span class="sub">${sub}${b.superset?' · superserie descanso 30s':''}</span>`:''}</div>`;
     if(b._meta){
       const vidBtn=b._meta.q?`<button class="btn-sm btn2" style="margin-top:8px" onclick="showFormatVideo('${b._meta.q.replace(/'/g,"")}','${b._meta.label.replace(/'/g,"")}')">🎬 Ver cómo se hace</button>`:'';
       html+=`<div class="note ${b.finisher?'gold':''}"><b>${b._meta.label}</b><br>${b._meta.desc}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn-sm ${b.finisher?'btn-gold':'btn-acc2'}" onclick="startBlockTimer(${bi})">▶ Cronómetro</button>${vidBtn}</div></div><div id="blockTimer_${bi}"></div>`;
@@ -502,14 +518,81 @@ function renderTimerHero(){renderFloatTimer();const el=document.getElementById('
 function renderFloatTimer(){const ft=document.getElementById('floatTimer');if(!ft)return;if(T.phase==='idle'||!T.running&&T.sec===0){ft.classList.remove('on');ft.innerHTML='';return;}const m=Math.floor(T.sec/60),s=T.sec%60;ft.className='on'+(T.phase==='rest'?' rest':'');ft.innerHTML=`<div class="ft-inner"><div class="ft-clock" style="color:${T.phase==='rest'?'var(--acc2)':'var(--acc)'}">${m}:${String(s).padStart(2,'0')}</div><div class="ft-label">${T.phase==='rest'?'descanso':T.label||'en marcha'}</div>${T.running?`<button onclick="pauseT()">⏸</button>`:`<button onclick="resumeT()">▶</button>`}<button onclick="stopT()">✕</button></div>`;}
 function tickRest(){T.sec--;if(T.sec<=0){beep(2);stopT();return;}renderFloatTimer();}
 function restT(sec){if(DB.session){DB.session.restTarget+=sec;}T.phase='rest';T.sec=sec;T.label='descanso';T.running=true;if(T.id)clearInterval(T.id);T.id=setInterval(()=>{if(DB.session)DB.session.restAccum++;tickRest();},1000);renderFloatTimer();}
-function startBlockTimer(bi){const meta=DB.session.blocks[bi]._meta;if(!meta)return;T.phase='format';T.label=meta.label;T.running=true;if(T.id)clearInterval(T.id);
-  if(meta.timer==='up'){T.sec=0;T.id=setInterval(()=>{T.sec++;renderFloatTimer();renderBlockTimerInline(bi);},1000);}
-  else{T.sec=meta.sec;T.id=setInterval(()=>{T.sec--;if(T.sec<=0){beep(3);stopT();renderBlockTimerInline(bi);return;}renderFloatTimer();renderBlockTimerInline(bi);},1000);}
-  renderFloatTimer();renderBlockTimerInline(bi);}
-function renderBlockTimerInline(bi){const el=document.getElementById('blockTimer_'+bi);if(!el)return;if(T.phase!=='format'){el.innerHTML='';return;}const m=Math.floor(T.sec/60),s=T.sec%60;el.innerHTML=`<div class="timer-hero go" style="margin-top:8px"><div class="phase">🔥 EN MARCHA</div><div class="clock">${m}:${String(s).padStart(2,'0')}</div><div class="timer-ctrl">${T.running?`<button class="btn2" onclick="pauseT()">Pausa</button>`:`<button class="btn-acc2" onclick="resumeT()">Seguir</button>`}<button class="btn2" onclick="stopT()">Parar</button></div></div>`;}
+function speak(txt){try{if(!DB.settings||DB.settings.voice===false)return;const u=new SpeechSynthesisUtterance(txt);u.lang='es-ES';u.rate=1.05;u.volume=1;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
+
+/* Motor de protocolos: entiende tabata, EMOM, AMRAP, intervalos y timer plano.
+   Cambio de fase con sonido fuerte + vibración + voz + barra visual. */
+function startBlockTimer(bi){
+  const meta=DB.session.blocks[bi]._meta;if(!meta)return;
+  const p=meta.proto||{kind:'timer',totalSec:meta.sec||300,direction:meta.timer==='up'?'up':'down'};
+  T.phase='format';T.label=meta.label;T.running=true;if(T.id)clearInterval(T.id);
+  T._proto=p;T._round=1;T._sub='work';T._bi=bi;
+  if(p.kind==='intervals'){T.sec=p.work;T._phaseSec=p.work;speak(`Empieza. Ronda 1. ${p.workName||'Trabajo'}`);}
+  else if(p.kind==='emom'){T.sec=p.minSec;T._phaseSec=p.minSec;speak(`Empieza. ${p.workName||''}. Minuto 1`);}
+  else if(p.kind==='amrap'){T.sec=p.totalSec;T._phaseSec=p.totalSec;speak('AMRAP. Empieza');}
+  else{T.sec=p.direction==='up'?0:p.totalSec;T._phaseSec=p.totalSec;speak('Empieza');}
+  T.id=setInterval(()=>tickBlock(),1000);
+  beep(2);renderFloatTimer();renderBlockTimerInline(bi);
+}
+function tickBlock(){
+  const p=T._proto;
+  if(p.kind==='intervals'){
+    T.sec--;
+    if(T.sec===3||T.sec===2||T.sec===1)try{if(navigator.vibrate)navigator.vibrate(60);}catch(e){}
+    if(T.sec<=0){
+      beep(3);try{if(navigator.vibrate)navigator.vibrate([200,60,200]);}catch(e){}
+      if(T._sub==='work'){
+        if(T._round>=p.rounds){finishBlock('¡Tabata completado!');return;}
+        T._sub='rest';T.sec=p.rest;T._phaseSec=p.rest;speak(p.restName||'Descanso');
+      }else{
+        T._round++;T._sub='work';T.sec=p.work;T._phaseSec=p.work;
+        if(T._round===p.rounds)speak(`Última ronda. ${p.workName||'Trabajo'}`);
+        else speak(`Ronda ${T._round}. ${p.workName||'Trabajo'}`);
+      }
+    }
+  }else if(p.kind==='emom'){
+    T.sec--;
+    if(T.sec<=0){
+      beep(3);try{if(navigator.vibrate)navigator.vibrate([200,60,200]);}catch(e){}
+      if(T._round>=p.rounds){finishBlock('¡EMOM completado!');return;}
+      T._round++;T.sec=p.minSec;T._phaseSec=p.minSec;
+      if(T._round===p.rounds)speak(`Última ronda. ${p.workName||''}`);
+      else speak(`Minuto ${T._round}. ${p.workName||''}`);
+    }
+  }else if(p.kind==='amrap'){
+    T.sec--;
+    if(T.sec===60)speak('Un minuto');
+    if(T.sec===10)speak('Diez segundos');
+    if(T.sec<=0){beep(3);finishBlock('¡Tiempo!');return;}
+  }else{ // timer
+    if(p.direction==='up'){T.sec++;}
+    else{T.sec--;if(T.sec===60)speak('Un minuto');if(T.sec<=0){beep(3);finishBlock('¡Tiempo!');return;}}
+  }
+  renderFloatTimer();renderBlockTimerInline(T._bi);
+}
+function finishBlock(msg){clearInterval(T.id);T.running=false;speak(msg);try{if(navigator.vibrate)navigator.vibrate([300,80,300,80,300]);}catch(e){}toast('✅ '+msg);renderBlockTimerInline(T._bi);T.phase='idle';T.sec=0;renderFloatTimer();}
+function renderBlockTimerInline(bi){
+  const el=document.getElementById('blockTimer_'+bi);if(!el)return;
+  if(T.phase!=='format'){el.innerHTML='';return;}
+  const p=T._proto||{};const m=Math.floor(T.sec/60),s=T.sec%60;
+  const isRest=T._sub==='rest';const color=isRest?'var(--acc2)':(p.kind==='intervals'||p.kind==='emom'?'var(--gold)':'var(--acc)');
+  const bgClass=isRest?'rest':'go';
+  // barra de progreso
+  const total=T._phaseSec||1;const pct=Math.max(0,Math.min(100,Math.round((total-T.sec)/total*100*(isRest||p.direction!=='up'?1:1))));
+  let head='',roundInfo='';
+  if(p.kind==='intervals'){head=isRest?`😮‍💨 ${p.restName||'DESCANSO'}`:`🔥 ${p.workName||'TRABAJO'}`;roundInfo=`Ronda ${T._round}/${p.rounds}${T._round===p.rounds&&!isRest?' · ÚLTIMA':''}`;}
+  else if(p.kind==='emom'){head=`⏱ EMOM · ${p.workName||''}`;roundInfo=`Minuto ${T._round}/${p.rounds}`;}
+  else if(p.kind==='amrap'){head='🔥 AMRAP · máximas rondas';roundInfo='cuenta atrás';}
+  else{head=p.direction==='up'?'🔥 POR TIEMPO':'🔥 EN MARCHA';roundInfo='';}
+  el.innerHTML=`<div class="timer-hero ${bgClass}" style="margin-top:8px"><div class="phase">${head}</div><div class="clock" style="color:${color}">${m}:${String(s).padStart(2,'0')}</div>${roundInfo?`<div class="sub" style="color:${color}">${roundInfo}</div>`:''}<div style="height:6px;background:var(--bg3);border-radius:4px;margin:8px 12px 0"><div style="height:100%;background:${color};border-radius:4px;width:${pct}%;transition:width .3s"></div></div><div class="timer-ctrl">${T.running?`<button class="btn2" onclick="pauseT()">Pausa</button>`:`<button class="btn-acc2" onclick="resumeT()">Seguir</button>`}<button class="btn2" onclick="stopT()">Parar</button></div></div>`;
+}
 function pauseT(){T.running=false;clearInterval(T.id);renderFloatTimer();}
-function resumeT(){if(T.phase==='idle')return;T.running=true;if(T.id)clearInterval(T.id);if(T.phase==='format'&&T.sec===0){T.id=setInterval(()=>{T.sec++;renderFloatTimer();},1000);}else{T.id=setInterval(()=>{if(T.phase==='rest'){if(DB.session)DB.session.restAccum++;tickRest();}else{T.sec--;if(T.sec<=0){beep(3);stopT();return;}renderFloatTimer();}},1000);}renderFloatTimer();}
-function stopT(){clearInterval(T.id);T={running:false,phase:'idle',sec:0,id:null,elapsed:0,label:''};renderFloatTimer();document.querySelectorAll('[id^="blockTimer_"]').forEach(e=>e.innerHTML='');}
+function resumeT(){if(T.phase==='idle')return;T.running=true;if(T.id)clearInterval(T.id);
+  if(T.phase==='format'&&T._proto){T.id=setInterval(()=>tickBlock(),1000);}
+  else if(T.phase==='format'&&T.sec===0){T.id=setInterval(()=>{T.sec++;renderFloatTimer();},1000);}
+  else{T.id=setInterval(()=>{if(T.phase==='rest'){if(DB.session)DB.session.restAccum++;tickRest();}else{T.sec--;if(T.sec<=0){beep(3);stopT();return;}renderFloatTimer();}},1000);}
+  renderFloatTimer();if(T.phase==='format'&&T._proto)renderBlockTimerInline(T._bi);}
+function stopT(){clearInterval(T.id);try{speechSynthesis.cancel();}catch(e){}T={running:false,phase:'idle',sec:0,id:null,elapsed:0,label:''};renderFloatTimer();document.querySelectorAll('[id^="blockTimer_"]').forEach(e=>e.innerHTML='');}
 function resetT(){clearInterval(T.id);T={running:false,phase:'idle',sec:0,id:null,elapsed:0,label:''};const ft=document.getElementById('floatTimer');if(ft){ft.classList.remove('on');ft.innerHTML='';}}
 function showFormatVideo(q,name){openModal(`<h3>🎬 ${name}</h3><p class="mini" style="margin-bottom:12px">Te llevo a la búsqueda exacta en YouTube para ver cómo se hace este formato, con varios vídeos correctos para elegir.</p><a href="https://www.youtube.com/results?search_query=${encodeURIComponent(q)}" target="_blank" style="display:block"><button class="btn btn-acc2" style="width:100%">▶ Ver cómo se hace</button></a><p class="mini" style="margin-top:10px">Necesita conexión a internet.</p>`);}
 
@@ -818,6 +901,255 @@ function confirmExtra(k){const d=today();DB.extraLog[d]=DB.extraLog[d]||{};DB.ex
   const pace=km&&min?` · ${(min/km).toFixed(1)} min/km`:'';
   toast((k==='box'?'🥊 Boxeo':'🏃 Carrera')+' registrado'+(km?` · ${km} km${pace}`:''));}
 
+/* ===================== SISTEMA DE CARRERA (RUNNING) ===================== */
+/* Plan inteligente 5K/10K adaptado a Recovery Score y a los días de gym.
+   Tipos: rodaje, series, tempo, fartlek, cuestas, técnica, tirada larga, recuperación.
+   Integra con gym y boxeo: reparte carga y evita acumular fatiga en la misma semana. */
+
+const RUN_TYPES={
+  rodaje:{ic:'🏃',lbl:'Rodaje suave (Z2)',desc:'Ritmo cómodo, podrías hablar. Base aeróbica: quema grasa y prepara la recuperación.',color:'var(--acc2)',fatigue:2},
+  tecnica:{ic:'🦵',lbl:'Técnica de carrera',desc:'Skipping alto y bajo, talones al glúteo, saltos, progresivos. Mejora la economía de carrera.',color:'var(--acc2)',fatigue:1},
+  recuperacion:{ic:'🌿',lbl:'Recuperación activa',desc:'Trote muy suave o marcha. Descarga sin quedarte parado.',color:'var(--ok)',fatigue:1},
+  series:{ic:'⚡',lbl:'Series',desc:'Repeticiones cortas rápidas con descanso: mejora VO2máx y velocidad.',color:'var(--acc)',fatigue:5},
+  tempo:{ic:'🔥',lbl:'Tempo',desc:'Ritmo cómodo pero exigente sostenido. Sube el umbral: correrás rápido más tiempo sin ahogarte.',color:'var(--acc)',fatigue:4},
+  fartlek:{ic:'🌊',lbl:'Fartlek',desc:'Cambios de ritmo libres: 1 min fuerte + 2 min suave, varias veces. Divertido y muy efectivo.',color:'var(--acc)',fatigue:3},
+  cuestas:{ic:'⛰️',lbl:'Cuestas',desc:'Repeticiones cortas subiendo una pendiente. Fuerza específica de piernas para correr.',color:'var(--gold)',fatigue:5},
+  larga:{ic:'🛣️',lbl:'Tirada larga',desc:'La sesión más larga de la semana a ritmo cómodo. Construye resistencia.',color:'var(--viol)',fatigue:4}
+};
+
+/* Plantillas de sesión por tipo. distancia se ajusta según el objetivo del usuario. */
+function runTemplate(type,km){
+  const t=RUN_TYPES[type];
+  const base={type,ic:t.ic,label:t.lbl,desc:t.desc,color:t.color,fatigue:t.fatigue};
+  if(type==='rodaje')return{...base,km,segments:[{lbl:'Rodaje continuo',km,pace:'cómodo'}]};
+  if(type==='recuperacion')return{...base,km:Math.max(3,km-2),segments:[{lbl:'Trote muy suave',km:Math.max(3,km-2),pace:'muy suave'}]};
+  if(type==='tecnica')return{...base,km:Math.max(3,Math.round(km*0.6)),segments:[
+    {lbl:'Calentamiento trote',km:1,pace:'suave'},
+    {lbl:'Skipping alto ×4 series de 20m',km:0,pace:'técnica'},
+    {lbl:'Talones al glúteo ×4×20m',km:0,pace:'técnica'},
+    {lbl:'Saltos alternos ×4×20m',km:0,pace:'técnica'},
+    {lbl:'Progresivos ×4×60m',km:0,pace:'crescendo'},
+    {lbl:'Vuelta a la calma',km:1,pace:'suave'}
+  ]};
+  if(type==='series'){const n=km<=5?6:8;return{...base,km:Math.max(4,Math.round(km*0.7)),segments:[
+    {lbl:'Calentamiento',km:1.5,pace:'suave'},
+    {lbl:`${n} × 400 m fuerte`,km:n*0.4,pace:'fuerte',interval:{work:105,rest:90,rounds:n}},
+    {lbl:'Vuelta a la calma',km:1,pace:'suave'}
+  ]};}
+  if(type==='tempo')return{...base,km,segments:[
+    {lbl:'Calentamiento',km:1.5,pace:'suave'},
+    {lbl:'Tempo continuo',km:Math.max(2,km-3),pace:'exigente sostenido'},
+    {lbl:'Vuelta a la calma',km:1.5,pace:'suave'}
+  ]};
+  if(type==='fartlek')return{...base,km,segments:[
+    {lbl:'Calentamiento',km:1,pace:'suave'},
+    {lbl:'6 × (1 min fuerte + 2 min suave)',km:Math.max(3,km-2),pace:'variable',interval:{work:60,rest:120,rounds:6}},
+    {lbl:'Vuelta a la calma',km:1,pace:'suave'}
+  ]};
+  if(type==='cuestas'){const n=6;return{...base,km:Math.max(4,Math.round(km*0.7)),segments:[
+    {lbl:'Calentamiento en llano',km:1.5,pace:'suave'},
+    {lbl:`${n} × cuesta 45 s + bajada trote`,km:n*0.25,pace:'fuerte cuesta arriba',interval:{work:45,rest:90,rounds:n}},
+    {lbl:'Vuelta a la calma',km:1,pace:'suave'}
+  ]};}
+  if(type==='larga')return{...base,km:Math.round(km*1.3),segments:[{lbl:'Tirada larga continua',km:Math.round(km*1.3),pace:'cómodo estable'}]};
+  return{...base,km,segments:[{lbl:'Correr',km,pace:'cómodo'}]};
+}
+
+/* ---------- Onboarding ---------- */
+function openRunSetup(){
+  const r=DB.running;
+  openModal(`<h3>🏃 Configura tu running</h3>
+  <p class="mini" style="margin-bottom:10px">La app te preparará las sesiones de la semana adaptándolas a tus entrenos de gym y a cómo estés recuperado.</p>
+  <label>Objetivo principal</label><select id="rsGoal"><option value="5K" ${r.target==='5K'?'selected':''}>5 km</option><option value="10K" ${r.target==='10K'?'selected':''}>10 km</option></select>
+  <label style="margin-top:8px">Días de carrera por semana</label><select id="rsDays"><option value="1" ${r.daysWeek==1?'selected':''}>1 día</option><option value="2" ${r.daysWeek==2?'selected':''}>2 días</option><option value="3" ${r.daysWeek==3?'selected':''}>3 días</option></select>
+  <label style="margin-top:8px">Km máximos por sesión (los cortos serán más suaves)</label><select id="rsMax"><option value="5" ${(r.maxKm||8)==5?'selected':''}>5 km</option><option value="7" ${(r.maxKm||8)==7?'selected':''}>7 km</option><option value="8" ${(r.maxKm||8)==8?'selected':''}>8 km</option><option value="10" ${(r.maxKm||8)==10?'selected':''}>10 km</option></select>
+  <label style="margin-top:8px">Ritmo aproximado en cómodo (min/km)</label><input id="rsPace" type="number" step="0.1" inputmode="decimal" value="${r.paceEasy||6.0}" placeholder="6.0">
+  <button class="btn" style="margin-top:14px" onclick="saveRunSetup()">Guardar y generar plan</button>`);
+}
+function saveRunSetup(){
+  DB.running.setup=true;
+  DB.running.target=document.getElementById('rsGoal').value;
+  DB.running.daysWeek=+document.getElementById('rsDays').value;
+  DB.running.maxKm=+document.getElementById('rsMax').value;
+  DB.running.paceEasy=+document.getElementById('rsPace').value||6.0;
+  generateRunPlan(true);save();closeModal();renderRunView();toast('🏃 Plan de carrera creado');
+}
+
+/* ---------- Planificador inteligente ---------- */
+function gymDaysThisWeek(){
+  // días de gym previstos según rutinas (día de la semana)
+  const set=new Set();DB.routines.forEach(r=>{if(r.day)set.add(r.day);});
+  return [...set];
+}
+function generateRunPlan(force){
+  const r=DB.running;if(!r.setup)return;
+  const wk=weekDates();const gymD=gymDaysThisWeek();
+  const days=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+  // huecos = días sin gym; priorizamos esos. Si no llegan, aceptamos días con gym pero con sesión suave.
+  const freeIdx=days.map((d,i)=>({d,i})).filter(x=>!gymD.includes(x.d));
+  const slots=[];
+  // reparto por número de días: siempre día alterno si es posible
+  const nDays=r.daysWeek;
+  const pref={1:[3],2:[1,4],3:[0,3,5]}[nDays]||[1,4]; // Mar/Vie/Dom por ejemplo
+  pref.forEach(idx=>{const dName=days[idx];if(!gymD.includes(dName))slots.push({dayName:dName,dayIdx:idx,heavy:true});else slots.push({dayName:dName,dayIdx:idx,heavy:false});});
+  // decidir tipo: alternamos calidad/suave según objetivo y frecuencia
+  const rotation=nDays===1?['tempo']:nDays===2?['series','rodaje']:['series','rodaje','larga'];
+  const plan=slots.map((s,i)=>{
+    let type=rotation[i%rotation.length];
+    if(!s.heavy)type='rodaje'; // día coincidente con gym: siempre suave
+    // adaptar km al objetivo
+    const km=(function(){const M=r.maxKm||8;if(type==='larga')return M;if(type==='rodaje')return Math.max(4,Math.round(M*0.7));if(type==='tempo')return Math.max(5,Math.round(M*0.85));return Math.max(4,Math.round(M*0.7));})();
+    const tpl=runTemplate(type,km);
+    return{...s,type,templateKm:km,session:tpl,date:wk[s.dayIdx],done:false};
+  });
+  DB.running.currentPlan={createdAt:today(),weekStart:wk[0],items:plan};
+  save();
+}
+/* Adaptación diaria: si Recovery bajo, mutar el tipo del día a algo más suave */
+function adaptForToday(item){
+  const rc=recoveryScore();const clone=JSON.parse(JSON.stringify(item));
+  if(rc<50){
+    if(['series','cuestas','tempo'].includes(clone.type)){
+      clone.type='rodaje';clone.session=runTemplate('rodaje',Math.max(4,(clone.templateKm||6)-1));
+      clone.adapted=`Recovery ${rc}: cambiado a rodaje suave para no acumular fatiga.`;
+    }
+  }else if(rc<70&&clone.type==='series'){
+    clone.type='fartlek';clone.session=runTemplate('fartlek',clone.templateKm||6);
+    clone.adapted=`Recovery ${rc}: fartlek en vez de series (menos duro).`;
+  }
+  return clone;
+}
+
+/* ---------- Vista de Carrera (dentro de Entreno) ---------- */
+function renderRunView(){
+  const el=document.getElementById('runView');if(!el)return;
+  const r=DB.running;
+  if(!r.setup){el.innerHTML=`<div class="note">Aún no has configurado tu running. Elige tu objetivo (5K o 10K) y cuántos días quieres correr.</div><button class="btn btn-acc2" style="margin-top:10px" onclick="openRunSetup()">🏃 Configurar mi running</button>`;return;}
+  // regenerar si la semana ha cambiado
+  const wk=weekDates();if(!r.currentPlan||r.currentPlan.weekStart!==wk[0])generateRunPlan();
+  const p=r.currentPlan;
+  // resumen semanal
+  const totalKm=p.items.reduce((a,x)=>a+(x.session.km||0),0);
+  const doneKm=p.items.filter(x=>x.done).reduce((a,x)=>a+(x.actualKm||x.session.km||0),0);
+  const stats=(function(){const s=r.history;if(!s.length)return null;const best5=s.filter(x=>x.km>=4.8&&x.km<=5.2).sort((a,b)=>a.duration-b.duration)[0];const best10=s.filter(x=>x.km>=9.5&&x.km<=10.5).sort((a,b)=>a.duration-b.duration)[0];return{best5,best10};})();
+  let html=`<div class="stat-grid c2"><div class="stat"><div class="v acc2">${r.target}</div><div class="l">objetivo</div></div><div class="stat"><div class="v acc">${totalKm.toFixed(1)}</div><div class="l">km planificados</div></div></div>`;
+  if(stats){html+=`<div class="row" style="margin-top:8px">${stats.best5?`<div class="stat" style="flex:1"><div class="v gold">${paceStr(stats.best5.duration/stats.best5.km)}</div><div class="l">mejor 5K min/km</div></div>`:''}${stats.best10?`<div class="stat" style="flex:1"><div class="v gold">${paceStr(stats.best10.duration/stats.best10.km)}</div><div class="l">mejor 10K min/km</div></div>`:''}</div>`;}
+  html+=`<div class="bar" style="margin-top:10px"><i style="width:${totalKm>0?Math.min(100,Math.round(doneKm/totalKm*100)):0}%;background:var(--acc2)"></i></div><p class="mini" style="margin-top:4px">${doneKm.toFixed(1)} / ${totalKm.toFixed(1)} km esta semana</p>`;
+  // sesiones
+  html+='<div style="margin-top:14px">';
+  p.items.forEach((it,idx)=>{
+    const t=RUN_TYPES[it.type];const isToday=it.date===today();const adapted=isToday?adaptForToday(it):it;
+    html+=`<div class="ex-block" style="border-left:4px solid ${t.color}"><div class="ex-head"><span class="nm">${it.dayName} · ${t.ic} ${t.lbl}</span>${it.done?'<span class="tag" style="color:var(--ok)">✓ hecho</span>':''}</div>`;
+    html+=`<div class="mini" style="margin-top:4px">${adapted.session.km} km aprox · ${t.desc}</div>`;
+    if(adapted.adapted)html+=`<div class="note" style="margin-top:6px;padding:8px 10px;font-size:12px">🧠 ${adapted.adapted}</div>`;
+    if(!it.done){html+=`<div class="row" style="margin-top:8px">${isToday?`<button class="btn-sm btn-acc2" onclick="startRun(${idx})">▶ Empezar</button>`:''}<button class="btn-sm btn2" onclick="viewRun(${idx})">Ver detalle</button><button class="btn-sm btn2" onclick="quickLogRun(${idx})">Registrar sin cronómetro</button></div>`;}
+    else{html+=`<div class="mini" style="margin-top:6px">${it.actualKm||0} km en ${Math.round((it.duration||0)/60)} min · ritmo ${paceStr((it.duration||0)/(it.actualKm||1))}</div>`;}
+    html+='</div>';
+  });
+  html+='</div>';
+  html+=`<div class="row" style="margin-top:10px"><button class="btn2" style="flex:1" onclick="openRunSetup()">⚙️ Ajustar objetivo</button><button class="btn2" style="flex:1" onclick="regenPlan()">🔄 Replanificar</button></div>`;
+  // últimas carreras
+  if(r.history.length){html+=`<div class="card" style="margin-top:14px"><h3>📚 Últimas carreras</h3>${r.history.slice(0,5).map(h=>`<div class="sub-opt"><span>${RUN_TYPES[h.type]?.ic||'🏃'} ${fd(h.date)} · ${h.km} km · ${Math.round(h.duration/60)}min</span><span class="mini">${paceStr(h.duration/h.km)}/km</span></div>`).join('')}</div>`;}
+  el.innerHTML=html;
+}
+function paceStr(secPerKm){if(!secPerKm||!isFinite(secPerKm))return '-';const m=Math.floor(secPerKm/60),s=Math.round(secPerKm%60);return `${m}:${String(s).padStart(2,'0')}`;}
+function regenPlan(){generateRunPlan(true);renderRunView();toast('🔄 Plan regenerado');}
+function viewRun(idx){const it=DB.running.currentPlan.items[idx];const s=it.session;openModal(`<h3>${RUN_TYPES[it.type].ic} ${RUN_TYPES[it.type].lbl}</h3><p class="mini" style="margin-bottom:10px">${RUN_TYPES[it.type].desc}</p><b style="font-family:Anton">Estructura</b>${s.segments.map(sg=>`<div class="sub-opt"><span>${sg.lbl}</span><span class="mini">${sg.km>0?sg.km.toFixed(1)+' km':''} ${sg.pace}</span></div>`).join('')}<p class="mini" style="margin-top:10px">Total aprox: <b>${s.km} km</b></p>`);}
+function quickLogRun(idx){
+  const it=DB.running.currentPlan.items[idx];const s=adaptForToday(it).session;
+  openModal(`<h3>🏃 Registrar carrera</h3><p class="mini" style="margin-bottom:10px">Si la corriste con reloj/aplicación externa, apunta km y tiempo.</p>
+  <div class="row"><div><label>Km</label><input id="qrKm" type="number" step="0.1" inputmode="decimal" value="${s.km}"></div><div><label>Minutos</label><input id="qrMin" type="number" inputmode="numeric" placeholder="${Math.round(s.km*(DB.running.paceEasy||6))}"></div></div>
+  <label style="margin-top:8px">Nota (opcional)</label><input id="qrNote" placeholder="Cómo fue">
+  <button class="btn" style="margin-top:14px" onclick="saveRunLog(${idx})">Guardar</button>`);
+}
+function saveRunLog(idx){
+  const km=+document.getElementById('qrKm').value||0;const min=+document.getElementById('qrMin').value||0;
+  if(!km||!min){toast('Pon km y minutos');return;}
+  const note=document.getElementById('qrNote').value||'';
+  const it=DB.running.currentPlan.items[idx];
+  it.done=true;it.actualKm=km;it.duration=min*60;
+  DB.running.history.unshift({date:today(),type:it.type,km,duration:min*60,note});
+  // marcar en extraLog para no romper resumen semanal existente
+  DB.extraLog[today()]=DB.extraLog[today()]||{};DB.extraLog[today()].run=true;DB.extraLog[today()].runKm=(DB.extraLog[today()].runKm||0)+km;DB.extraLog[today()].runMin=(DB.extraLog[today()].runMin||0)+min;
+  save();closeModal();renderRunView();renderDashboard();toast('🏃 Carrera registrada');
+}
+
+/* ---------- Ejecutor de carrera con cronómetro e intervalos ---------- */
+let RUN={active:false,idx:null,segIdx:0,startTs:0,pauseAccum:0,pauseTs:0,intv:null,phase:'work',phaseSec:0,phaseRound:1,tickId:null};
+function startRun(idx){
+  const it=DB.running.currentPlan.items[idx];
+  RUN={active:true,idx,segIdx:0,startTs:Date.now(),pauseAccum:0,pauseTs:0,intv:null,phase:'work',phaseSec:0,phaseRound:1,tickId:null,session:adaptForToday(it).session};
+  DB.running.activeSession={idx,started:Date.now()};save();
+  if(DB.settings&&DB.settings.wakeLock)requestWake();
+  speak(`Empezamos ${RUN_TYPES[it.type].lbl}. Primer bloque: ${RUN.session.segments[0].lbl}`);
+  runStartSegment(0);
+  RUN.tickId=setInterval(runTick,1000);
+  renderRunLive();
+}
+function runStartSegment(si){
+  RUN.segIdx=si;const seg=RUN.session.segments[si];
+  if(seg.interval){RUN.intv=seg.interval;RUN.phase='work';RUN.phaseSec=seg.interval.work;RUN.phaseRound=1;speak('Fuerte');}
+  else{RUN.intv=null;speak(seg.lbl);}
+  renderRunLive();
+}
+function runTick(){
+  if(!RUN.active)return;
+  if(RUN.intv){
+    RUN.phaseSec--;
+    if(RUN.phaseSec===3||RUN.phaseSec===2||RUN.phaseSec===1)try{if(navigator.vibrate)navigator.vibrate(60);}catch(e){}
+    if(RUN.phaseSec<=0){
+      beep(3);try{if(navigator.vibrate)navigator.vibrate([200,60,200]);}catch(e){}
+      if(RUN.phase==='work'){
+        if(RUN.phaseRound>=RUN.intv.rounds){runNextSegment();return;}
+        RUN.phase='rest';RUN.phaseSec=RUN.intv.rest;speak('Recupera');
+      }else{
+        RUN.phaseRound++;RUN.phase='work';RUN.phaseSec=RUN.intv.work;
+        if(RUN.phaseRound===RUN.intv.rounds)speak(`Última. Fuerte`);
+        else speak(`Serie ${RUN.phaseRound}. Fuerte`);
+      }
+    }
+  }
+  renderRunLive();
+}
+function runNextSegment(){
+  if(RUN.segIdx>=RUN.session.segments.length-1){finishRun();return;}
+  runStartSegment(RUN.segIdx+1);
+}
+function renderRunLive(){
+  const el=document.getElementById('runLive');if(!el)return;
+  if(!RUN.active){el.innerHTML='';return;}
+  const seg=RUN.session.segments[RUN.segIdx];
+  const elapsed=Math.floor((Date.now()-RUN.startTs-RUN.pauseAccum)/1000);
+  const em=Math.floor(elapsed/60),es=elapsed%60;
+  let bloq;
+  if(RUN.intv){
+    const m=Math.floor(RUN.phaseSec/60),s=RUN.phaseSec%60;
+    const isWork=RUN.phase==='work';
+    bloq=`<div class="timer-hero ${isWork?'go':'rest'}"><div class="phase">${isWork?'🔥 FUERTE':'😮‍💨 RECUPERA'}</div><div class="clock" style="color:${isWork?'var(--acc)':'var(--acc2)'}">${m}:${String(s).padStart(2,'0')}</div><div class="sub">Serie ${RUN.phaseRound}/${RUN.intv.rounds}${RUN.phaseRound===RUN.intv.rounds&&isWork?' · ÚLTIMA':''}</div></div>`;
+  }else{
+    bloq=`<div class="timer-hero go"><div class="phase">${seg.lbl}</div><div class="clock">${em}:${String(es).padStart(2,'0')}</div><div class="sub">${seg.pace}${seg.km>0?' · ~'+seg.km+' km':''}</div></div>`;
+  }
+  el.innerHTML=`<div style="margin-bottom:10px">${bloq}<div class="mini" style="text-align:center;margin-top:6px">Segmento ${RUN.segIdx+1}/${RUN.session.segments.length} · total ${em} min</div><div class="row" style="margin-top:8px"><button class="btn2" style="flex:1" onclick="runNextSegment()">Sig ▶</button><button class="btn2" style="flex:1" onclick="finishRun()">✓ Terminar</button></div></div>`;
+}
+function finishRun(){
+  clearInterval(RUN.tickId);
+  const dur=Math.floor((Date.now()-RUN.startTs-RUN.pauseAccum)/1000);
+  const it=DB.running.currentPlan.items[RUN.idx];const est=it.session.km;
+  openModal(`<h3>✓ Carrera terminada</h3><p class="mini" style="margin-bottom:10px">Tiempo total: <b>${Math.floor(dur/60)} min ${dur%60}s</b>. Confirma km reales para calcular tu ritmo.</p><label>Km reales</label><input id="frKm" type="number" step="0.1" value="${est}"><label style="margin-top:8px">Nota</label><input id="frNote" placeholder="Cómo fue">
+  <button class="btn btn-acc2" style="margin-top:14px" onclick="saveFinishRun(${dur})">Guardar</button>`);
+}
+function saveFinishRun(dur){
+  const km=+document.getElementById('frKm').value||0;const note=document.getElementById('frNote').value||'';
+  if(!km){toast('Pon los km reales');return;}
+  const it=DB.running.currentPlan.items[RUN.idx];
+  it.done=true;it.actualKm=km;it.duration=dur;
+  DB.running.history.unshift({date:today(),type:it.type,km,duration:dur,note});
+  DB.extraLog[today()]=DB.extraLog[today()]||{};DB.extraLog[today()].run=true;DB.extraLog[today()].runKm=(DB.extraLog[today()].runKm||0)+km;DB.extraLog[today()].runMin=(DB.extraLog[today()].runMin||0)+Math.round(dur/60);
+  DB.running.activeSession=null;RUN={active:false,idx:null,segIdx:0,startTs:0,pauseAccum:0,pauseTs:0,intv:null,phase:'work',phaseSec:0,phaseRound:1,tickId:null};
+  releaseWake();save();closeModal();renderRunView();renderDashboard();
+  const pace=paceStr(dur/km);toast(`🏃 ${km} km en ${Math.round(dur/60)} min · ${pace}/km`);
+}
+
 /* ===================== CHECK-IN DIARIO · HEALTH SCORE ===================== */
 const CHECKIN_Q=[
   {k:'mood',q:'¿Cómo estás?',opts:[['😞',1],['😐',2],['🙂',3],['😄',4]]},
@@ -942,6 +1274,7 @@ function openSettings(){
   <div class="ex-block"><b style="font-family:Anton">⏱️ Cronómetro de intervalos</b><p class="mini" style="margin:6px 0 8px">Para carrera y cardio: trabajo/descanso × rondas (HIIT, sprints).</p><button class="btn2" onclick="openIntervals()">Abrir cronómetro</button></div>
   <div class="ex-block"><b style="font-family:Anton">🐢 Tiempo bajo tensión (TUT)</b><p class="mini" style="margin:6px 0 8px">Cuenta los segundos de una serie. El rango óptimo para hipertrofia es 40-70s. Útil en el modo Strongman.</p><button class="btn2" onclick="openTUT()">Abrir contador TUT</button></div>
   <div class="ex-block"><b style="font-family:Anton">📱 Pantalla activa</b><p class="mini" style="margin:6px 0 8px">Evita que el móvil se apague durante la sesión.</p><label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px"><input type="checkbox" id="wlChk" ${DB.settings&&DB.settings.wakeLock?'checked':''} onchange="toggleWakeSetting(this.checked)" style="width:20px;height:20px"> Mantener pantalla encendida</label></div>
+  <div class="ex-block"><b style="font-family:Anton">🗣️ Avisos de voz</b><p class="mini" style="margin:6px 0 8px">Voz en tabata, EMOM y protocolos ("trabajo", "descanso", "última ronda").</p><label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px"><input type="checkbox" id="vcChk" ${!DB.settings||DB.settings.voice!==false?'checked':''} onchange="toggleVoice(this.checked)" style="width:20px;height:20px"> Voz activada</label></div>
   <div class="ex-block"><b style="font-family:Anton">⚠️ Datos</b><p class="mini" style="margin:6px 0 8px">Tus datos viven solo en este teléfono. Exporta de vez en cuando como copia de seguridad.</p></div>`);
 }
 function exportData(){try{DB.lastBackup=today();const data=JSON.stringify(DB);const blob=new Blob([data],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='forja-backup-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);save();toast('💾 Copia exportada');renderBackupReminder();}catch(e){toast('Error al exportar');}}
@@ -956,6 +1289,7 @@ let _wakeLock=null;
 async function requestWake(){try{if('wakeLock'in navigator){_wakeLock=await navigator.wakeLock.request('screen');}}catch(e){}}
 function releaseWake(){try{if(_wakeLock){_wakeLock.release();_wakeLock=null;}}catch(e){}}
 function toggleWakeSetting(on){DB.settings=DB.settings||{};DB.settings.wakeLock=on;save();if(on)requestWake();else releaseWake();}
+function toggleVoice(on){DB.settings=DB.settings||{};DB.settings.voice=on;save();if(on)speak('Voz activada');else{try{speechSynthesis.cancel();}catch(e){}}}
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&DB.settings&&DB.settings.wakeLock&&DB.session)requestWake();});
 
 /* ===================== RESUMEN SEMANAL ===================== */
