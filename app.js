@@ -71,6 +71,7 @@ function load(){
     }
   }catch(e){}
   seed();renderAll();
+  if(!DB.tourDone)setTimeout(()=>showTour(0),400);
 }
 function save(){
   try{
@@ -92,7 +93,8 @@ let DB={
   athlete:null, mode:'gym', settings:{fontScale:1,wakeLock:false}, exNotes:{},
   goalWeight:105, lastBackup:null,
   goals:[], checkins:{},
-  running:{setup:false,target:'10K',daysWeek:2,history:[],currentPlan:null,activeSession:null}
+  running:{setup:false,target:'10K',daysWeek:2,history:[],currentPlan:null,activeSession:null},
+  pain:{}, tourDone:false
 };
 const DEF_HAB=[{id:'h1',ic:'💧',name:'3 L de agua'},{id:'h2',ic:'🌞',name:'Luz natural 10 min'},{id:'h3',ic:'🧠',name:'Ritual de mañana'},{id:'h4',ic:'🥩',name:'Proteína en cada comida'},{id:'h5',ic:'📵',name:'Pausa de pantalla cada hora'},{id:'h6',ic:'😴',name:'Dormir 7-8 h'}];
 const MIND=[{t:'0-2',d:'Respira: 6 respiraciones, inhala 4s / exhala 6s. Suelta hombros y mandíbula.',sec:120},{t:'2-5',d:'Columna: gato-camello x8, rotaciones de tronco x8/lado, círculos de cadera x8.',sec:180},{t:'5-8',d:'Activa: 20 sentadillas + 15 elevaciones de talón + 10 círculos de brazos.',sec:180},{t:'8-11',d:'Tren alto: aperturas de pecho, cuello suave, muñecas (por el teclado) x10.',sec:180},{t:'11-14',d:'Foco: ¿cuál es LA tarea importante de hoy? Visualízate haciéndola.',sec:180},{t:'14-15',d:'Intención: di en voz alta tu objetivo del día y un hábito que cumplirás.',sec:60}];
@@ -171,7 +173,7 @@ const BOX_SESSION={
 /* ===== navegación ===== */
 function nav(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));el.classList.add('on');window.scrollTo(0,0);if(v==='home')renderDashboard();if(v==='mind'){renderVideoCats();renderHabits();}if(v==='body')renderBody();if(v==='train'){renderCycle();renderTodayReady();renderExtra();}}
 function navBtn(i){return document.querySelectorAll('nav button')[i];}
-function trainTab(t,el){['hoy','carrera','prog','retos','rutinas'].forEach(x=>{const e=document.getElementById('train-'+x);if(e)e.style.display='none';});document.getElementById('train-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='prog'){renderDeload();renderStagnation();renderProgSelect();renderVolume();renderE1RM();renderCycleCompare();renderDensityChart();renderPR();renderHistory();}if(t==='retos'){renderGoals();renderMedals();renderFormatPR();}if(t==='rutinas'){renderRoutines();renderRotation();}if(t==='hoy'){renderCycle();renderTodayReady();renderExtra();}if(t==='carrera'){renderRunView();renderRunLive();}}
+function trainTab(t,el){['hoy','carrera','prog','retos','rutinas'].forEach(x=>{const e=document.getElementById('train-'+x);if(e)e.style.display='none';});document.getElementById('train-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='prog'){renderDeload();renderStagnation();renderProgSelect();renderVolume();renderE1RM();renderPredictions();renderCycleCompare();renderDensityChart();renderPR();renderHistory();}if(t==='retos'){renderGoals();renderMedals();renderFormatPR();}if(t==='rutinas'){renderRoutines();renderRotation();}if(t==='hoy'){renderCycle();renderTodayReady();renderExtra();}if(t==='carrera'){renderRunView();renderRunLive();}}
 function mindTab(t,el){['video','checkin','ritual','habits'].forEach(x=>{const e=document.getElementById('mind-'+x);if(e)e.style.display='none';});document.getElementById('mind-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='habits'){renderHabits();renderHabitStreak();renderHealthScore();}else if(t==='ritual'){renderMindSteps();renderMindTimer();}else if(t==='checkin'){renderCheckin();renderCheckinTrend();}else{renderVideoCats();}}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400);}
 function closeModal(){document.getElementById('modalBg').classList.remove('on');}
@@ -243,6 +245,7 @@ function generateCoach(){
   if(cur.weight&&prev.weight&&cur.weight>=prev.weight&&cur.waist&&prev.waist&&cur.waist>=prev.waist)actions.push(`El peso y la cintura no bajan. Revisa la comida con sentido común y añade una caminata o carrera extra.`);
   if(cur.box+cur.run===0)actions.push(`Mete al menos 1 sesión de cardio (boxeo o carrera) para acelerar la pérdida de grasa.`);
   if(cur.adher!=null&&cur.adher<60)actions.push(`Elige solo 1-2 hábitos clave y céntrate en no fallar dos días seguidos.`);
+  const pains=currentPain();if(pains.length)actions.unshift(`Tienes molestia en ${pains.join(', ')}: baja volumen o cambia ejercicios que carguen esa zona hasta que mejore.`);
   if(!actions.length)actions.push(`Mantén exactamente lo que haces: está funcionando. Sigue así.`);
   return {lines,actions,cur,prev};
 }
@@ -284,7 +287,7 @@ function renderDashboard(){
   const fl=fatLossScore();const fn=document.getElementById('fatNum');const fr=document.getElementById('fatRing');
   if(fl!=null){fn.textContent=fl;const col=fl>=66?'var(--ok)':fl>=40?'var(--gold)':'var(--bad)';fr.style.background=`conic-gradient(${col} ${fl*3.6}deg, var(--bg3) 0)`;document.getElementById('fatMsg').textContent=fl>=66?'vas bien':fl>=40?'aceptable':'aprieta';}
   else{fn.textContent='—';fr.style.background='var(--bg3)';document.getElementById('fatMsg').textContent='mide y entrena';}
-  renderWeekChallenge();renderWeeklySummary();renderCoach();renderRecovery();renderGoalProgress();renderBackupReminder();renderCalendar();renderExtraHistory();renderTodayDash();renderWeekView();applyCollapsed();
+  renderWeekChallenge();renderWeeklySummary();renderTodayHero();renderCoach();renderRecovery();renderInsights();renderGoalProgress();renderBackupReminder();renderCalendar();renderExtraHistory();renderTodayDash();renderWeekView();applyCollapsed();
 }
 function renderExtraHistory(){const el=document.getElementById('extraHistory');if(!el)return;let html='';for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10);const e=DB.extraLog[ds]||{};const sess=DB.sessions.some(s=>s.date===ds);let bg='var(--bg3)',bd='var(--line)';if(e.box){bg='rgba(255,193,50,.3)';bd='var(--gold)';}else if(sess){bg='rgba(255,64,21,.25)';bd='var(--acc)';}else if(e.run){bg='rgba(156,107,255,.25)';bd='var(--viol)';}html+=`<span class="streak-dot" style="background:${bg};border-color:${bd}" title="${ds}${e.box?' 🥊':''}${e.run?' 🏃':''}${sess?' 💪':''}"></span>`;}
   const wk=weekDates();const totBox=Object.keys(DB.extraLog).filter(d=>DB.extraLog[d].box).length;const totRun=Object.keys(DB.extraLog).filter(d=>DB.extraLog[d].run).length;
@@ -377,7 +380,7 @@ function renderRotation(){const idx=(DB.cycle.rotIndex||0);document.getElementBy
 /* ===================== MODO ATLETA + FLUJO SESIÓN ===================== */
 function renderTodayReady(){const td=DAYS[(new Date().getDay()+6)%7];const r=DB.routines.find(x=>x.day===td);const el=document.getElementById('todayReady');document.getElementById('readyTitle').textContent='📅 '+td;
   if(DB.session){el.innerHTML='<p class="mini">Sesión en curso abajo 👇</p>';return;}
-  if(r){const hasLast=!!lastSessionFor(r.id);el.innerHTML=`<div class="day-row"><div class="dd">💪</div><div class="di"><b>${r.name}</b><div class="mini">4 bloques · Fuerza · Hipertrofia · Densidad · Finisher</div></div><button class="btn-sm btn-acc2" onclick="startFlow('${r.id}')">Empezar</button></div><div class="row" style="margin-top:8px"><button class="btn2" style="flex:1" onclick="startWarmup('${r.id}')">🔥 Calentamiento</button>${hasLast?`<button class="btn2" style="flex:1" onclick="repeatLast('${r.id}')">↺ Repetir última</button>`:''}</div>`;}
+  if(r){const hasLast=!!lastSessionFor(r.id);el.innerHTML=`<div class="day-row"><div class="dd">💪</div><div class="di"><b>${r.name}</b><div class="mini">4 bloques · Fuerza · Hipertrofia · Densidad · Finisher</div></div><button class="btn-sm btn-acc2" onclick="startFlow('${r.id}')">Empezar</button></div><div class="row" style="margin-top:8px"><button class="btn2" style="flex:1" onclick="startWarmup('${r.id}')">🔥 Calentamiento</button>${hasLast?`<button class="btn2" style="flex:1" onclick="repeatLast('${r.id}')">↺ Repetir última</button><button class="btn2" style="flex:1" onclick="repeatProgress('${r.id}')">↺⬆ Repetir y subir</button>`:''}</div>`;}
   else el.innerHTML=`<p class="mini">Hoy (${td}) sin rutina. Descanso o empieza una manual:</p><div style="margin-top:8px">${DB.routines.map(x=>`<button class="btn-sm btn2" style="margin:2px" onclick="startFlow('${x.id}')">${x.name}</button>`).join('')}</div>`;
 }
 function startFlow(rid){window._pendingRid=rid;openModal(`<h3>Modo Atleta</h3><p class="mini" style="margin-bottom:6px">¿Cómo llegas hoy? La sesión se ajusta a tu estado.</p><div class="athlete-opt"><button class="fresco" onclick="pickAthlete('fresco')"><span class="e">🔋</span>Fresco</button><button class="normal" onclick="pickAthlete('normal')"><span class="e">⚡</span>Normal</button><button class="fatigado" onclick="pickAthlete('fatigado')"><span class="e">🪫</span>Fatigado</button></div><p class="mini" style="margin-top:10px">Fresco: +volumen e intensidad · Normal: plan estándar · Fatigado: menos volumen, más descanso, finisher suave.</p>`);}
@@ -443,7 +446,7 @@ function renderSessionBody(){const s=DB.session;if(!s)return;let html='';
       const vidBtn=`<button class="btn-sm btn2" style="margin-top:6px" onclick="showExVideo('${ex.name.replace(/'/g,"")}')">🎬 Técnica</button>`;
       const bw=/dominada|fondo|flexi|muscle.?up/i.test(ex.name);
       const bwHint=bw?`<div class="mini" style="margin:-2px 0 6px;color:var(--acc2)">💡 ¿Con goma? Apunta la ayuda en negativo: -15 = la goma te quita ~15 kg. Progresar = menos goma o más reps.</div>`:'';
-      html+=`<div class="ex-block ${b.superset?'super':''}"><div class="ex-head"><span class="nm" onclick="swapExercise(${bi},${ei})" style="cursor:pointer">${ex.name} ${SUBS[ex.name]?'<span style="color:var(--acc2);font-size:13px">⇄</span>':''}</span><span style="display:flex;gap:4px;align-items:center"><button class="btn-sm btn2" style="padding:4px 8px" onclick="moveEx(${bi},${ei},-1)">↑</button><button class="btn-sm btn2" style="padding:4px 8px" onclick="moveEx(${bi},${ei},1)">↓</button></span></div><div class="mini" style="margin:-4px 0 6px">${ex.reps} ${b.type==='fuerza'?'· RPE '+(ex.rpe||8):''} ${ex.rest?'· ⏸'+ex.rest+'s':''}</div>${bwHint}${prevTxt}${sugTxt}<div class="set-head"><span>#</span><span>Kg</span><span>Reps</span><span>${showRpe?'RPE':''}</span><span>✓</span></div>${ex.sets.map((st,j)=>{
+      html+=`<div class="ex-block ${b.superset?'super':''}"><div class="ex-head"><span class="nm" onclick="exerciseMenu(${bi},${ei})" style="cursor:pointer">${ex.name} ${SUBS[ex.name]?'<span style="color:var(--acc2);font-size:13px">⇄</span>':''} <span style="color:var(--dim);font-size:12px">📊</span></span><span style="display:flex;gap:4px;align-items:center"><button class="btn-sm btn2" style="padding:4px 8px" onclick="moveEx(${bi},${ei},-1)">↑</button><button class="btn-sm btn2" style="padding:4px 8px" onclick="moveEx(${bi},${ei},1)">↓</button></span></div><div class="mini" style="margin:-4px 0 6px">${ex.reps} ${b.type==='fuerza'?'· RPE '+(ex.rpe||8):''} ${ex.rest?'· ⏸'+ex.rest+'s':''}</div>${bwHint}${prevTxt}${sugTxt}<div class="set-head"><span>#</span><span>Kg</span><span>Reps</span><span>${showRpe?'RPE':''}</span><span>✓</span></div>${ex.sets.map((st,j)=>{
         const pv=ex.prev&&ex.prev[j]?ex.prev[j]:null;
         const beat=pv&&(+st.reps||0)>0&&(((+st.kg||0)>0&&(+st.kg)*(+st.reps)>(+pv.kg||0)*(+pv.reps||0))||((+pv.kg||0)<0&&(+st.kg||0)>(+pv.kg)&&(+st.reps)>=(+pv.reps||0)));
         const goal=pv&&(+pv.kg||+pv.reps)?`<span class="mini" style="display:block;font-size:9px;color:${beat?'var(--ok)':'var(--dim)'}">${beat?'✔':'↑'}${pv.kg||0}×${pv.reps||0}</span>`:'';
@@ -602,7 +605,7 @@ function exerciseHistory(name){const out=[];[...DB.sessions].reverse().forEach(s
 function renderProgSelect(){const sel=document.getElementById('progSelect');sel.innerHTML=allExerciseNames().map(n=>`<option>${n}</option>`).join('');renderProgChart();}
 function renderProgChart(){const name=document.getElementById('progSelect').value;const h=exerciseHistory(name);const el=document.getElementById('progChart'),st=document.getElementById('progStats');if(!h.length){el.innerHTML='<p class="empty">Sin datos. Entrena este ejercicio.</p>';st.innerHTML='';return;}const max=Math.max(...h.map(x=>x.topKg),1);el.innerHTML=`<div class="chart">${h.slice(-10).map(x=>`<div class="b" style="height:${x.topKg/max*100}%"><em>${x.topKg}</em><span>${x.date.slice(5)}</span></div>`).join('')}</div><div style="height:22px"></div>`;const f=h[0].topKg,l=h[h.length-1].topKg,d=(l-f).toFixed(1);st.innerHTML=`<div class="stat-grid"><div class="stat"><div class="v acc2">${l}</div><div class="l">último kg</div></div><div class="stat"><div class="v gold">${max}</div><div class="l">máximo</div></div><div class="stat"><div class="v" style="${d<0?'color:var(--bad)':'color:var(--acc)'}">${d>=0?'+':''}${d}</div><div class="l">desde inicio</div></div></div>`;}
 function renderDensityChart(){const ds=[...DB.sessions].filter(s=>s.density!=null).reverse().slice(-12);const el=document.getElementById('densityChart');if(!ds.length){el.innerHTML='<p class="empty">Completa sesiones para ver tu Density Score.</p>';return;}const max=Math.max(...ds.map(s=>s.density),1);el.innerHTML=`<div class="chart">${ds.map(s=>`<div class="b" style="height:${s.density/max*100}%"><em>${s.density}</em><span>${s.date.slice(5)}</span></div>`).join('')}</div><div style="height:22px"></div>`;}
-function renderPR(){const pr={};DB.sessions.forEach(s=>(s.blocks||[]).forEach(b=>b.exercises.forEach(e=>e.sets.forEach(st=>{const k=+st.kg||0;if(k>0&&(!pr[e.name]||k>pr[e.name].kg))pr[e.name]={kg:k,reps:st.reps};}))));const arr=Object.entries(pr).sort((a,b)=>b[1].kg-a[1].kg);document.getElementById('prList').innerHTML=arr.length?`<table style="width:100%;border-collapse:collapse;font-size:13px">${arr.map(([n,p])=>`<tr><td style="padding:6px;border-top:1px solid var(--line)">${n}</td><td style="padding:6px;border-top:1px solid var(--line);text-align:right"><b style="color:var(--gold)">${p.kg}kg</b></td><td style="padding:6px;border-top:1px solid var(--line);text-align:right;color:var(--dim)">${p.reps} reps</td></tr>`).join('')}</table>`:'<p class="empty">Sin récords aún.</p>';}
+function renderPR(){const pr={};DB.sessions.forEach(s=>(s.blocks||[]).forEach(b=>b.exercises.forEach(e=>e.sets.forEach(st=>{const k=+st.kg||0;if(k>0&&(!pr[e.name]||k>pr[e.name].kg))pr[e.name]={kg:k,reps:st.reps};}))));const arr=Object.entries(pr).sort((a,b)=>b[1].kg-a[1].kg);document.getElementById('prList').innerHTML=(arr.length?`<table style="width:100%;border-collapse:collapse;font-size:13px">${arr.map(([n,p])=>`<tr><td style="padding:6px;border-top:1px solid var(--line)">${n}</td><td style="padding:6px;border-top:1px solid var(--line);text-align:right"><b style="color:var(--gold)">${p.kg}kg</b></td><td style="padding:6px;border-top:1px solid var(--line);text-align:right;color:var(--dim)">${p.reps} reps</td></tr>`).join('')}</table>`+(arr[0]?`<button class="btn2" style="margin-top:10px;width:100%" onclick="shareAchievement('${arr[0][1].kg} kg en ${arr[0][0].replace(/'/g,'')}','Mi récord personal')">📸 Compartir mi mejor récord</button>`:''):'<p class="empty">Sin récords aún.</p>');}
 function renderHistory(){const el=document.getElementById('historyList');el.innerHTML=DB.sessions.length?DB.sessions.slice(0,20).map(s=>`<div class="log-item"><div class="d">${fd(s.date)} · ${s.duration||'?'} min · ⚡${s.density||'—'}</div><div class="t">${s.name} <span class="mini" style="font-family:Barlow">${s.athlete||''}</span></div><details><summary style="cursor:pointer;color:var(--acc2);font-size:12px">ver bloques</summary>${(s.blocks||[]).map(b=>`<div style="margin-top:4px;font-size:13px"><b style="font-family:Anton">${b.label||b.type}</b>${b.result?` · ${b.result}`:''}<br>${b.exercises.map(e=>`${e.name}: ${(e.sets||[]).map(st=>`${st.kg||0}×${st.reps||0}`).join(', ')}`).join('<br>')}</div>`).join('')}</details><button class="btn-sm btn2" style="margin-top:8px" onclick="delSession('${s.id}')">Eliminar</button></div>`).join(''):'<p class="empty">Sin sesiones aún.</p>';}
 function delSession(id){DB.sessions=DB.sessions.filter(s=>s.id!==id);save();renderHistory();renderPR();renderProgChart();renderDensityChart();renderDashboard();}
 
@@ -1192,6 +1195,166 @@ function renderHealthScore(){
   el.innerHTML=`<div style="text-align:center;margin-bottom:10px"><span style="font-family:Anton;font-size:46px;color:${col}">${score}</span><span class="mini"> /100</span></div>${comps.map(c=>`<div style="margin-bottom:6px"><div style="display:flex;justify-content:space-between"><span style="font-size:12px">${c.n}</span><span class="mini">${c.v}</span></div><div class="bar"><i style="width:${c.v}%;background:${col}"></i></div></div>`).join('')}<p class="mini" style="margin-top:8px">Combina hábitos, sueño, energía, calma y actividad del día. Rellena el Check-in para que sea más preciso.</p>`;
 }
 
+/* ===================== V26 · MEJORAS DE VALOR ===================== */
+
+/* --- 2. Pantalla HOY grande --- */
+function renderTodayHero(){
+  const el=document.getElementById('todayHero');if(!el)return;
+  const td=DAYS[(new Date().getDay()+6)%7];
+  const gymR=DB.routines.find(x=>x.day===td);
+  const runToday=DB.running&&DB.running.currentPlan&&DB.running.currentPlan.items.find(x=>x.date===today()&&!x.done);
+  const rc=recoveryScore();const rcA=recoveryAdvice(rc);
+  const log=DB.habitLog[today()]||{};const habPend=DB.habits.filter(h=>!log[h.id]).length;
+  const doneToday=DB.sessions.some(s=>s.date===today());
+  let plan,ic,btn='';
+  if(doneToday){ic='✅';plan='Entreno completado. ¡Bien hecho!';}
+  else if(gymR){ic='💪';plan=`Hoy toca <b>${gymR.name}</b>`;btn=`<button class="btn btn-acc2" style="margin-top:10px;width:100%" onclick="document.querySelector('nav button:nth-child(2)').click()">Ir a entrenar →</button>`;}
+  else if(runToday){ic='🏃';plan=`Hoy toca <b>${RUN_TYPES[runToday.type].lbl}</b>`;btn=`<button class="btn btn-acc2" style="margin-top:10px;width:100%" onclick="document.querySelector('nav button:nth-child(2)').click()">Ir a correr →</button>`;}
+  else{ic='🌿';plan='Día de descanso. Recupera bien.';}
+  const painZones=currentPain();
+  el.innerHTML=`<div class="card" style="border-color:var(--acc);background:linear-gradient(135deg,rgba(255,64,21,.08),transparent)">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start">
+      <div><div class="mini" style="text-transform:capitalize">${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</div><div style="font-family:Anton;font-size:22px;margin-top:2px">${ic} ${plan}</div></div>
+      <div style="text-align:center"><div style="font-family:Anton;font-size:32px;color:${rcA.col}">${rc}</div><div class="mini">recovery</div></div>
+    </div>
+    ${btn}
+    <div class="row" style="margin-top:10px">
+      <div class="stat" style="flex:1"><div class="v ${habPend?'gold':'acc2'}">${habPend}</div><div class="l">hábitos pendientes</div></div>
+      <div class="stat" style="flex:1;cursor:pointer" onclick="openPainLog()"><div class="v ${painZones.length?'bad':'acc2'}">${painZones.length||'✓'}</div><div class="l">molestias 🩹</div></div>
+    </div>
+    ${painZones.length?`<div class="mini" style="margin-top:6px;color:var(--bad)">⚠️ Molestia en: ${painZones.join(', ')}. Ve con cuidado en esas zonas hoy.</div>`:''}
+  </div>`;
+}
+
+/* --- 1. Menú de ejercicio: histórico + sustitución --- */
+function exerciseMenu(bi,ei){
+  const ex=DB.session.blocks[bi].exercises[ei];
+  openModal(`<h3>${ex.name}</h3><div class="row" style="margin-top:6px"><button class="btn2" style="flex:1" onclick="showExerciseHistory('${ex.name.replace(/'/g,"")}')">📊 Ver progresión</button><button class="btn2" style="flex:1" onclick="swapExercise(${bi},${ei})">⇄ Cambiar</button></div><button class="btn2" style="margin-top:8px;width:100%" onclick="showExVideo('${ex.name.replace(/'/g,"")}')">🎬 Técnica</button>`);
+}
+function showExerciseHistory(name){
+  const h=exerciseHistory(name);
+  if(!h.length){openModal(`<h3>📊 ${name}</h3><p class="empty">Aún no hay histórico de este ejercicio. Al registrarlo unas cuantas veces verás aquí tu progresión.</p>`);return;}
+  const recent=h.slice(-10);const max=Math.max(...recent.map(x=>x.topKg),1);
+  const first=h[0],last=h[h.length-1];const diff=(last.topKg-first.topKg).toFixed(1);
+  const e1=bestE1RM(name);
+  openModal(`<h3>📊 ${name}</h3><div class="stat-grid"><div class="stat"><div class="v acc2">${last.topKg}</div><div class="l">último kg</div></div><div class="stat"><div class="v gold">${max}</div><div class="l">máximo</div></div><div class="stat"><div class="v ${diff>=0?'acc':'bad'}">${diff>=0?'+':''}${diff}</div><div class="l">desde inicio</div></div></div>
+  <div class="chart" style="margin-top:14px">${recent.map(x=>`<div class="b" style="height:${Math.round(x.topKg/max*100)}%"><em>${x.topKg}</em><span>${x.date.slice(5)}</span></div>`).join('')}</div><div style="height:22px"></div>
+  ${e1?`<p class="mini" style="margin-top:6px">Fuerza estimada (1RM): <b>${e1} kg</b>.</p>`:''}
+  <p class="mini">Últimas ${recent.length} veces que registraste este ejercicio.</p>`);
+}
+
+/* --- 3. Repetir + progresar (sube 2,5 kg donde cerraste con RPE ≤ 8) --- */
+function repeatProgress(rid){
+  startSession(rid,'normal');
+  const s=DB.session;if(!s)return;let subidos=0;
+  s.blocks.forEach(b=>{if(b.type!=='fuerza'&&b.type!=='hipertrofia')return;b.exercises.forEach(e=>{
+    const prev=e.prev;if(!prev||!prev.length)return;
+    const allDone=prev.every(p=>(+p.reps||0)>0);const maxRpe=Math.max(...prev.map(p=>+p.rpe||0));
+    if(allDone&&maxRpe>0&&maxRpe<=8){e.sets.forEach((st,i)=>{const base=+((prev[i]||prev[0]).kg)||0;if(base>0){st.kg=Math.round((base+2.5)*4)/4;subidos++;}});}
+  });});
+  save();renderSessionBody();renderSessionHead();
+  toast(subidos?`↺ +2,5 kg en ${subidos} series donde ibas sobrado (RPE ≤8)`:'↺ Cargada. No había series claras para subir; progresa donde puedas');
+}
+
+/* --- 4. Compartir logro como imagen --- */
+function shareAchievement(title,subtitle){
+  const cv=document.createElement('canvas');cv.width=1080;cv.height=1080;const x=cv.getContext('2d');
+  x.fillStyle='#0e0f13';x.fillRect(0,0,1080,1080);
+  x.fillStyle='#ff4015';x.fillRect(0,0,1080,14);
+  x.fillStyle='#15e0c0';x.fillRect(0,1066,1080,14);
+  x.textAlign='center';
+  x.fillStyle='#fff';x.font='bold 64px Arial';x.fillText('FORJA',540,180);
+  x.fillStyle='#ff4015';x.font='bold 120px Arial';
+  wrapText(x,title,540,480,980,120);
+  x.fillStyle='#c9ccd4';x.font='42px Arial';
+  wrapText(x,subtitle||'',540,720,900,54);
+  x.fillStyle='#8a8f99';x.font='34px Arial';x.fillText(new Date().toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'}),540,980);
+  cv.toBlob(blob=>{
+    const file=new File([blob],'forja-logro.png',{type:'image/png'});
+    if(navigator.canShare&&navigator.canShare({files:[file]})){navigator.share({files:[file],title:'Mi logro en FORJA'}).catch(()=>{});}
+    else{const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='forja-logro.png';a.click();toast('📸 Imagen descargada');}
+  },'image/png');
+}
+function wrapText(ctx,text,cx,cy,maxW,lh){const words=(text||'').split(' ');let line='',y=cy;const lines=[];words.forEach(w=>{const test=line+w+' ';if(ctx.measureText(test).width>maxW&&line){lines.push(line);line=w+' ';}else line=test;});lines.push(line);const startY=cy-(lines.length-1)*lh/2;lines.forEach((l,i)=>ctx.fillText(l.trim(),cx,startY+i*lh));}
+
+/* --- 5. Diario de molestias (toca zona del mapa) --- */
+const PAIN_ZONES=['Hombro','Pecho','Espalda','Brazo','Core','Cadera','Pierna','Rodilla'];
+function openPainLog(){
+  DB.pain=DB.pain||{};const d=today();const cur=DB.pain[d]||{};
+  openModal(`<h3>🩹 Molestias de hoy</h3><p class="mini" style="margin-bottom:10px">Marca dónde notas molestia y cuánto. El Coach lo tendrá en cuenta para sugerirte bajar volumen en esa zona.</p>${PAIN_ZONES.map(z=>`<div style="margin-bottom:8px"><div style="font-size:13px;margin-bottom:4px">${z}</div><div class="row">${[['ninguna',0],['leve',1],['media',2],['fuerte',3]].map(o=>`<button class="btn-sm ${((cur[z]||0)===o[1])?'btn-acc2':'btn2'}" style="flex:1" onclick="setPain('${z}',${o[1]},this)">${o[0]}</button>`).join('')}</div></div>`).join('')}<button class="btn" style="margin-top:10px" onclick="closeModal();renderDashboard()">Guardar</button>`);
+}
+function setPain(zone,lvl,btn){DB.pain=DB.pain||{};const d=today();DB.pain[d]=DB.pain[d]||{};if(lvl===0)delete DB.pain[d][zone];else DB.pain[d][zone]=lvl;save();btn.parentElement.querySelectorAll('button').forEach(b=>{b.classList.remove('btn-acc2');b.classList.add('btn2');});btn.classList.remove('btn2');btn.classList.add('btn-acc2');}
+function currentPain(){const d=today();const p=DB.pain&&DB.pain[d];if(!p)return[];return Object.keys(p).filter(z=>p[z]>=2);}
+
+/* --- 6. Insights automáticos (patrones) --- */
+function generateInsights(){
+  const out=[];const S=DB.sessions;
+  if(S.length>=4){
+    // mejor día de la semana por density
+    const byDow={};S.forEach(s=>{if(!s.density)return;const dw=new Date(s.date).getDay();(byDow[dw]=byDow[dw]||[]).push(s.density);});
+    let bestDow=null,bestAvg=0;Object.keys(byDow).forEach(dw=>{const avg=byDow[dw].reduce((a,x)=>a+x,0)/byDow[dw].length;if(avg>bestAvg){bestAvg=avg;bestDow=dw;}});
+    if(bestDow!==null){const names=['domingos','lunes','martes','miércoles','jueves','viernes','sábados'];out.push(`Tu mejor rendimiento suele caer los ${names[bestDow]}.`);}
+  }
+  // correlación sueño/rendimiento
+  const paired=S.filter(s=>s.density&&DB.checkins[s.date]&&DB.checkins[s.date].sleep);
+  if(paired.length>=4){const good=paired.filter(s=>DB.checkins[s.date].sleep>=3),bad=paired.filter(s=>DB.checkins[s.date].sleep<3);if(good.length&&bad.length){const ga=good.reduce((a,s)=>a+s.density,0)/good.length,ba=bad.reduce((a,s)=>a+s.density,0)/bad.length;if(ga>ba*1.05)out.push(`Rindes mejor cuando duermes bien: cuida el sueño la víspera de entrenar.`);}}
+  // racha de progreso
+  if(S.length>=3){const vols=S.slice(0,3).map(s=>sessionVolume(s));if(vols[0]>vols[2])out.push(`Tu volumen de entrenamiento viene subiendo en las últimas sesiones. Buena progresión.`);}
+  // consistencia
+  const wk=weekDates();const done=wk.filter(d=>S.some(s=>s.date===d)).length;
+  if(done>=3)out.push(`Llevas ${done} entrenos esta semana. La constancia es tu mayor activo.`);
+  return out;
+}
+function renderInsights(){const el=document.getElementById('insightsCard');if(!el)return;const ins=generateInsights();if(!ins.length){el.innerHTML='';return;}el.innerHTML=`<div class="card"><h3>🔍 Patrones detectados</h3>${ins.map(i=>`<div style="display:flex;gap:8px;margin-bottom:6px"><span style="color:var(--gold)">●</span><span style="font-size:14px">${i}</span></div>`).join('')}</div>`;}
+
+/* --- 7. Predicción de 1RM futuro --- */
+function predictE1RM(name){
+  const h=exerciseHistory(name).filter(x=>x.topKg>0);if(h.length<3)return null;
+  const pts=h.map((x,i)=>({x:new Date(x.date).getTime()/864e5,y:e1RM(x.topKg,x.topReps||1)}));
+  const n=pts.length,sx=pts.reduce((a,p)=>a+p.x,0),sy=pts.reduce((a,p)=>a+p.y,0),sxy=pts.reduce((a,p)=>a+p.x*p.y,0),sxx=pts.reduce((a,p)=>a+p.x*p.x,0);
+  const slope=(n*sxy-sx*sy)/(n*sxx-sx*sx||1);if(slope<=0)return null;
+  const last=pts[pts.length-1];const cur=last.y;
+  return {slope,cur,name};
+}
+function renderPredictions(){
+  const el=document.getElementById('predictView');if(!el)return;
+  const names=[...new Set(DB.sessions.flatMap(s=>(s.blocks||[]).filter(b=>b.type==='fuerza').flatMap(b=>b.exercises.map(e=>e.name))))];
+  const preds=names.map(predictE1RM).filter(Boolean);
+  if(!preds.length){el.innerHTML='<p class="empty">Con más sesiones registradas podré proyectar tu progreso futuro.</p>';return;}
+  el.innerHTML=preds.map(p=>{const target=Math.ceil((p.cur+5)/5)*5;const daysNeeded=Math.round((target-p.cur)/p.slope);const dt=new Date();dt.setDate(dt.getDate()+daysNeeded);const when=daysNeeded>0&&daysNeeded<720?dt.toLocaleDateString('es-ES',{month:'long',year:'numeric'}):'—';return `<div class="sub-opt"><span>${p.name}</span><span class="mini">${Math.round(p.cur)}→${target}kg ${when!=='—'?'· '+when:''}</span></div>`;}).join('')+`<p class="mini" style="margin-top:8px">Proyección según tu ritmo actual. Es una estimación motivadora, no una promesa: el progreso real no es lineal.</p>`;
+}
+
+/* --- MANUAL integrado --- */
+const MANUAL=[
+  ['👋 Bienvenida','FORJA es tu entrenador personal en el móvil. Funciona sin conexión y guarda todo en tu teléfono. Tiene 4 pestañas abajo: Panel (resumen), Entreno (fuerza y carrera), Cuerpo (medidas) y Mente (hábitos y bienestar). La filosofía: constancia sobre perfección. No busques el 100% cada día; busca no fallar dos días seguidos.'],
+  ['📊 Panel','Tu centro de mando. Arriba, la pantalla HOY te dice qué toca. El Coach Semanal analiza tu semana y te da acciones concretas. El Recovery Score (0-100) combina tu carga reciente y tu descanso: si está bajo, entrena más suave. También ves tu camino a la meta de peso, calendario y constancia.'],
+  ['💪 Entreno · sistema','Cada sesión tiene 4 bloques: FUERZA (principal pesado), ACCESORIOS (complementos), DENSIDAD (cardio-fuerza) y FINISHER (cierre). Antes de empezar eliges cómo estás (fresco/normal/fatigado) y la app ajusta el volumen. Tienes 3 modos: Gym, Strongman y Viaje (sin gimnasio).'],
+  ['📝 Registrar series','Teclea kg y reps, marca ✓ al terminar cada serie. Si repites lo mismo que la última vez, marca ✓ sin teclear: se autocompleta. Cuando superas tu marca anterior, la serie se pone verde. Toca el nombre del ejercicio para ver su progresión o cambiarlo si la máquina está ocupada. Con gomas (dominadas/fondos): apunta la ayuda en negativo (-15).'],
+  ['⏱️ Formatos','EMOM: cada minuto haces las reps y descansas lo que sobre. AMRAP: máximas rondas en X minutos. Tabata: 20s fuerte / 10s suave × 8. La app te guía con cuenta atrás, sonido, vibración y voz. En Ajustes puedes activar o silenciar la voz.'],
+  ['🏃 Carrera','Configura tu objetivo (5K o 10K) y días por semana. La app planifica sesiones variadas (rodaje, series, tempo, fartlek, cuestas, técnica, tirada larga) evitando tus días de gym. Si tu Recovery está bajo, cambia sola la sesión por una más suave. Al terminar, apunta km y calcula tu ritmo.'],
+  ['📏 Cuerpo','Mídete cada 2 semanas (peso, cintura, cuello...) siempre igual: en ayunas y a la misma hora. Los campos salen vacíos con tu última medida como referencia gris: teclea solo lo que midas hoy. La tendencia de peso usa media móvil para no asustarte con el ruido diario. La composición estimada usa la fórmula US Navy (orientativa).'],
+  ['🧠 Mente','Check-in diario de 30 segundos (ánimo, sueño, estrés...). Hábitos con cadena de días: no rompas la cadena. Health Score combina hábitos, sueño y actividad. Biblioteca de vídeos de movilidad, yoga y respiración.'],
+  ['⚙️ Ajustes y copia','MUY IMPORTANTE: exporta tu copia de seguridad de vez en cuando (Ajustes → Exportar). Tus datos viven solo en este móvil; si lo pierdes o borras el navegador sin copia, se pierden. También ajustas tamaño de letra, voz, pantalla activa y tienes calculadora de discos y cronómetros.'],
+  ['❓ Problemas','¿Datos borrados? Solo se recuperan si tienes copia exportada. ¿Vídeos no cargan? Necesitan internet, el resto funciona sin conexión. ¿La app no se actualiza? Ciérrala del todo y reábrela. ¿Algo va raro? Exporta tu copia antes de tocar nada, así nunca pierdes el progreso.']
+];
+function openManual(cap){
+  cap=cap||0;const[t,txt]=MANUAL[cap];
+  openModal(`<h3>${t}</h3><p style="font-size:14px;line-height:1.55;margin:8px 0 14px">${txt}</p><div class="row"><button class="btn2" style="flex:1" ${cap===0?'disabled style=opacity:.4':''} onclick="openManual(${cap-1})">‹ Anterior</button><span class="mini" style="align-self:center">${cap+1}/${MANUAL.length}</span><button class="btn2" style="flex:1" ${cap===MANUAL.length-1?'disabled style=opacity:.4':''} onclick="openManual(${cap+1})">Siguiente ›</button></div><div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px">${MANUAL.map((m,i)=>`<button class="btn-sm ${i===cap?'btn-acc2':'btn2'}" style="padding:4px 8px;font-size:11px" onclick="openManual(${i})">${m[0].split(' ')[0]}</button>`).join('')}</div>`);
+}
+
+/* --- TOUR de bienvenida (primera vez) --- */
+const TOUR=[
+  ['👋 Bienvenido a FORJA','Tu entrenador personal en el bolsillo. Todo funciona sin conexión y tus datos se guardan en tu móvil. Te enseño lo básico en 4 pasos.'],
+  ['📊 Panel','Aquí ves de un vistazo qué toca hoy, cómo estás de recuperado y tu progreso. El Coach te aconseja cada semana.'],
+  ['💪 Entreno','Registra tus series (la app recuerda tus marcas y te avisa cuando mejoras), sigue tu plan de carrera y cambia entre modo Gym, Strongman o Viaje.'],
+  ['📏📧 Cuerpo y Mente','Mídete cada 2 semanas para ver tu evolución, y cuida hábitos, sueño y descanso. Y muy importante: exporta tu copia de seguridad de vez en cuando desde Ajustes ⚙️.']
+];
+function showTour(step){
+  step=step||0;const[t,txt]=TOUR[step];
+  openModal(`<div style="text-align:center"><div style="font-size:40px;margin-bottom:8px">${t.split(' ')[0]}</div><h3>${t.substring(t.indexOf(' ')+1)}</h3><p style="font-size:15px;line-height:1.5;margin:12px 0">${txt}</p><div style="display:flex;justify-content:center;gap:6px;margin:14px 0">${TOUR.map((_,i)=>`<span style="width:8px;height:8px;border-radius:50%;background:${i===step?'var(--acc)':'var(--line)'}"></span>`).join('')}</div>${step<TOUR.length-1?`<button class="btn btn-acc2" onclick="showTour(${step+1})">Siguiente</button><br><button class="btn2" style="margin-top:8px" onclick="finishTour()">Saltar</button>`:`<button class="btn btn-acc2" onclick="finishTour()">¡Empezar!</button>`}</div>`);
+}
+function finishTour(){DB.tourDone=true;save();closeModal();toast('💪 ¡A darlo todo! Consulta el Manual en Ajustes cuando quieras');}
+
 /* ===================== MENTE · VÍDEOS GUIADOS ===================== */
 const VIDEO_LIB=[
   {cat:'Movilidad',ic:'🤸',sub:'Despierta el cuerpo · 10 min',vids:[
@@ -1268,6 +1431,7 @@ function renderHabitStreak(){const el=document.getElementById('habitStreak');if(
 function openSettings(){
   const fs=DB.settings&&DB.settings.fontScale||1;
   openModal(`<h3>⚙️ Ajustes</h3>
+  <div class="ex-block" style="border-color:var(--acc2)"><b style="font-family:Anton">📖 Manual de uso</b><p class="mini" style="margin:6px 0 10px">Cómo sacar el máximo partido a cada pantalla de FORJA.</p><button class="btn2" style="width:100%" onclick="openManual(0)">Abrir manual</button></div>
   <div class="ex-block"><b style="font-family:Anton">💾 Respaldo de datos</b><p class="mini" style="margin:6px 0 10px">Guarda una copia de todo (entrenos, medidas, fotos, hábitos). Impórtala si cambias de móvil o limpias el navegador.</p><div class="row"><button class="btn-acc2" style="flex:1" onclick="exportData()">⬇ Exportar</button><button class="btn2" style="flex:1" onclick="document.getElementById('importFile').click()">⬆ Importar</button></div></div>
   <div class="ex-block"><b style="font-family:Anton">🔤 Tamaño de letra</b><div class="row" style="margin-top:8px"><button class="btn2" onclick="setFont(0.9)">A−</button><button class="btn2" onclick="setFont(1)">A</button><button class="btn2" onclick="setFont(1.15)">A+</button><button class="btn2" onclick="setFont(1.3)">A++</button></div><p class="mini" style="margin-top:6px">Actual: ${Math.round(fs*100)}%</p></div>
   <div class="ex-block"><b style="font-family:Anton">🧮 Calculadora de discos</b><p class="mini" style="margin:6px 0 8px">Qué discos poner por lado para un peso objetivo.</p><button class="btn2" onclick="openPlates()">Abrir calculadora</button></div>

@@ -167,6 +167,7 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 
 <!-- DASHBOARD -->
 <section class="view on" id="v-home">
+  <div id="todayHero"></div>
   <div class="row" style="margin-bottom:13px">
     <div class="score-hero" style="flex:1"><div class="mini" style="text-transform:uppercase;letter-spacing:.05em">Density</div><div class="ring" id="densityRing"><div class="num" id="densityNum">—</div><div class="cap">score</div></div><div class="mini" id="densityTrend"></div></div>
     <div class="score-hero" style="flex:1"><div class="mini" style="text-transform:uppercase;letter-spacing:.05em">Fat Loss</div><div class="ring" id="fatRing"><div class="num" id="fatNum">—</div><div class="cap">semana</div></div><div class="mini" id="fatMsg"></div></div>
@@ -184,6 +185,7 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
   </div></div>
   <div id="coachCard"></div>
   <div class="card"><h3>🔋 Recovery Score</h3><div id="recoveryView"></div></div>
+  <div id="insightsCard"></div>
   <div class="card"><h3>🎯 Camino a tu meta</h3><div id="goalProgress"></div></div>
   <div class="card"><h3>🎯 Reto de la semana</h3><div id="weekChallenge"></div></div>
   <div class="card"><h3>📅 Resumen semanal</h3><div id="weeklySummary"></div></div>
@@ -215,6 +217,7 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
     <div class="card"><h3>⚠️ Estancamientos</h3><div id="stagnationView"></div></div>
     <div class="card"><h3>💪 Volumen por músculo <span class="tag c2">esta semana</span></h3><div id="volumeView"></div></div>
     <div class="card"><h3>🏋️ Fuerza estimada (1RM)</h3><div id="e1rmView"></div></div>
+    <div class="card"><h3>🔮 Predicción de progreso</h3><div id="predictView"></div></div>
     <div class="card"><h3>🔁 Comparativa de ciclos</h3><div id="cycleCompareView"></div></div>
     <div class="card"><h3>📈 Progresión por ejercicio</h3><label>Ejercicio</label><select id="progSelect" onchange="renderProgChart()"></select><div id="progChart"></div><div id="progStats" style="margin-top:24px"></div></div>
     <div class="card"><h3>⚡ Density Score · sesiones</h3><div id="densityChart"></div></div>
