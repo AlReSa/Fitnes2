@@ -171,9 +171,9 @@ const BOX_SESSION={
 };
 
 /* ===== navegación ===== */
-function nav(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));el.classList.add('on');window.scrollTo(0,0);if(v==='home')renderDashboard();if(v==='mind'){renderVideoCats();renderHabits();}if(v==='body')renderBody();if(v==='train'){renderCycle();renderTodayReady();renderExtra();}}
+function nav(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));el.classList.add('on');window.scrollTo(0,0);if(v==='home')renderDashboard();if(v==='mind'){renderVideoCats();renderHabits();}if(v==='body')renderBody();if(v==='run'){renderRunView();renderRunLive();}if(v==='train'){renderCycle();renderTodayReady();renderExtra();}}
 function navBtn(i){return document.querySelectorAll('nav button')[i];}
-function trainTab(t,el){['hoy','carrera','prog','retos','rutinas'].forEach(x=>{const e=document.getElementById('train-'+x);if(e)e.style.display='none';});document.getElementById('train-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='prog'){renderDeload();renderStagnation();renderProgSelect();renderVolume();renderE1RM();renderPredictions();renderCycleCompare();renderDensityChart();renderPR();renderHistory();}if(t==='retos'){renderGoals();renderMedals();renderFormatPR();}if(t==='rutinas'){renderRoutines();renderRotation();}if(t==='hoy'){renderCycle();renderTodayReady();renderExtra();}if(t==='carrera'){renderRunView();renderRunLive();}}
+function trainTab(t,el){['hoy','prog','retos','rutinas'].forEach(x=>{const e=document.getElementById('train-'+x);if(e)e.style.display='none';});document.getElementById('train-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='prog'){renderDeload();renderStagnation();renderProgSelect();renderVolume();renderE1RM();renderPredictions();renderCycleCompare();renderDensityChart();renderPR();renderHistory();}if(t==='retos'){renderGoals();renderMedals();renderFormatPR();}if(t==='rutinas'){renderRoutines();renderRotation();}if(t==='hoy'){renderCycle();renderTodayReady();renderExtra();}}
 function mindTab(t,el){['video','checkin','ritual','habits'].forEach(x=>{const e=document.getElementById('mind-'+x);if(e)e.style.display='none';});document.getElementById('mind-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='habits'){renderHabits();renderHabitStreak();renderHealthScore();}else if(t==='ritual'){renderMindSteps();renderMindTimer();}else if(t==='checkin'){renderCheckin();renderCheckinTrend();}else{renderVideoCats();}}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400);}
 function closeModal(){document.getElementById('modalBg').classList.remove('on');}
@@ -443,7 +443,12 @@ function renderSessionBody(){const s=DB.session;if(!s)return;let html='';
       let sugTxt=sug?`<div class="prev" style="color:var(--gold)">🎯 Sugerencia: ${sug}</div>`:'';
       const noteVal=DB.exNotes&&DB.exNotes[ex.name]||'';
       const noteTxt=`<input value="${noteVal.replace(/"/g,'&quot;')}" placeholder="📝 nota (agarre, molestia...)" oninput="setExNote('${ex.name.replace(/'/g,"")}',this.value)" style="font-size:12px;padding:7px 10px;margin-top:6px;background:var(--bg)">`;
-      const vidBtn=`<button class="btn-sm btn2" style="margin-top:6px" onclick="showExVideo('${ex.name.replace(/'/g,"")}')">🎬 Técnica</button>`;
+      const isIso=/plancha|isom|hang|wall ?sit|puente|hollow|dead ?hang|estátic/i.test(ex.name);
+      const tempoPreset=ex.tempo||(/tempo/i.test(ex.name)?'3-1-1':null);
+      const tempoBtn=isIso
+        ? `<button class="btn-sm btn2" style="margin-top:6px" onclick="openIso('${ex.name.replace(/'/g,"")}')">🧊 Isométrico</button>`
+        : `<button class="btn-sm btn2" style="margin-top:6px" onclick="openTempo('${ex.name.replace(/'/g,"")}','${tempoPreset||''}')">⏱️ Tempo</button>`;
+      const vidBtn=`<button class="btn-sm btn2" style="margin-top:6px" onclick="showExVideo('${ex.name.replace(/'/g,"")}')">🎬 Técnica</button> ${tempoBtn}`;
       const bw=/dominada|fondo|flexi|muscle.?up/i.test(ex.name);
       const bwHint=bw?`<div class="mini" style="margin:-2px 0 6px;color:var(--acc2)">💡 ¿Con goma? Apunta la ayuda en negativo: -15 = la goma te quita ~15 kg. Progresar = menos goma o más reps.</div>`:'';
       html+=`<div class="ex-block ${b.superset?'super':''}"><div class="ex-head"><span class="nm" onclick="exerciseMenu(${bi},${ei})" style="cursor:pointer">${ex.name} ${SUBS[ex.name]?'<span style="color:var(--acc2);font-size:13px">⇄</span>':''} <span style="color:var(--dim);font-size:12px">📊</span></span><span style="display:flex;gap:4px;align-items:center"><button class="btn-sm btn2" style="padding:4px 8px" onclick="moveEx(${bi},${ei},-1)">↑</button><button class="btn-sm btn2" style="padding:4px 8px" onclick="moveEx(${bi},${ei},1)">↓</button></span></div><div class="mini" style="margin:-4px 0 6px">${ex.reps} ${b.type==='fuerza'?'· RPE '+(ex.rpe||8):''} ${ex.rest?'· ⏸'+ex.rest+'s':''}</div>${bwHint}${prevTxt}${sugTxt}<div class="set-head"><span>#</span><span>Kg</span><span>Reps</span><span>${showRpe?'RPE':''}</span><span>✓</span></div>${ex.sets.map((st,j)=>{
@@ -1354,6 +1359,91 @@ function showTour(step){
   openModal(`<div style="text-align:center"><div style="font-size:40px;margin-bottom:8px">${t.split(' ')[0]}</div><h3>${t.substring(t.indexOf(' ')+1)}</h3><p style="font-size:15px;line-height:1.5;margin:12px 0">${txt}</p><div style="display:flex;justify-content:center;gap:6px;margin:14px 0">${TOUR.map((_,i)=>`<span style="width:8px;height:8px;border-radius:50%;background:${i===step?'var(--acc)':'var(--line)'}"></span>`).join('')}</div>${step<TOUR.length-1?`<button class="btn btn-acc2" onclick="showTour(${step+1})">Siguiente</button><br><button class="btn2" style="margin-top:8px" onclick="finishTour()">Saltar</button>`:`<button class="btn btn-acc2" onclick="finishTour()">¡Empezar!</button>`}</div>`);
 }
 function finishTour(){DB.tourDone=true;save();closeModal();toast('💪 ¡A darlo todo! Consulta el Manual en Ajustes cuando quieras');}
+
+/* ===================== CONTROL DE TEMPO E ISOMÉTRICOS ===================== */
+/* Guía cada repetición por fases (excéntrica-pausa-concéntrica) con voz, pitido y vibración.
+   Formato de tempo: "3-1-1" = 3s bajada, 1s pausa abajo, 1s subida. "3-1-1-0" añade pausa arriba. */
+let TEMPO={active:false,id:null};
+const TEMPO_PRESETS=['3-1-1','4-1-1','2-0-2','4-0-1','5-1-1','3-1-2','2-1-2'];
+function openTempo(name,preset){
+  const def=preset||'3-1-1';
+  openModal(`<h3>⏱️ Tempo · ${name||'ejercicio'}</h3>
+  <p class="mini" style="margin-bottom:10px">La app te guía cada repetición: bajada, pausa y subida, con voz y sonido. Ejecuta al ritmo que marca.</p>
+  <label>Tempo (bajada-pausa-subida)</label>
+  <select id="tempoSel">${TEMPO_PRESETS.map(t=>`<option ${t===def?'selected':''}>${t}</option>`).join('')}</select>
+  <label style="margin-top:8px">Repeticiones a guiar</label>
+  <input id="tempoReps" type="number" inputmode="numeric" value="8">
+  <div id="tempoLive" style="margin-top:14px"></div>
+  <button class="btn btn-acc2" style="margin-top:12px" id="tempoStartBtn" onclick="startTempo()">▶ Empezar</button>`);
+}
+function startTempo(){
+  const parts=document.getElementById('tempoSel').value.split('-').map(Number);
+  const reps=+document.getElementById('tempoReps').value||8;
+  const [down,pauseB,up,pauseT=0]=parts;
+  TEMPO={active:true,id:null,phases:[],rep:1,reps,phaseIdx:0,phaseLeft:0};
+  // construir secuencia de fases de UNA repetición
+  const seq=[];
+  if(down>0)seq.push({lbl:'BAJA',sec:down,col:'var(--acc2)',say:'Baja'});
+  if(pauseB>0)seq.push({lbl:'PAUSA',sec:pauseB,col:'var(--gold)',say:'Pausa'});
+  if(up>0)seq.push({lbl:'SUBE',sec:up,col:'var(--acc)',say:'Sube'});
+  if(pauseT>0)seq.push({lbl:'ARRIBA',sec:pauseT,col:'var(--gold)',say:'Arriba'});
+  TEMPO.seq=seq;TEMPO.phaseIdx=0;TEMPO.phaseLeft=seq[0].sec;
+  document.getElementById('tempoStartBtn').style.display='none';
+  speak(`Repetición 1. ${seq[0].say}`);beep(1);
+  TEMPO.id=setInterval(tempoTick,1000);renderTempoLive();
+}
+function tempoTick(){
+  TEMPO.phaseLeft--;
+  if(TEMPO.phaseLeft<=0){
+    TEMPO.phaseIdx++;
+    if(TEMPO.phaseIdx>=TEMPO.seq.length){
+      // fin de una repetición
+      if(TEMPO.rep>=TEMPO.reps){finishTempo();return;}
+      TEMPO.rep++;TEMPO.phaseIdx=0;TEMPO.phaseLeft=TEMPO.seq[0].sec;
+      beep(2);try{if(navigator.vibrate)navigator.vibrate(120);}catch(e){}
+      speak(`${TEMPO.rep}. ${TEMPO.seq[0].say}`);
+    }else{
+      const ph=TEMPO.seq[TEMPO.phaseIdx];TEMPO.phaseLeft=ph.sec;
+      beep(1);try{if(navigator.vibrate)navigator.vibrate(60);}catch(e){}
+      speak(ph.say);
+    }
+  }
+  renderTempoLive();
+}
+function renderTempoLive(){
+  const el=document.getElementById('tempoLive');if(!el||!TEMPO.active)return;
+  const ph=TEMPO.seq[TEMPO.phaseIdx];
+  el.innerHTML=`<div class="timer-hero go" style="background:${ph.col}22"><div class="phase" style="color:${ph.col}">${ph.lbl}</div><div class="clock" style="color:${ph.col};font-size:56px">${TEMPO.phaseLeft}</div><div class="sub">Repetición ${TEMPO.rep} de ${TEMPO.reps}</div><div class="timer-ctrl"><button class="btn2" onclick="stopTempo()">Parar</button></div></div>`;
+}
+function finishTempo(){clearInterval(TEMPO.id);TEMPO.active=false;speak('Serie completada');beep(3);try{if(navigator.vibrate)navigator.vibrate([200,80,200]);}catch(e){}const el=document.getElementById('tempoLive');if(el)el.innerHTML='<div class="note">✅ Serie completada con tempo controlado.</div>';toast('✅ Serie con tempo completada');}
+function stopTempo(){clearInterval(TEMPO.id);TEMPO.active=false;try{speechSynthesis.cancel();}catch(e){}const el=document.getElementById('tempoLive');if(el)el.innerHTML='';const b=document.getElementById('tempoStartBtn');if(b)b.style.display='block';}
+
+/* Isométrico / mantenimiento (plancha, hang, wall sit, pausa) */
+let ISO={active:false,id:null,left:0};
+function openIso(name){
+  openModal(`<h3>🧊 Isométrico · ${name||'mantenimiento'}</h3>
+  <p class="mini" style="margin-bottom:10px">Para planchas, hangs, wall sits o pausas. Elige el tiempo a mantener; la app avisa al empezar, en la recta final y al terminar.</p>
+  <label>Segundos a mantener</label>
+  <select id="isoSec"><option>20</option><option>30</option><option selected>45</option><option>60</option><option>90</option><option>120</option></select>
+  <div id="isoLive" style="margin-top:14px"></div>
+  <button class="btn btn-acc2" style="margin-top:12px" id="isoStartBtn" onclick="startIso()">▶ Empezar</button>`);
+}
+function startIso(){
+  const sec=+document.getElementById('isoSec').value||45;
+  ISO={active:true,id:null,left:sec,total:sec};
+  document.getElementById('isoStartBtn').style.display='none';
+  speak(`Mantén la posición. ${sec} segundos`);beep(2);
+  ISO.id=setInterval(isoTick,1000);renderIsoLive();
+}
+function isoTick(){
+  ISO.left--;
+  if(ISO.left===10)speak('Diez segundos');
+  if(ISO.left<=5&&ISO.left>0){beep(1);try{if(navigator.vibrate)navigator.vibrate(60);}catch(e){}}
+  if(ISO.left<=0){clearInterval(ISO.id);ISO.active=false;speak('Descansa');beep(3);try{if(navigator.vibrate)navigator.vibrate([200,80,200]);}catch(e){}const el=document.getElementById('isoLive');if(el)el.innerHTML='<div class="note">✅ ¡Aguantado!</div>';toast('✅ Isométrico completado');return;}
+  renderIsoLive();
+}
+function renderIsoLive(){const el=document.getElementById('isoLive');if(!el||!ISO.active)return;const pct=Math.round((ISO.total-ISO.left)/ISO.total*100);const col=ISO.left<=5?'var(--acc)':'var(--acc2)';el.innerHTML=`<div class="timer-hero go"><div class="phase" style="color:${col}">MANTÉN</div><div class="clock" style="color:${col};font-size:56px">${ISO.left}s</div><div style="height:6px;background:var(--bg3);border-radius:4px;margin:8px 12px 0"><div style="height:100%;background:${col};border-radius:4px;width:${pct}%"></div></div><div class="timer-ctrl"><button class="btn2" onclick="stopIso()">Parar</button></div></div>`;}
+function stopIso(){clearInterval(ISO.id);ISO.active=false;try{speechSynthesis.cancel();}catch(e){}const el=document.getElementById('isoLive');if(el)el.innerHTML='';const b=document.getElementById('isoStartBtn');if(b)b.style.display='block';}
 
 /* ===================== MENTE · VÍDEOS GUIADOS ===================== */
 const VIDEO_LIB=[

@@ -198,7 +198,7 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 
 <!-- ENTRENO -->
 <section class="view" id="v-train">
-  <div class="tabs"><button class="on" onclick="trainTab('hoy',this)">Hoy</button><button onclick="trainTab('carrera',this)">🏃 Carrera</button><button onclick="trainTab('prog',this)">Progreso</button><button onclick="trainTab('retos',this)">Retos</button><button onclick="trainTab('rutinas',this)">Rutinas</button></div>
+  <div class="tabs"><button class="on" onclick="trainTab('hoy',this)">Hoy</button><button onclick="trainTab('prog',this)">Progreso</button><button onclick="trainTab('retos',this)">Retos</button><button onclick="trainTab('rutinas',this)">Rutinas</button></div>
   <div id="train-hoy">
     <div class="card"><h3 id="cycleTitle">📦 Ciclo</h3><div id="cycleInfo"></div><div class="cycle-bar" id="cycleBar"></div><div id="cycleAlert"></div><button class="btn2" style="margin-top:11px" onclick="openCycle()">Ajustar ciclo</button></div>
     <div class="card" id="readyCard"><h3 id="readyTitle">📅 Hoy</h3><div id="todayReady"></div></div>
@@ -207,10 +207,6 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
       <div class="tic" id="runTic" onclick="toggleExtra('run')"><div class="bi">🏃</div><div class="bt" id="runTicTxt">Hice carrera hoy</div><div class="bck">✓</div></div>
     </div>
     <div class="card" id="sessionCard" style="display:none"><div id="sessionHead"></div><div id="timerHero"></div><div id="sessionBody"></div><div class="row" style="margin-top:8px"><button class="btn-acc2" style="flex:1" onclick="finishSession()">Finalizar y guardar</button><button class="btn2 btn-sm" onclick="cancelSession()">Cancelar</button></div></div>
-  </div>
-  <div id="train-carrera" style="display:none">
-    <div id="runLive"></div>
-    <div class="card"><h3>🏃 Mi plan de carrera</h3><div id="runView"></div></div>
   </div>
   <div id="train-prog" style="display:none">
     <div class="card" style="border-color:var(--gold)"><h3>🪶 Descarga (deload)</h3><div id="deloadView"></div></div>
@@ -236,6 +232,11 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 </section>
 
 <!-- CUERPO -->
+<section class="view" id="v-run">
+  <div id="runLive"></div>
+  <div class="card"><h3>🏃 Mi plan de carrera</h3><div id="runView"></div></div>
+</section>
+
 <section class="view" id="v-body">
   <div class="card"><h3>📏 Control corporal <span class="tag c2">cada 2 sem</span></h3><div id="bodyAlert"></div><div id="bodyLatest"></div><button class="btn" style="margin-top:12px" onclick="openMeasure()">+ Registrar medición de hoy</button></div>
   <div class="card"><h3>📊 Tendencia de peso <span class="tag c2">media 7 días</span></h3><div id="weightTrend"></div></div>
@@ -281,6 +282,7 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 <nav>
   <button class="on" onclick="nav('home',this)"><span class="ic">📊</span>Panel</button>
   <button onclick="nav('train',this)"><span class="ic">💪</span>Entreno</button>
+  <button onclick="nav('run',this)"><span class="ic">🏃</span>Carrera</button>
   <button onclick="nav('body',this)"><span class="ic">📏</span>Cuerpo</button>
   <button onclick="nav('mind',this)"><span class="ic">🧠</span>Mente</button>
 </nav>
