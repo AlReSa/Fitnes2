@@ -103,16 +103,16 @@ const MIND=[{t:'0-2',d:'Respira: 6 respiraciones, inhala 4s / exhala 6s. Suelta 
 function buildRoutines(rotIdx){
   const pick=(arr)=>arr[rotIdx%arr.length];
   return [
-    {id:'r1',name:'PUSH',day:'Lunes',blocks:[
-      {type:'fuerza',label:'💪 Bloque 1 · FUERZA',exercises:[{name:pick(MAIN_ROT.Lunes),sets:4,reps:'3-5',rest:150,rpe:8,kg:DB.profile.bench}]},
-      {type:'hipertrofia',label:'🎯 Bloque 2 · ACCESORIOS',superset:true,rest:30,exercises:[{name:'Press inclinado mancuernas',sets:3,reps:'10-12',kg:24},{name:'Aperturas / cruce poleas',sets:3,reps:'12-15',kg:12},{name:'Elevaciones laterales',sets:3,reps:'15',kg:10}]},
-      {type:'densidad',label:'⚡ Bloque 3 · DENSIDAD',density:true,exercises:[{name:'Push press KB',sets:1,reps:'AMRAP',kg:20}]},
-      {type:'finisher',label:'🔥 Bloque 4 · FINISHER',finisher:true,exercises:[{name:'Finisher dinámico',sets:1,reps:'5 min',kg:0}]}
-    ]},
-    {id:'r2',name:'PULL',day:'Miércoles',blocks:[
+    {id:'r1',name:'PULL',day:'Lunes',blocks:[
       {type:'fuerza',label:'💪 Bloque 1 · FUERZA',exercises:[{name:pick(MAIN_ROT.Miércoles),sets:4,reps:'4-6',rest:150,rpe:8,kg:0}]},
       {type:'hipertrofia',label:'🎯 Bloque 2 · ACCESORIOS',superset:true,rest:30,exercises:[{name:'Remo gorila KB',sets:3,reps:'10-12',kg:26},{name:'Curl bíceps barra',sets:3,reps:'12',kg:30},{name:'Face pull',sets:3,reps:'15-20',kg:25}]},
       {type:'densidad',label:'⚡ Bloque 3 · DENSIDAD',density:true,exercises:[{name:'KB swings',sets:1,reps:'EMOM',kg:24}]},
+      {type:'finisher',label:'🔥 Bloque 4 · FINISHER',finisher:true,exercises:[{name:'Finisher dinámico',sets:1,reps:'5 min',kg:0}]}
+    ]},
+    {id:'r2',name:'PUSH',day:'Miércoles',blocks:[
+      {type:'fuerza',label:'💪 Bloque 1 · FUERZA',exercises:[{name:pick(MAIN_ROT.Lunes),sets:4,reps:'3-5',rest:150,rpe:8,kg:DB.profile.bench}]},
+      {type:'hipertrofia',label:'🎯 Bloque 2 · ACCESORIOS',superset:true,rest:30,exercises:[{name:'Press inclinado mancuernas',sets:3,reps:'10-12',kg:24},{name:'Aperturas / cruce poleas',sets:3,reps:'12-15',kg:12},{name:'Elevaciones laterales',sets:3,reps:'15',kg:10}]},
+      {type:'densidad',label:'⚡ Bloque 3 · DENSIDAD',density:true,exercises:[{name:'Push press KB',sets:1,reps:'AMRAP',kg:20}]},
       {type:'finisher',label:'🔥 Bloque 4 · FINISHER',finisher:true,exercises:[{name:'Finisher dinámico',sets:1,reps:'5 min',kg:0}]}
     ]},
     {id:'r3',name:'LEGS',day:'Sábado',blocks:[
@@ -178,16 +178,29 @@ function mindTab(t,el){['video','checkin','ritual','habits'].forEach(x=>{const e
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400);}
 function closeModal(){document.getElementById('modalBg').classList.remove('on');}
 function openModal(h){document.getElementById('modalBox').innerHTML='<button class="close" onclick="closeModal()">×</button>'+h;document.getElementById('modalBg').classList.add('on');}
-function beep(n=1){
-  try{const c=new(window.AudioContext||window.webkitAudioContext)();
-    for(let i=0;i<n;i++){const t0=c.currentTime+i*0.32;
-      const o=c.createOscillator(),g=c.createGain();o.type='square';o.connect(g);g.connect(c.destination);
-      o.frequency.setValueAtTime(660,t0);o.frequency.setValueAtTime(990,t0+0.12);
-      g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(0.4,t0+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t0+0.28);
-      o.start(t0);o.stop(t0+0.3);
-    }setTimeout(()=>c.close(),n*340+200);
+let _actx=null;
+function initAudio(){
+  try{
+    if(!_actx)_actx=new(window.AudioContext||window.webkitAudioContext)();
+    if(_actx.state==='suspended')_actx.resume();
+    // "toque" silencioso para desbloquear en iOS
+    const o=_actx.createOscillator(),g=_actx.createGain();g.gain.value=0;o.connect(g);g.connect(_actx.destination);o.start();o.stop(_actx.currentTime+0.01);
   }catch(e){}
-  try{if(navigator.vibrate)navigator.vibrate(n>1?[120,80,120,80,200]:[200]);}catch(e){}
+}
+function beep(n=1,strong){
+  try{
+    if(!_actx)_actx=new(window.AudioContext||window.webkitAudioContext)();
+    if(_actx.state==='suspended')_actx.resume();
+    const c=_actx;
+    for(let i=0;i<n;i++){const t0=c.currentTime+i*0.34;
+      const o=c.createOscillator(),g=c.createGain();o.type='square';o.connect(g);g.connect(c.destination);
+      const f=strong?880:660;
+      o.frequency.setValueAtTime(f,t0);o.frequency.setValueAtTime(f*1.5,t0+0.12);
+      g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(strong?0.7:0.45,t0+0.02);g.gain.exponentialRampToValueAtTime(0.0001,t0+0.3);
+      o.start(t0);o.stop(t0+0.32);
+    }
+  }catch(e){}
+  try{if(navigator.vibrate)navigator.vibrate(n>1?[150,80,150,80,250]:[220]);}catch(e){}
 }
 function fd(ds){const d=new Date(ds+'T00:00');return d.toLocaleDateString('es-ES',{weekday:'short',day:'numeric',month:'short'});}
 function daysBetween(a,b){return Math.floor((new Date(b)-new Date(a))/864e5);}
@@ -432,7 +445,7 @@ function renderSessionBody(){const s=DB.session;if(!s)return;let html='';
     html+=`<div class="block-head b-${b.type}">${b.label}${sub?`<span class="sub">${sub}${b.superset?' · superserie descanso 30s':''}</span>`:''}</div>`;
     if(b._meta){
       const vidBtn=b._meta.q?`<button class="btn-sm btn2" style="margin-top:8px" onclick="showFormatVideo('${b._meta.q.replace(/'/g,"")}','${b._meta.label.replace(/'/g,"")}')">🎬 Ver cómo se hace</button>`:'';
-      html+=`<div class="note ${b.finisher?'gold':''}"><b>${b._meta.label}</b><br>${b._meta.desc}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn-sm ${b.finisher?'btn-gold':'btn-acc2'}" onclick="startBlockTimer(${bi})">▶ Cronómetro</button>${vidBtn}</div></div><div id="blockTimer_${bi}"></div>`;
+      html+=`<div class="note ${b.finisher?'gold':''}"><b>${b._meta.label}</b><br>${b._meta.desc}<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn-sm ${b.finisher?'btn-gold':'btn-acc2'}" onclick="chooseProtocol(${bi})">▶ Cronómetro guiado</button>${vidBtn}</div></div><div id="blockTimer_${bi}"></div>`;
       if(b.density){html+=`<div class="ex-block" style="margin-top:8px"><div class="mini">Apunta tu resultado (reps/rondas/tiempo) para batir tu marca:</div><input id="dens_${bi}" placeholder="ej. 8 rondas / 4:30" value="${b.result||''}" oninput="DB.session.blocks[${bi}].result=this.value;save()" style="margin-top:6px"></div>`;}
       return;
     }
@@ -528,11 +541,45 @@ function tickRest(){T.sec--;if(T.sec<=0){beep(2);stopT();return;}renderFloatTime
 function restT(sec){if(DB.session){DB.session.restTarget+=sec;}T.phase='rest';T.sec=sec;T.label='descanso';T.running=true;if(T.id)clearInterval(T.id);T.id=setInterval(()=>{if(DB.session)DB.session.restAccum++;tickRest();},1000);renderFloatTimer();}
 function speak(txt){try{if(!DB.settings||DB.settings.voice===false)return;const u=new SpeechSynthesisUtterance(txt);u.lang='es-ES';u.rate=1.05;u.volume=1;speechSynthesis.cancel();speechSynthesis.speak(u);}catch(e){}}
 
+/* Selector de protocolo: el usuario elige cómo quiere que la app le guíe.
+   Presets de intervalos habituales + los del propio ejercicio. */
+const INTERVAL_PRESETS=[
+  {id:'30-10-8',lbl:'Tabata 20/10 ×8',work:20,rest:10,rounds:8},
+  {id:'30-30',lbl:'30/30 ×10',work:30,rest:30,rounds:10},
+  {id:'40-20',lbl:'40/20 ×8',work:40,rest:20,rounds:8},
+  {id:'45-15',lbl:'45/15 ×8',work:45,rest:15,rounds:8},
+  {id:'30-10',lbl:'30/10 ×10',work:30,rest:10,rounds:10},
+  {id:'60-30',lbl:'60/30 ×6',work:60,rest:30,rounds:6},
+  {id:'emom',lbl:'EMOM ×10',kind:'emom',minSec:60,rounds:10},
+  {id:'amrap5',lbl:'AMRAP 5 min',kind:'amrap',totalSec:300},
+  {id:'amrap8',lbl:'AMRAP 8 min',kind:'amrap',totalSec:480}
+];
+function chooseProtocol(bi){
+  initAudio();
+  const meta=DB.session.blocks[bi]._meta;if(!meta)return;
+  const own=meta.proto;
+  let ownBtn='';
+  if(own){const lbl=own.kind==='intervals'?`${own.work}/${own.rest} ×${own.rounds}`:own.kind==='emom'?`EMOM ×${own.rounds}`:own.kind==='amrap'?`AMRAP ${Math.round(own.totalSec/60)}min`:'Como viene';ownBtn=`<button class="btn btn-gold" style="width:100%;margin-bottom:10px" onclick="startBlockTimerCustom(${bi},null)">▶ Usar el del ejercicio (${lbl})</button>`;}
+  openModal(`<h3>⏱️ ${meta.label}</h3><p class="mini" style="margin-bottom:10px">Elige cómo quieres que la app te guíe. Te avisará en cada cambio con sonido, vibración y voz.</p>${ownBtn}<div style="font-size:12px;color:var(--dim);margin-bottom:6px">O elige un formato:</div><div style="display:flex;flex-direction:column;gap:6px">${INTERVAL_PRESETS.map((p,i)=>`<button class="btn2" onclick="startBlockTimerCustom(${bi},${i})">${p.lbl}</button>`).join('')}</div>`);
+}
+function startBlockTimerCustom(bi,presetIdx){
+  closeModal();
+  const meta=DB.session.blocks[bi]._meta;if(!meta)return;
+  if(presetIdx!==null){
+    const p=INTERVAL_PRESETS[presetIdx];
+    if(p.kind==='emom')meta._activeProto={kind:'emom',minSec:p.minSec,rounds:p.rounds,workName:'Trabajo'};
+    else if(p.kind==='amrap')meta._activeProto={kind:'amrap',totalSec:p.totalSec};
+    else meta._activeProto={kind:'intervals',work:p.work,rest:p.rest,rounds:p.rounds,workName:'A TOPE',restName:'Descanso'};
+  }else{meta._activeProto=meta.proto;}
+  startBlockTimer(bi);
+}
+
 /* Motor de protocolos: entiende tabata, EMOM, AMRAP, intervalos y timer plano.
    Cambio de fase con sonido fuerte + vibración + voz + barra visual. */
 function startBlockTimer(bi){
+  initAudio();
   const meta=DB.session.blocks[bi]._meta;if(!meta)return;
-  const p=meta.proto||{kind:'timer',totalSec:meta.sec||300,direction:meta.timer==='up'?'up':'down'};
+  const p=meta._activeProto||meta.proto||{kind:'timer',totalSec:meta.sec||300,direction:meta.timer==='up'?'up':'down'};
   T.phase='format';T.label=meta.label;T.running=true;if(T.id)clearInterval(T.id);
   T._proto=p;T._round=1;T._sub='work';T._bi=bi;
   if(p.kind==='intervals'){T.sec=p.work;T._phaseSec=p.work;speak(`Empieza. Ronda 1. ${p.workName||'Trabajo'}`);}
@@ -546,9 +593,9 @@ function tickBlock(){
   const p=T._proto;
   if(p.kind==='intervals'){
     T.sec--;
-    if(T.sec===3||T.sec===2||T.sec===1)try{if(navigator.vibrate)navigator.vibrate(60);}catch(e){}
+    if(T.sec===3||T.sec===2||T.sec===1){beep(1);try{if(navigator.vibrate)navigator.vibrate(60);}catch(e){}}
     if(T.sec<=0){
-      beep(3);try{if(navigator.vibrate)navigator.vibrate([200,60,200]);}catch(e){}
+      beep(3,true);try{if(navigator.vibrate)navigator.vibrate([200,60,200]);}catch(e){}
       if(T._sub==='work'){
         if(T._round>=p.rounds){finishBlock('¡Tabata completado!');return;}
         T._sub='rest';T.sec=p.rest;T._phaseSec=p.rest;speak(p.restName||'Descanso');
@@ -560,8 +607,9 @@ function tickBlock(){
     }
   }else if(p.kind==='emom'){
     T.sec--;
+    if(T.sec===3||T.sec===2||T.sec===1){beep(1);try{if(navigator.vibrate)navigator.vibrate(60);}catch(e){}}
     if(T.sec<=0){
-      beep(3);try{if(navigator.vibrate)navigator.vibrate([200,60,200]);}catch(e){}
+      beep(3,true);try{if(navigator.vibrate)navigator.vibrate([200,60,200]);}catch(e){}
       if(T._round>=p.rounds){finishBlock('¡EMOM completado!');return;}
       T._round++;T.sec=p.minSec;T._phaseSec=p.minSec;
       if(T._round===p.rounds)speak(`Última ronda. ${p.workName||''}`);
@@ -571,6 +619,7 @@ function tickBlock(){
     T.sec--;
     if(T.sec===60)speak('Un minuto');
     if(T.sec===10)speak('Diez segundos');
+    if(T.sec===3||T.sec===2||T.sec===1)beep(1);
     if(T.sec<=0){beep(3);finishBlock('¡Tiempo!');return;}
   }else{ // timer
     if(p.direction==='up'){T.sec++;}
@@ -648,7 +697,15 @@ function renderRoutines(){const el=document.getElementById('routineList');if(!el
   if(isS)head+=`<div class="note" style="margin-bottom:10px">Modo strongman adaptado a tu nivel: compuestos pesados primero, hipertrofia con tiempo bajo tensión (baja lento) y acarreos (farmer walk, zercher). Full-body, gran gasto y músculo funcional. Progresa 2,5 kg cuando cierres todas las series.</div>`;
   const list=DB.routines.map(r=>`<div class="ex-block"><div class="ex-head"><span class="nm">${r.name} <span class="split-tag">${r.day}</span></span><span><button class="btn-sm btn2" onclick="editRoutine('${r.id}')">✎</button> <button class="btn-sm btn2" onclick="changeDay('${r.id}')">📅</button> <button class="btn-sm btn2" onclick="startFlow('${r.id}')">▶</button></span></div>${r.blocks.map(b=>`<div class="mini" style="margin-top:4px"><b style="color:var(--acc)">${b.label.replace('Bloque','B').replace(' · ',': ')}</b> ${b.exercises.map(e=>e.name+(SUBS[e.name]?` <span style="color:var(--acc2);cursor:pointer" onclick="showSubs('${e.name.replace(/'/g,"")}')">⇄</span>`:'')).join(' · ')}</div>`).join('')}</div>`).join('');
   const box=`<div class="ex-block" style="border-color:var(--gold);margin-top:6px"><div class="ex-head"><span class="nm">🥊 BOXEO TÉCNICA <span class="split-tag" style="color:var(--gold)">guiado</span></span><button class="btn-sm btn-gold" onclick="startBoxSession()">▶ Empezar</button></div><div class="mini" style="margin-top:4px">5 rounds de 3 min con descanso de 1 min. Sombra, drills 1-2, combate imaginario y ráfagas, con vídeo y campana en cada round. Como tener un entrenador.</div></div>`;
-  el.innerHTML=head+list+box;
+  const reset=`<button class="btn2" style="margin-top:10px;width:100%;font-size:12px" onclick="resetRoutines()">🔄 Restaurar rutinas base de este modo</button><p class="mini" style="margin-top:4px;text-align:center">No borra tu historial de sesiones, solo repone las rutinas por defecto (útil si el orden se descuadró).</p>`;
+  el.innerHTML=head+list+box+reset;
+}
+function resetRoutines(){
+  if(!confirm('¿Reponer las rutinas base de este modo? Tu historial de entrenos NO se toca, solo se regeneran las plantillas de rutina.'))return;
+  if(DB.mode==='travel')DB.routines=travelRoutines();
+  else if(DB.mode==='strong'){DB.routines=strongRoutines();DB.strongRoutinesSaved=DB.routines;}
+  else{DB.routines=buildRoutines(DB.cycle.rotIndex||0);DB.gymRoutinesSaved=DB.routines;}
+  save();renderRoutines();renderTodayReady();toast('🔄 Rutinas base restauradas');
 }
 function setMode(m){if(DB.mode==='strong')DB.strongRoutinesSaved=DB.routines;if(DB.mode===m){renderRoutines();return;}
   // guardar las rutinas actuales en su cajón antes de cambiar
