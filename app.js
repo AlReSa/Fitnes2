@@ -94,6 +94,7 @@ let DB={
   goalWeight:105, lastBackup:null,
   goals:[], checkins:{},
   running:{setup:false,target:'10K',daysWeek:2,history:[],currentPlan:null,activeSession:null},
+  spin:{history:[]}, coreLog:[],
   pain:{}, tourDone:false
 };
 const DEF_HAB=[{id:'h1',ic:'💧',name:'3 L de agua'},{id:'h2',ic:'🌞',name:'Luz natural 10 min'},{id:'h3',ic:'🧠',name:'Ritual de mañana'},{id:'h4',ic:'🥩',name:'Proteína en cada comida'},{id:'h5',ic:'📵',name:'Pausa de pantalla cada hora'},{id:'h6',ic:'😴',name:'Dormir 7-8 h'}];
@@ -171,7 +172,7 @@ const BOX_SESSION={
 };
 
 /* ===== navegación ===== */
-function nav(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));el.classList.add('on');window.scrollTo(0,0);if(v==='home')renderDashboard();if(v==='mind'){renderVideoCats();renderHabits();}if(v==='body')renderBody();if(v==='run'){renderRunView();renderRunLive();}if(v==='train'){renderCycle();renderTodayReady();renderExtra();}}
+function nav(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));el.classList.add('on');window.scrollTo(0,0);if(v==='home')renderDashboard();if(v==='mind'){renderVideoCats();renderHabits();}if(v==='body')renderBody();if(v==='run'){renderSpinView();renderSpinLive();}if(v==='train'){renderCycle();renderTodayReady();renderExtra();}}
 function navBtn(i){return document.querySelectorAll('nav button')[i];}
 function trainTab(t,el){['hoy','prog','retos','rutinas'].forEach(x=>{const e=document.getElementById('train-'+x);if(e)e.style.display='none';});document.getElementById('train-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='prog'){renderDeload();renderStagnation();renderProgSelect();renderVolume();renderE1RM();renderPredictions();renderCycleCompare();renderDensityChart();renderPR();renderHistory();}if(t==='retos'){renderGoals();renderMedals();renderFormatPR();}if(t==='rutinas'){renderRoutines();renderRotation();}if(t==='hoy'){renderCycle();renderTodayReady();renderExtra();}}
 function mindTab(t,el){['video','checkin','ritual','habits'].forEach(x=>{const e=document.getElementById('mind-'+x);if(e)e.style.display='none';});document.getElementById('mind-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='habits'){renderHabits();renderHabitStreak();renderHealthScore();}else if(t==='ritual'){renderMindSteps();renderMindTimer();}else if(t==='checkin'){renderCheckin();renderCheckinTrend();}else{renderVideoCats();}}
@@ -529,8 +530,20 @@ function doFinishSession(){const s=DB.session;if(!s)return;
   closeModal();document.getElementById('sessionCard').style.display='none';renderTodayReady();renderCycle();renderDashboard();
   const volNow=sessionVolume(rec);const volPrev=lastPrev?sessionVolume(lastPrev):0;
   const volMsg=volPrev>0&&volNow>0?` · Vol ${volNow>volPrev?'+':''}${Math.round((volNow/volPrev-1)*100)}%`:'';
-  toast(np.length?`🏆 ¡RÉCORD en ${np[0]}! · Density ${rec.density}${volMsg}`:`💪 Guardado · Density ${rec.density}${volMsg}`);
+  toast(np.length?`🏆 ¡RÉCORD en ${np[0]}!${volMsg}`:`💪 Guardado${volMsg}`);
+  offerRecovery(rec.name);
 }
+function offerRecovery(sessionName){
+  const plan=recoveryPlanFor(sessionName);
+  const stMin=Math.round(plan.stretches.reduce((a,p)=>a+p.sec,0)/60);
+  const coreMin=Math.round(CORE_SEQ.reduce((a,p)=>a+p.sec,0)/60);
+  openModal(`<h3>✅ Sesión completada</h3><p class="mini" style="margin-bottom:12px">Buena sesión. Para recuperar bien, esto es lo que tu cuerpo necesita hoy según lo que has trabajado:</p>
+  <div class="ex-block" style="border-color:var(--acc2)"><b>🧘 Estiramientos · ${stMin} min</b><div class="mini" style="margin-top:4px">${plan.lower?'Tren inferior: cuádriceps, isquios, glúteo, cadera, gemelo.':'Tren superior: pecho, dorsal, tríceps, hombro, cuello.'}</div><button class="btn-acc2" style="width:100%;margin-top:8px" onclick="startStretch(${plan.lower})">▶ Empezar estiramientos</button></div>
+  ${plan.core?`<div class="ex-block" style="border-color:var(--viol)"><b>🔥 Core · ${coreMin} min</b><div class="mini" style="margin-top:4px">Hoy toca: no cargaste el core directamente y tienes margen esta semana.</div><button class="btn2" style="width:100%;margin-top:8px" onclick="startCore()">▶ Empezar core</button></div>`:`<div class="note" style="border-color:var(--dim)">🔥 Core no necesario hoy${plan.lower?': las piernas ya han cargado bastante el core.':'.'}</div>`}
+  <button class="btn2" style="margin-top:10px;width:100%" onclick="closeModal()">Ahora no</button>`);
+}
+function startStretch(lower){closeModal();const seq=(lower?ST_LOWER:ST_UPPER).map(p=>({...p}));runSequence('Estiramientos',seq,()=>renderDashboard());}
+function startCore(){closeModal();runSequence('Core',CORE_SEQ.map(p=>({...p})),()=>{coreDoneToday();renderDashboard();});}
 function cancelSession(){DB.session=null;resetT();save();releaseWake();document.getElementById('sessionCard').style.display='none';renderTodayReady();}
 
 /* ===== timers (con barra flotante siempre visible) ===== */
@@ -766,16 +779,19 @@ function bxFinish(){clearInterval(BX.id);const d=today();DB.extraLog[d]=DB.extra
 /* Recovery Score diario: combina carga reciente (entreno/boxeo/carrera) y check-in (sueño/estrés/energía) */
 function recoveryScore(){
   const d=today();
-  // carga: cuántas actividades intensas en los últimos 3 días
-  let load=0;for(let i=0;i<3;i++){const dd=new Date();dd.setDate(dd.getDate()-i);const ds=dd.toISOString().slice(0,10);if(DB.sessions.some(s=>s.date===ds))load+=2;const e=DB.extraLog[ds]||{};if(e.box)load+=1.5;if(e.run)load+=1.5;}
-  // sesión dura hoy/ayer baja recovery
+  // carga: cuántas actividades intensas en los últimos 3 días, ponderadas por intensidad
+  let load=0;for(let i=0;i<3;i++){const dd=new Date();dd.setDate(dd.getDate()-i);const ds=dd.toISOString().slice(0,10);
+    if(DB.sessions.some(s=>s.date===ds))load+=2;
+    const e=DB.extraLog[ds]||{};if(e.box)load+=1.5;if(e.run&&!e.spin)load+=1.5;
+    // spinning/remo/cinta: carga real según intensidad de la sesión guardada
+    const spins=(DB.spin.history||[]).filter(h=>h.date===ds);spins.forEach(s=>{load+=Math.max(0.4,(s.load||s.min*0.6)/15);});
+  }
   const c=DB.checkins[d]||{};
   let score=100;
-  score-=Math.min(40,load*7); // a más carga acumulada, menos recovery
-  if(c.sleep)score+=(c.sleep-2.5)*8; // dormir bien suma
-  if(c.stress)score-=(c.stress-2)*8; // estrés resta
+  score-=Math.min(45,load*7);
+  if(c.sleep)score+=(c.sleep-2.5)*8;
+  if(c.stress)score-=(c.stress-2)*8;
   if(c.energy)score+=(c.energy-2.5)*6;
-  // sensación de la última sesión
   const last=DB.sessions[0];if(last&&last.date>=new Date(Date.now()-2*864e5).toISOString().slice(0,10)){if(last.feel==='mala')score-=10;if(last.feel==='buena')score+=5;}
   return Math.max(5,Math.min(100,Math.round(score)));
 }
@@ -1215,6 +1231,431 @@ function saveFinishRun(dur){
   const pace=paceStr(dur/km);toast(`🏃 ${km} km en ${Math.round(dur/60)} min · ${pace}/km`);
 }
 
+/* ===================== SPINNING GUIADO ===================== */
+/* Genera sesiones según duración + tipo + tu estado (Recovery/fatiga).
+   Reutiliza el motor de intervalos por fases con avisos, voz, cuenta atrás de 5s. */
+
+const SPIN_TYPES={
+  base:{ic:'🚴',lbl:'Base aeróbica',desc:'Continuo a intensidad moderada. Resistencia y quema de grasa sin machacarte.',load:1.0},
+  hiit:{ic:'🔥',lbl:'Intervalos HIIT',desc:'Bloques fuertes y recuperaciones. Máximo gasto en poco tiempo.',load:1.6},
+  subida:{ic:'⛰️',lbl:'Simulación de subida',desc:'Resistencia progresiva. Fuerza de piernas sobre la bici.',load:1.4},
+  sprints:{ic:'⚡',lbl:'Sprints',desc:'Esfuerzos cortos máximos. Potencia y capacidad anaeróbica.',load:1.5},
+  tempo:{ic:'🫀',lbl:'Tempo / umbral',desc:'Bloques largos exigentes pero sostenibles. Sube tu umbral.',load:1.4},
+  piramide:{ic:'🔺',lbl:'Pirámide',desc:'Bloques que suben y bajan de duración. Muy completa.',load:1.5},
+  regen:{ic:'🌿',lbl:'Regenerativo',desc:'Pedaleo muy suave. Recupera activando la circulación sin fatiga.',load:0.5}
+};
+
+/* Construye la secuencia de fases según tipo y minutos. Cada fase: {lbl,sec,rpe,tip,kind} */
+function buildSpinSession(type,min){
+  const warm={lbl:'CALENTAMIENTO',sec:300,rpe:3,tip:'Pedaleo cómodo, sube poco a poco',kind:'warm'};
+  const cool={lbl:'VUELTA A LA CALMA',sec:300,rpe:2,tip:'Baja resistencia, suelta piernas',kind:'cool'};
+  // presupuesto de minutos para el cuerpo central (quitando 5+5 de warm/cool si cabe)
+  let coreMin=min-10;let hasWarm=true,hasCool=true;
+  if(min<=15){coreMin=min-4;warm.sec=120;cool.sec=120;} // sesiones cortas: warm/cool de 2min
+  const phases=[];phases.push({...warm});
+  let coreSec=coreMin*60;
+  const W=(lbl,sec,rpe,tip,kind)=>({lbl,sec,rpe,tip,kind:kind||'work'});
+  const R=(sec,rpe=3)=>({lbl:'RECUPERA',sec,rpe,tip:'Baja resistencia y recupera',kind:'rest'});
+  if(type==='base'||type==='regen'){
+    const rpe=type==='regen'?3:5;phases.push(W('RITMO CONTINUO',coreSec,rpe,type==='regen'?'Pedaleo suave y constante':'Ritmo sostenido cómodo','work'));
+  }else if(type==='hiit'){
+    // bloques de 30/30 x8 con 3 min suave entre bloques
+    let used=0;let block=1;
+    while(used<coreSec-120){
+      for(let i=0;i<8&&used<coreSec-60;i++){phases.push(W('TRABAJO',30,8,'Fuerte, sube resistencia','work'));phases.push(R(30));used+=60;}
+      if(used<coreSec-180){phases.push(W('SUAVE',180,4,'Rueda suave entre bloques','work'));used+=180;block++;}
+    }
+  }else if(type==='sprints'){
+    let used=0;while(used<coreSec-60){phases.push(W('SPRINT',10,10,'¡Todo lo que tengas!','sprint'));phases.push(R(50));used+=60;}
+  }else if(type==='subida'){
+    let used=0;while(used<coreSec-60){
+      phases.push(W('SUBIDA baja',180,5,'Sube resistencia, mantén cadencia','work'));
+      phases.push(W('SUBIDA media',180,6,'Más resistencia, sigue firme','work'));
+      phases.push(W('SUBIDA alta',120,8,'Resistencia alta, de pie si hace falta','work'));
+      phases.push(W('CIMA',60,9,'Máximo esfuerzo, ya casi','sprint'));
+      phases.push(R(120));used+=660;
+    }
+  }else if(type==='tempo'){
+    let used=0;while(used<coreSec-180){phases.push(W('RITMO ALTO',Math.min(480,coreSec-used-180),7,'Exigente pero sostenible','work'));used+=480;if(used<coreSec-180){phases.push(R(180));used+=180;}}
+  }else if(type==='piramide'){
+    const steps=[[60,60],[120,60],[180,60],[240,120],[180,60],[120,60],[60,0]];
+    steps.forEach(([w,r])=>{phases.push(W('FUERTE',w,8,'Sube intensidad progresiva','work'));if(r)phases.push(R(r));});
+  }
+  phases.push({...cool});
+  return phases;
+}
+
+/* ---- REMO ---- reutiliza el mismo formato de fases {lbl,sec,rpe,tip,kind} ---- */
+const ROW_TYPES={
+  aerobico:{ic:'🚣',lbl:'Remo aeróbico',desc:'Continuo moderado. Cuerpo entero, bajo impacto.',load:1.1},
+  intervalos:{ic:'🔥',lbl:'Remo intervalos',desc:'1 min fuerte / 1 min suave. Potencia aeróbica.',load:1.5},
+  piramide:{ic:'🔺',lbl:'Remo pirámide',desc:'Bloques 1-2-3-4-3-2-1 min. Completo.',load:1.5},
+  hiit:{ic:'⚡',lbl:'Remo HIIT',desc:'Bloques cortos muy intensos.',load:1.6},
+  recup:{ic:'🌿',lbl:'Remo recuperación',desc:'Palada suave y técnica.',load:0.5}
+};
+function buildRowSession(type,min){
+  const W=(lbl,sec,rpe,tip,kind)=>({lbl,sec,rpe,tip,kind:kind||'work'});
+  const R=(sec,rpe=3)=>({lbl:'SUAVE',sec,rpe,tip:'Palada suave, recupera',kind:'rest'});
+  const phases=[W('CALENTAMIENTO',180,3,'Paladas suaves, técnica','warm')];
+  let core=(min-6)*60;
+  if(type==='aerobico'||type==='recup'){phases.push(W('REMO CONTINUO',core,type==='recup'?3:5,type==='recup'?'Suave y técnico':'Ritmo sostenido cómodo','work'));}
+  else if(type==='intervalos'){let u=0;while(u<core-60){phases.push(W('FUERTE',60,8,'Palada potente','work'));phases.push(R(60));u+=120;}}
+  else if(type==='hiit'){let u=0;while(u<core-40){phases.push(W('TRABAJO',40,9,'A tope','sprint'));phases.push(R(80));u+=120;}}
+  else if(type==='piramide'){[60,120,180,240,180,120,60].forEach((w,i)=>{phases.push(W('FUERTE',w,8,'Sube intensidad','work'));if(i<6)phases.push(R(60));});}
+  phases.push({lbl:'VUELTA A LA CALMA',sec:180,rpe:2,tip:'Palada muy suave',kind:'cool'});
+  return phases;
+}
+
+/* ---- CINTA / CAMINATA INCLINADA ---- */
+const TREAD_TYPES={
+  caminata:{ic:'🚶',lbl:'Caminata rápida',desc:'Ritmo vivo en llano. Quema grasa sin impacto.',load:0.7},
+  inclinada:{ic:'⛰️',lbl:'Inclinada continua',desc:'Pendiente sostenida. Glúteo y gasto alto.',load:1.1},
+  pendiente:{ic:'🔥',lbl:'Intervalos de pendiente',desc:'Alterna pendiente alta y llano.',load:1.3},
+  piramide:{ic:'🔺',lbl:'Pirámide inclinación',desc:'Sube y baja la pendiente por bloques.',load:1.3},
+  recup:{ic:'🌿',lbl:'Caminata suave',desc:'Paseo de recuperación.',load:0.4}
+};
+function buildTreadSession(type,min){
+  const W=(lbl,sec,rpe,tip,kind)=>({lbl,sec,rpe,tip,kind:kind||'work'});
+  const R=(sec)=>({lbl:'LLANO',sec,rpe:3,tip:'Baja pendiente, recupera',kind:'rest'});
+  const phases=[W('CALENTAMIENTO',300,3,'Camina cómodo en llano','warm')];
+  let core=(min-8)*60;
+  if(type==='caminata'||type==='recup'){phases.push(W('RITMO VIVO',core,type==='recup'?3:5,type==='recup'?'Paso tranquilo':'Paso rápido, brazos activos','work'));}
+  else if(type==='inclinada'){phases.push(W('INCLINACIÓN',core,6,'Sube la pendiente y mantén el paso','work'));}
+  else if(type==='pendiente'){let u=0;while(u<core-120){phases.push(W('PENDIENTE ALTA',120,7,'Sube inclinación, aguanta','work'));phases.push(R(120));u+=240;}}
+  else if(type==='piramide'){[[120,3],[120,5],[120,7],[120,8],[120,6],[120,4]].forEach(([s,r])=>phases.push(W(r>=7?'PENDIENTE ALTA':r>=5?'PENDIENTE MEDIA':'PENDIENTE BAJA',s,r,'Ajusta inclinación','work')));}
+  phases.push({lbl:'VUELTA A LA CALMA',sec:180,rpe:2,tip:'Camina suave en llano',kind:'cool'});
+  return phases;
+}
+
+/* ---- BOXEO CARDIO ---- rounds guiados con el mismo motor ---- */
+const BOX_TYPES={
+  rounds3:{ic:'🥊',lbl:'3 rounds',desc:'Combate de sombra por rounds de 3 min con 1 min de descanso.',load:1.2,rounds:3},
+  rounds5:{ic:'🥊',lbl:'5 rounds',desc:'Sesión clásica de 5 rounds. Técnica y cardio.',load:1.5,rounds:5},
+  hiit:{ic:'🔥',lbl:'Boxeo HIIT',desc:'30 s ráfagas máximas / 30 s ligero. Quema alta.',load:1.6,rounds:0},
+  tecnica:{ic:'🎯',lbl:'Técnica suave',desc:'Rounds suaves centrados en técnica. Recuperación activa.',load:0.7,rounds:3}
+};
+function buildBoxSession(type,min){
+  const W=(lbl,sec,rpe,tip,kind)=>({lbl,sec,rpe,tip,kind:kind||'work'});
+  const phases=[W('CALENTAMIENTO',180,3,'Suelta hombros, muévete, sombra suave','warm')];
+  if(type==='hiit'){let u=0;const core=(min-6)*60;while(u<core-30){phases.push(W('RÁFAGA',30,9,'Combinaciones rápidas a tope','sprint'));phases.push({lbl:'LIGERO',sec:30,rpe:4,tip:'Sigue moviéndote, suave',kind:'rest'});u+=60;}}
+  else{const cfg=BOX_TYPES[type];const rounds=cfg.rounds;const rpe=type==='tecnica'?4:8;for(let r=1;r<=rounds;r++){phases.push(W('ROUND '+r,180,rpe,type==='tecnica'?'Técnica limpia, sin forzar':'Combina, muévete, no pares',r===rounds?'sprint':'work'));if(r<rounds)phases.push({lbl:'DESCANSO',sec:60,rpe:2,tip:'Respira, agua, sacude brazos',kind:'rest'});}}
+  phases.push({lbl:'VUELTA A LA CALMA',sec:120,rpe:2,tip:'Estira hombros y respira',kind:'cool'});
+  return phases;
+}
+
+/* ---- CARDIO MIXTO ---- encadena bloques de distintas modalidades ---- */
+function buildMixedSession(type,min){
+  // reparte el tiempo entre 3-4 modalidades con calentamiento y calma
+  const W=(lbl,sec,rpe,tip,kind)=>({lbl,sec,rpe,tip,kind:kind||'work'});
+  const phases=[W('CALENTAMIENTO',300,3,'Empieza suave en la primera máquina','warm')];
+  const core=min-8;
+  const blocks=type==='hiit'
+    ? [['🚴 Spinning fuerte',Math.round(core*0.3),7],['🚣 Remo intervalos',Math.round(core*0.25),8],['🚶 Cinta pendiente',Math.round(core*0.25),6],['🚴 Spinning sprints',Math.round(core*0.2),9]]
+    : [['🚴 Spinning',Math.round(core*0.35),5],['🚣 Remo',Math.round(core*0.3),6],['🚶 Cinta inclinada',Math.round(core*0.35),5]];
+  blocks.forEach(([lbl,m,rpe])=>phases.push(W(lbl.toUpperCase(),m*60,rpe,'Cambia de máquina y mantén el ritmo','work')));
+  phases.push({lbl:'VUELTA A LA CALMA',sec:180,rpe:2,tip:'Suave para bajar pulsaciones',kind:'cool'});
+  return phases;
+}
+const MIX_TYPES={
+  aerobico:{ic:'🔄',lbl:'Mixto aeróbico',desc:'Spinning + remo + cinta a ritmo sostenido. Variedad sin machacar.',load:1.2},
+  hiit:{ic:'🔥',lbl:'Mixto HIIT',desc:'Bloques intensos rotando de máquina. Máximo estímulo.',load:1.7}
+};
+
+/* ---- ROUTER central: cualquier modalidad -> lista de fases ---- */
+const CARDIO_MODES={
+  spin:{ic:'🚴',name:'Spinning',types:SPIN_TYPES,build:buildSpinSession},
+  row:{ic:'🚣',name:'Remo',types:ROW_TYPES,build:buildRowSession},
+  tread:{ic:'🚶',name:'Cinta / inclinada',types:TREAD_TYPES,build:buildTreadSession},
+  box:{ic:'🥊',name:'Boxeo cardio',types:BOX_TYPES,build:buildBoxSession},
+  mixed:{ic:'🔄',name:'Cardio mixto',types:MIX_TYPES,build:buildMixedSession}
+};
+function buildCardioSession(mode,type,min){return CARDIO_MODES[mode].build(type,min);}
+
+/* Recomendación según estado: si ayer/hoy hay carga, propone tipo e intensidad adecuados */
+function spinSuggestion(){
+  const rc=recoveryScore();
+  // ¿entrenó ayer piernas o fuerte?
+  const yst=new Date();yst.setDate(yst.getDate()-1);const ys=yst.toISOString().slice(0,10);
+  const trainedYst=DB.sessions.some(s=>s.date===ys)||(DB.extraLog[ys]&&(DB.extraLog[ys].box||DB.extraLog[ys].run));
+  const legsYst=DB.sessions.some(s=>s.date===ys&&/legs|pierna/i.test(s.name||''));
+  const trainedToday=DB.sessions.some(s=>s.date===today());
+  let type,min,reason;
+  if(rc<45||legsYst){type='regen';min=25;reason=legsYst?'Ayer entrenaste piernas: hoy mejor spinning regenerativo para recuperar sin cargar más.':`Recovery bajo (${rc}): sesión suave para recuperar.`;}
+  else if(rc<65||trainedYst||trainedToday){type='base';min=35;reason=trainedYst?'Ayer entrenaste: carga cardiovascular moderada, ni muy suave ni HIIT brutal.':`Recovery medio (${rc}): base aeróbica sostenible.`;}
+  else{type='hiit';min=30;reason=`Recovery alto (${rc}): buen día para intervalos de calidad.`;}
+  return {type,min,reason,rc};
+}
+
+function renderSpinView(){
+  const el=document.getElementById('spinView');if(!el)return;
+  const sug=spinSuggestion();const t=SPIN_TYPES[sug.type];
+  let html=`<div class="note" style="border-color:var(--acc2)">🧠 <b>Hoy te sugiero:</b> ${t.ic} ${t.lbl} · ${sug.min} min<br><span class="mini">${sug.reason}</span></div>
+  <button class="btn btn-acc2" style="margin-top:10px;width:100%" onclick="setupSpin('${sug.type}',${sug.min},'spin')">▶ Empezar la sesión sugerida</button>
+  <div style="margin-top:14px"><b style="font-family:Anton;font-size:13px">O móntala tú:</b></div>
+  <label style="margin-top:8px">Modalidad</label><select id="cMode" onchange="onCardioModeChange()">${Object.entries(CARDIO_MODES).map(([k,v])=>`<option value="${k}">${v.ic} ${v.name}</option>`).join('')}</select>
+  <label style="margin-top:8px">Tipo de sesión</label><select id="spinType">${Object.entries(SPIN_TYPES).map(([k,v])=>`<option value="${k}" ${k===sug.type?'selected':''}>${v.ic} ${v.lbl}</option>`).join('')}</select>
+  <label style="margin-top:8px">Duración</label><select id="spinMin"><option>15</option><option>20</option><option ${sug.min===30?'selected':''}>30</option><option>40</option><option>45</option><option>60</option></select>
+  <div id="spinTypeDesc" class="mini" style="margin-top:8px">${t.desc}</div>
+  <button class="btn2" style="margin-top:10px;width:100%" onclick="setupSpinManual()">Preparar esta sesión</button>`;
+  // resumen semanal cardio
+  const wk=weekDates();const spinWk=DB.spin.history.filter(h=>wk.includes(h.date));
+  const minWk=spinWk.reduce((a,h)=>a+h.min,0);
+  if(DB.spin.history.length)html+=`<div class="card" style="margin-top:14px"><h3>Esta semana en máquina</h3><div class="stat-grid c2"><div class="stat"><div class="v acc2">${minWk}</div><div class="l">min cardio</div></div><div class="stat"><div class="v acc">${spinWk.length}</div><div class="l">sesiones</div></div></div></div>`;
+  el.innerHTML=html;
+}
+function onCardioModeChange(){
+  const mode=document.getElementById('cMode').value;const types=CARDIO_MODES[mode].types;
+  const sel=document.getElementById('spinType');
+  sel.innerHTML=Object.entries(types).map(([k,v])=>`<option value="${k}">${v.ic} ${v.lbl}</option>`).join('');
+  document.getElementById('spinTypeDesc').textContent=types[sel.value].desc;
+  sel.onchange=()=>{document.getElementById('spinTypeDesc').textContent=types[sel.value].desc;};
+}
+function setupSpinManual(){const mode=document.getElementById('cMode').value;setupSpin(document.getElementById('spinType').value,+document.getElementById('spinMin').value,mode);}
+function setupSpin(type,min,mode){
+  mode=mode||'spin';
+  const phases=buildCardioSession(mode,type,min);
+  const totalSec=phases.reduce((a,p)=>a+p.sec,0);const m=CARDIO_MODES[mode];const ty=m.types[type];
+  openModal(`<h3>${ty.ic} ${ty.lbl} · ${Math.round(totalSec/60)} min</h3><p class="mini" style="margin-bottom:10px">${m.name}. Vista previa: la app te guiará fase por fase con voz, sonido y aviso de 5 segundos antes de cada cambio.</p><div style="max-height:260px;overflow:auto">${phases.map(p=>`<div class="sub-opt"><span>${p.lbl} <span class="mini">${p.tip}</span></span><span class="mini">${Math.floor(p.sec/60)}:${String(p.sec%60).padStart(2,'0')} · RPE ${p.rpe}</span></div>`).join('')}</div><button class="btn btn-acc2" style="margin-top:12px;width:100%" onclick="startSpin('${type}',${min},'${mode}')">▶ EMPEZAR</button>`);
+}
+
+/* Ejecutor: usa un motor de fases genérico con avisos (mismo patrón que finishers) */
+let SPIN={active:false,id:null,phases:[],idx:0,left:0,type:null,min:0,startTs:0,mode:'spin'};
+function startSpin(type,min,mode){
+  mode=mode||'spin';
+  initAudio();closeModal();
+  const phases=buildCardioSession(mode,type,min);
+  SPIN={active:true,id:null,phases,idx:0,left:phases[0].sec,type,min,startTs:Date.now(),mode};
+  if(DB.settings&&DB.settings.wakeLock)requestWake();
+  speak(`${phases[0].lbl}. ${Math.round(phases[0].sec/60)} minutos. Erre pe e ${phases[0].rpe}`);beep(2);
+  SPIN.id=setInterval(spinTick,1000);
+  const cont=document.querySelector('#cardio-spin');if(cont&&cont.scrollIntoView)cont.scrollIntoView({behavior:'smooth'});
+  renderSpinLive();
+}
+function spinTick(){
+  SPIN.left--;
+  const nextPh=SPIN.phases[SPIN.idx+1];
+  // aviso previo de 5 segundos
+  if(SPIN.left===5&&nextPh){speak(`Cambio en 5`);beep(1);}
+  if(SPIN.left===4||SPIN.left===3||SPIN.left===2||SPIN.left===1){if(nextPh){beep(1);try{if(navigator.vibrate)navigator.vibrate(60);}catch(e){}}}
+  if(SPIN.left<=0){
+    SPIN.idx++;
+    if(SPIN.idx>=SPIN.phases.length){finishSpin();return;}
+    const ph=SPIN.phases[SPIN.idx];SPIN.left=ph.sec;
+    beep(3,true);try{if(navigator.vibrate)navigator.vibrate([200,80,200]);}catch(e){}
+    const last=SPIN.idx===SPIN.phases.length-2;
+    speak(`${ph.lbl}. Erre pe e ${ph.rpe}. ${ph.tip}${last?'. Última parte':''}`);
+  }
+  renderSpinLive();
+}
+function spinPhaseColor(kind){return {warm:'var(--acc2)',cool:'var(--ok)',rest:'var(--acc2)',work:'var(--acc)',sprint:'var(--gold)'}[kind]||'var(--acc)';}
+function renderSpinLive(){
+  const el=document.getElementById('spinLive');if(!el)return;
+  if(!SPIN.active){el.innerHTML='';return;}
+  const ph=SPIN.phases[SPIN.idx];const col=spinPhaseColor(ph.kind);
+  const m=Math.floor(SPIN.left/60),s=SPIN.left%60;
+  const pct=Math.round((ph.sec-SPIN.left)/ph.sec*100);
+  const next=SPIN.phases[SPIN.idx+1];
+  const totalLeft=SPIN.phases.slice(SPIN.idx).reduce((a,p,i)=>a+(i===0?SPIN.left:p.sec),0);
+  el.innerHTML=`<div class="card" style="border-color:${col};margin-bottom:10px">
+    <div style="text-align:center">
+      <div style="font-family:Anton;font-size:26px;color:${col};letter-spacing:1px">${ph.lbl}</div>
+      <div style="font-family:Anton;font-size:64px;line-height:1;margin:4px 0">${m}:${String(s).padStart(2,'0')}</div>
+      <div class="tag" style="color:${col};font-size:14px">RPE ${ph.rpe} · esfuerzo ${['','muy suave','muy suave','suave','moderado','moderado','sostenido','fuerte','fuerte','muy fuerte','máximo'][ph.rpe]||''}</div>
+      <div style="font-size:13px;color:var(--dim);margin-top:6px">${ph.tip}</div>
+      <div style="height:8px;background:var(--bg3);border-radius:4px;margin:10px 0 0"><div style="height:100%;background:${col};border-radius:4px;width:${pct}%;transition:width .3s"></div></div>
+      ${next?`<div class="mini" style="margin-top:8px">Siguiente: ${next.lbl} · ${Math.floor(next.sec/60)}:${String(next.sec%60).padStart(2,'0')}</div>`:'<div class="mini" style="margin-top:8px">¡Última fase!</div>'}
+      <div class="mini">Fase ${SPIN.idx+1}/${SPIN.phases.length} · quedan ~${Math.ceil(totalLeft/60)} min</div>
+    </div>
+    <div class="timer-ctrl" style="margin-top:10px"><button class="btn2" onclick="skipSpinPhase()">Saltar fase ▶</button><button class="btn2" onclick="stopSpin()">Terminar</button></div>
+  </div>`;
+}
+function skipSpinPhase(){if(!SPIN.active)return;SPIN.left=1;}
+function finishSpin(){
+  clearInterval(SPIN.id);SPIN.active=false;
+  const dur=Math.round((Date.now()-SPIN.startTs)/1000);
+  const el=document.getElementById('spinLive');if(el)el.innerHTML='';
+  // carga estimada = min * factor de intensidad del tipo
+  const load=Math.round(SPIN.min*SPIN_TYPES[SPIN.type].load);
+  const modeName=CARDIO_MODES[SPIN.mode].name;const typeLbl=CARDIO_MODES[SPIN.mode].types[SPIN.type].lbl;
+  openModal(`<h3>✓ ${modeName} completado</h3><p class="mini" style="margin-bottom:10px">${typeLbl} · ${Math.round(dur/60)} min. Carga estimada: ${load}. Confirma para guardar.</p><label>RPE medio de la sesión (1-10)</label><input id="spinRpe" type="number" inputmode="numeric" value="${/recup|regen/.test(SPIN.type)?3:/hiit|sprint/.test(SPIN.type)?8:6}"><label style="margin-top:8px">Nota (opcional)</label><input id="spinNote" placeholder="Cómo fue"><button class="btn btn-acc2" style="margin-top:12px" onclick="saveSpin(${dur},${load})">Guardar</button>`);
+  speak('Sesión completada. Buen trabajo');beep(3,true);
+}
+function stopSpin(){if(SPIN.active&&!confirm('¿Terminar la sesión?'))return;finishSpin();}
+function saveSpin(dur,load){
+  const rpe=+document.getElementById('spinRpe').value||6;const note=document.getElementById('spinNote').value||'';
+  DB.spin.history.unshift({date:today(),mode:SPIN.mode,type:SPIN.type,min:Math.round(dur/60),rpe,load,note});
+  DB.extraLog[today()]=DB.extraLog[today()]||{};DB.extraLog[today()].run=true;DB.extraLog[today()].spin=true;DB.extraLog[today()].spinMin=(DB.extraLog[today()].spinMin||0)+Math.round(dur/60);
+  releaseWake();save();closeModal();renderSpinView();renderDashboard();toast('✅ Sesión guardada');
+}
+
+/* Historial de cardio (carrera + todas las modalidades de máquina) */
+function cardioTypeLabel(h){
+  if(h.mode==='run')return {ic:'🏃',lbl:RUN_TYPES[h.type]?.lbl||'Carrera'};
+  const m=CARDIO_MODES[h.mode||'spin'];return {ic:m?.ic||'🚴',lbl:(m&&m.types[h.type]?.lbl)||'Cardio'};
+}
+function renderCardioHist(){
+  const el=document.getElementById('cardioHist');if(!el)return;
+  const runs=(DB.running.history||[]).map(h=>({...h,mode:'run'}));
+  const machines=(DB.spin.history||[]).map(h=>({...h,mode:h.mode||'spin',km:0,duration:h.min*60}));
+  const all=[...runs,...machines].sort((a,b)=>b.date.localeCompare(a.date));
+  if(!all.length){el.innerHTML='<p class="empty">Aún no hay sesiones de cardio. Haz tu primera sesión.</p>';return;}
+  const wk=weekDates();const minWk=all.filter(h=>wk.includes(h.date)).reduce((a,h)=>a+Math.round((h.duration||h.min*60)/60),0);
+  const loadWk=all.filter(h=>wk.includes(h.date)).reduce((a,h)=>a+(h.load||0),0);
+  el.innerHTML=`<div class="stat-grid"><div class="stat"><div class="v acc2">${minWk}</div><div class="l">min esta semana</div></div><div class="stat"><div class="v gold">${loadWk}</div><div class="l">carga cardio</div></div><div class="stat"><div class="v acc">${all.length}</div><div class="l">sesiones</div></div></div>
+  <div style="margin-top:12px">${all.slice(0,20).map(h=>{const t=cardioTypeLabel(h);return `<div class="sub-opt"><span>${t.ic} ${fd(h.date)} · ${t.lbl}</span><span class="mini">${h.mode==='run'?h.km+' km':h.min+' min · RPE '+h.rpe}</span></div>`;}).join('')}</div>`;
+}
+
+function cardioTab(t,el){
+  ['spin','run','hist'].forEach(x=>{const e=document.getElementById('cardio-'+x);if(e)e.style.display='none';});
+  document.getElementById('cardio-'+t).style.display='block';
+  el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');
+  if(t==='spin'){renderSpinView();renderSpinLive();}
+  else if(t==='run'){renderRunView();renderRunLive();}
+  else if(t==='hist'){renderCardioHist();}
+}
+
+/* ===================== MOTOR DE SECUENCIAS GUIADAS (universal) ===================== */
+/* Reutiliza el patrón del cardio: una lista de fases {lbl,sec,tip,kind} guiada con
+   cuenta atrás, aviso de 5s, sonido, vibración y voz. Sirve para calentamiento,
+   estiramientos y core. Se muestra en un overlay para funcionar desde cualquier vista. */
+let SEQ={active:false,id:null,phases:[],idx:0,left:0,title:'',onDone:null};
+function runSequence(title,phases,onDone){
+  if(!phases||!phases.length){if(onDone)onDone();return;}
+  initAudio();
+  SEQ={active:true,id:null,phases,idx:0,left:phases[0].sec,title,onDone};
+  if(DB.settings&&DB.settings.wakeLock)requestWake();
+  let ov=document.getElementById('seqOverlay');
+  if(!ov){ov=document.createElement('div');ov.id='seqOverlay';ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(10,11,15,.97);display:flex;align-items:center;justify-content:center;padding:20px';document.body.appendChild(ov);}
+  ov.style.display='flex';
+  speak(`${title}. ${phases[0].lbl}`);beep(2);
+  SEQ.id=setInterval(seqTick,1000);renderSeq();
+}
+function seqTick(){
+  SEQ.left--;const next=SEQ.phases[SEQ.idx+1];
+  if(SEQ.left===5&&next){speak('Cambio en 5');beep(1);}
+  if(SEQ.left>=1&&SEQ.left<=3){beep(1);try{if(navigator.vibrate)navigator.vibrate(50);}catch(e){}}
+  if(SEQ.left<=0){
+    SEQ.idx++;
+    if(SEQ.idx>=SEQ.phases.length){finishSequence();return;}
+    const ph=SEQ.phases[SEQ.idx];SEQ.left=ph.sec;
+    beep(3,true);try{if(navigator.vibrate)navigator.vibrate([200,80,200]);}catch(e){}
+    const last=SEQ.idx===SEQ.phases.length-1;
+    speak(`${ph.lbl}. ${ph.tip||''}${last?'. Última':''}`);
+  }
+  renderSeq();
+}
+function seqColor(kind){return {warm:'var(--acc)',mobility:'var(--acc2)',activation:'var(--gold)',approach:'var(--acc)',stretch:'var(--acc2)',core:'var(--viol)',rest:'var(--ok)',cool:'var(--ok)'}[kind]||'var(--acc2)';}
+function renderSeq(){
+  const ov=document.getElementById('seqOverlay');if(!ov||!SEQ.active)return;
+  const ph=SEQ.phases[SEQ.idx];const col=seqColor(ph.kind);
+  const m=Math.floor(SEQ.left/60),s=SEQ.left%60;const pct=Math.round((ph.sec-SEQ.left)/ph.sec*100);
+  const next=SEQ.phases[SEQ.idx+1];
+  const totalLeft=SEQ.phases.slice(SEQ.idx).reduce((a,p,i)=>a+(i===0?SEQ.left:p.sec),0);
+  ov.innerHTML=`<div style="width:100%;max-width:440px;text-align:center">
+    <div class="mini" style="letter-spacing:2px;text-transform:uppercase">${SEQ.title}</div>
+    <div style="font-family:Anton;font-size:30px;color:${col};letter-spacing:1px;margin-top:6px">${ph.lbl}</div>
+    <div style="font-family:Anton;font-size:88px;line-height:1;margin:10px 0">${m}:${String(s).padStart(2,'0')}</div>
+    ${ph.tip?`<div style="font-size:15px;color:var(--dim);margin-bottom:10px">${ph.tip}</div>`:''}
+    <div style="height:10px;background:var(--bg3);border-radius:5px;margin:0 20px"><div style="height:100%;background:${col};border-radius:5px;width:${pct}%;transition:width .3s"></div></div>
+    ${next?`<div class="mini" style="margin-top:12px">Siguiente: ${next.lbl} · ${next.sec}s</div>`:'<div class="mini" style="margin-top:12px">¡Última!</div>'}
+    <div class="mini">Paso ${SEQ.idx+1}/${SEQ.phases.length} · quedan ~${Math.ceil(totalLeft/60)} min</div>
+    <div class="row" style="margin-top:20px;justify-content:center"><button class="btn2" onclick="skipSeq()">Saltar ▶</button><button class="btn2" onclick="pauseSeq()" id="seqPauseBtn">${SEQ.id?'Pausa':'Seguir'}</button><button class="btn2" onclick="quitSequence()">Salir</button></div>
+  </div>`;
+}
+function skipSeq(){if(SEQ.active)SEQ.left=1;}
+function pauseSeq(){if(!SEQ.active)return;if(SEQ.id){clearInterval(SEQ.id);SEQ.id=null;try{speechSynthesis.cancel();}catch(e){}}else{SEQ.id=setInterval(seqTick,1000);}renderSeq();}
+function finishSequence(){
+  if(SEQ.id)clearInterval(SEQ.id);SEQ.active=false;
+  speak('Completado. Buen trabajo');beep(3,true);try{if(navigator.vibrate)navigator.vibrate([250,80,250]);}catch(e){}
+  const ov=document.getElementById('seqOverlay');if(ov)ov.style.display='none';
+  releaseWake();const cb=SEQ.onDone;SEQ.onDone=null;toast('✅ '+SEQ.title+' completado');if(cb)cb();
+}
+function quitSequence(){if(SEQ.id)clearInterval(SEQ.id);SEQ.active=false;try{speechSynthesis.cancel();}catch(e){}const ov=document.getElementById('seqOverlay');if(ov)ov.style.display='none';releaseWake();const cb=SEQ.onDone;SEQ.onDone=null;if(cb)cb();}
+
+/* ---- Generadores de calentamiento según el músculo/tipo de la sesión ---- */
+const WU_LOWER=[
+  {lbl:'Movilidad de tobillo',sec:40,tip:'Rodilla sobre la punta, adelante y atrás',kind:'mobility'},
+  {lbl:'Apertura de cadera',sec:40,tip:'Círculos amplios de cadera a cada lado',kind:'mobility'},
+  {lbl:'Activación de glúteo',sec:40,tip:'Puente de glúteo, aprieta arriba',kind:'activation'},
+  {lbl:'Sentadilla corporal',sec:45,tip:'Profundas y controladas, sin peso',kind:'activation'},
+  {lbl:'Bisagra de cadera',sec:40,tip:'Peso muerto sin carga, espalda recta',kind:'activation'},
+  {lbl:'Core anti-extensión',sec:30,tip:'Plancha activa, abdomen firme',kind:'core'}
+];
+const WU_UPPER=[
+  {lbl:'Movilidad de hombros',sec:45,tip:'Círculos amplios adelante y atrás',kind:'mobility'},
+  {lbl:'Rotación de escápulas',sec:35,tip:'Junta y separa omóplatos',kind:'mobility'},
+  {lbl:'Manguito rotador',sec:40,tip:'Rotaciones externas con poco o nada de peso',kind:'activation'},
+  {lbl:'Scapular push-ups',sec:35,tip:'En plancha, solo mueve los omóplatos',kind:'activation'},
+  {lbl:'Muñecas y codos',sec:30,tip:'Círculos de muñeca y flexo-extensión',kind:'mobility'},
+  {lbl:'Flexiones progresivas',sec:35,tip:'Suaves, activa pecho y tríceps',kind:'activation'}
+];
+const WU_METCON=[
+  {lbl:'Movilidad dinámica',sec:60,tip:'Balanceos de brazos y piernas',kind:'mobility'},
+  {lbl:'Sentadillas + brazos',sec:45,tip:'Ritmo suave, sube pulsaciones',kind:'activation'},
+  {lbl:'Jumping jacks suaves',sec:45,tip:'Eleva temperatura corporal',kind:'warm'},
+  {lbl:'Patrón del ejercicio',sec:45,tip:'Ensaya el gesto que harás, sin carga',kind:'activation'},
+  {lbl:'Progresión de intensidad',sec:45,tip:'Sube el ritmo poco a poco',kind:'warm'}
+];
+function warmupFor(routine){
+  // detectar tipo por nombre + primer ejercicio de fuerza
+  const nm=(routine.name||'').toUpperCase();
+  const firstEx=(routine.blocks?.find(b=>b.type==='fuerza')?.exercises?.[0]?.name)||'';
+  let base;
+  if(/LEG|PIERNA/.test(nm)||/sentadilla|peso muerto|prensa|zancada|pierna/i.test(firstEx))base=WU_LOWER;
+  else if(/PULL|PUSH|TORSO|EMPUJE|TRACC/.test(nm)||/press|dominada|remo|banca|militar|fondo/i.test(firstEx))base=WU_UPPER;
+  else base=WU_METCON;
+  let seq=base.map(p=>({...p}));
+  // Recovery bajo -> añadir 2 pasos progresivos; alto -> quitar el último
+  const rc=recoveryScore();
+  if(rc<50){seq.unshift({lbl:'Cardio suave',sec:60,tip:'Caminar en el sitio o cuerda imaginaria',kind:'warm'});seq.push({lbl:'Segunda progresión',sec:40,tip:'Repite el patrón, algo más de ritmo',kind:'warm'});}
+  else if(rc>=80&&seq.length>4)seq=seq.slice(0,seq.length-1);
+  // series de aproximación si hay ejercicio de fuerza con peso
+  const heavy=routine.blocks?.find(b=>b.type==='fuerza')?.exercises?.[0];
+  if(heavy&&+heavy.kg>40){const top=+heavy.kg;[[0.4,10],[0.6,5],[0.8,3]].forEach(([f,r])=>seq.push({lbl:`Aproximación ${Math.round(top*f/2.5)*2.5} kg`,sec:35,tip:`${r} reps suaves de ${heavy.name}`,kind:'approach'}));}
+  return seq;
+}
+
+/* ---- Estiramientos y core según lo trabajado ---- */
+const ST_LOWER=[
+  {lbl:'Cuádriceps de pie',sec:30,tip:'Talón al glúteo, rodillas juntas — izquierda',kind:'stretch'},
+  {lbl:'Cuádriceps — derecha',sec:30,tip:'Cambia de pierna',kind:'stretch'},
+  {lbl:'Isquios',sec:35,tip:'Pierna estirada, inclínate desde la cadera',kind:'stretch'},
+  {lbl:'Glúteo (figura 4)',sec:30,tip:'Tobillo sobre rodilla — izquierda',kind:'stretch'},
+  {lbl:'Glúteo — derecha',sec:30,tip:'Cambia de lado',kind:'stretch'},
+  {lbl:'Flexor de cadera',sec:35,tip:'Zancada baja, empuja cadera adelante',kind:'stretch'},
+  {lbl:'Gemelo en pared',sec:30,tip:'Talón al suelo, pierna atrás estirada',kind:'stretch'}
+];
+const ST_UPPER=[
+  {lbl:'Pecho en marco',sec:30,tip:'Antebrazo en la pared, gira el torso',kind:'stretch'},
+  {lbl:'Dorsal',sec:30,tip:'Brazo arriba, inclínate al lado contrario',kind:'stretch'},
+  {lbl:'Tríceps',sec:25,tip:'Codo arriba y atrás — izquierdo',kind:'stretch'},
+  {lbl:'Tríceps — derecho',sec:25,tip:'Cambia de brazo',kind:'stretch'},
+  {lbl:'Hombro cruzado',sec:25,tip:'Brazo cruzado al pecho — izquierdo',kind:'stretch'},
+  {lbl:'Hombro — derecho',sec:25,tip:'Cambia de brazo',kind:'stretch'},
+  {lbl:'Cuello y trapecio',sec:30,tip:'Oreja al hombro, suave a cada lado',kind:'stretch'}
+];
+const CORE_SEQ=[
+  {lbl:'Dead bug',sec:40,tip:'Brazo y pierna opuestos, zona lumbar pegada',kind:'core'},
+  {lbl:'Descanso',sec:20,tip:'Respira',kind:'rest'},
+  {lbl:'Plancha frontal',sec:40,tip:'Cuerpo en línea, glúteo y abdomen firmes',kind:'core'},
+  {lbl:'Descanso',sec:20,tip:'Respira',kind:'rest'},
+  {lbl:'Plancha lateral izq.',sec:30,tip:'Cadera arriba, línea recta',kind:'core'},
+  {lbl:'Plancha lateral der.',sec:30,tip:'Cambia de lado',kind:'core'},
+  {lbl:'Descanso',sec:20,tip:'Respira',kind:'rest'},
+  {lbl:'Hollow hold',sec:35,tip:'Lumbar pegada, brazos y piernas arriba',kind:'core'}
+];
+function recoveryPlanFor(sessionName){
+  const nm=(sessionName||'').toUpperCase();
+  const lower=/LEG|PIERNA|FULL/.test(nm);
+  const stretches=lower?ST_LOWER:ST_UPPER;
+  // ¿toca core? no si fue piernas pesadas (ya cargaste core), sí en tren superior, según frecuencia semanal
+  const wk=weekDates();const coreThisWeek=(DB.coreLog||[]).filter(d=>wk.includes(d)).length;
+  const doneToday=(DB.coreLog||[]).includes(today());
+  const core=!lower&&!doneToday&&coreThisWeek<3;
+  return {stretches,core,lower};
+}
+function coreDoneToday(){DB.coreLog=DB.coreLog||[];if(!DB.coreLog.includes(today()))DB.coreLog.push(today());save();}
+
 /* ===================== CHECK-IN DIARIO · HEALTH SCORE ===================== */
 const CHECKIN_Q=[
   {k:'mood',q:'¿Cómo estás?',opts:[['😞',1],['😐',2],['🙂',3],['😄',4]]},
@@ -1646,20 +2087,12 @@ function renderGoalProgress(){
 function openGoalWeight(){openModal(`<h3>🎯 Peso objetivo</h3><p class="mini" style="margin-bottom:10px">Tu meta de peso. La app calcula el progreso y estima cuándo llegarás según tu ritmo real.</p><label>Meta (kg)</label><input id="gwInput" type="number" inputmode="decimal" value="${DB.goalWeight||105}"><button class="btn" style="margin-top:14px" onclick="saveGoalWeight()">Guardar</button>`);}
 function saveGoalWeight(){const v=+document.getElementById('gwInput').value;if(v>0)DB.goalWeight=v;save();closeModal();renderGoalProgress();toast('🎯 Meta actualizada');}
 
-/* ===================== CALENTAMIENTO GUIADO ===================== */
-const WARMUPS={
-  PUSH:[{d:'Movilidad de hombros: círculos grandes 10 adelante + 10 atrás',sec:40},{d:'Rotaciones de muñeca y codo x10',sec:30},{d:'Band pull-apart o aperturas x15',sec:40},{d:'Flexiones lentas x10 (activación)',sec:40},{d:'Series de aproximación: barra vacía + 50% del peso',sec:60}],
-  PULL:[{d:'Movilidad de hombro y dorsal: colgarse 20s + círculos',sec:40},{d:'Band pull-apart x15',sec:30},{d:'Gato-camello x8 + rotación torácica x8/lado',sec:40},{d:'Remos ligeros con banda x15',sec:40},{d:'Aproximación: dominadas asistidas o jalón ligero x8',sec:60}],
-  LEGS:[{d:'Movilidad de cadera y tobillo: sentadilla profunda asistida 30s',sec:40},{d:'Círculos de cadera x8/lado + balanceos de pierna x10',sec:40},{d:'Sentadilla peso corporal x15',sec:40},{d:'Zancadas x8/pierna',sec:40},{d:'Aproximación: barra vacía + 50% sentadilla',sec:60}]
-};
-let WU={running:false,sec:0,idx:0,id:null,steps:[],name:''};
-function startWarmup(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;const key=r.name.includes('PUSH')||r.name.includes('TORSO')?'PUSH':r.name.includes('PULL')?'PULL':r.name.includes('LEGS')||r.name.includes('PIERNA')||r.name.includes('FULL')?'LEGS':'PUSH';WU={running:false,sec:WARMUPS[key][0].sec,idx:0,id:null,steps:WARMUPS[key],name:r.name};renderWarmup();}
-function renderWarmup(){let card=document.getElementById('warmupCard');if(!card){card=document.createElement('div');card.id='warmupCard';card.className='card';card.style.borderColor='var(--acc2)';document.getElementById('readyCard').after(card);}const s=WU.steps[WU.idx];const m=Math.floor(WU.sec/60),sec=WU.sec%60;card.innerHTML=`<h3>🔥 Calentamiento · ${WU.name} <span class="tag c2">${WU.idx+1}/${WU.steps.length}</span></h3><div class="timer-hero go"><div class="phase">PREPARACIÓN</div><div class="clock">${m}:${String(sec).padStart(2,'0')}</div><div class="sub">${s.d}</div><div class="timer-ctrl">${WU.running?`<button class="btn2" onclick="wuPause()">Pausa</button>`:`<button class="btn-acc2" onclick="wuStart()">Iniciar</button>`}<button class="btn2" onclick="wuNext()">Sig ▶</button><button class="btn2" onclick="wuClose()">Cerrar</button></div></div><div class="mini">${WU.steps.map((x,i)=>`<span class="pill" style="${i===WU.idx?'border-color:var(--acc2);color:var(--acc2)':''}">${i+1}</span>`).join('')}</div>`;card.scrollIntoView({behavior:'smooth'});}
-function wuStart(){WU.running=true;if(WU.id)clearInterval(WU.id);WU.id=setInterval(()=>{WU.sec--;if(WU.sec<=0){beep(1);if(WU.idx<WU.steps.length-1){WU.idx++;WU.sec=WU.steps[WU.idx].sec;}else{wuDone();return;}}renderWarmup();},1000);renderWarmup();}
-function wuPause(){WU.running=false;clearInterval(WU.id);renderWarmup();}
-function wuNext(){if(WU.idx<WU.steps.length-1){WU.idx++;WU.sec=WU.steps[WU.idx].sec;renderWarmup();}else wuDone();}
-function wuDone(){clearInterval(WU.id);beep(2);wuClose();toast('🔥 Calentado. ¡A entrenar!');}
-function wuClose(){clearInterval(WU.id);const c=document.getElementById('warmupCard');if(c)c.remove();WU={running:false,sec:0,idx:0,id:null,steps:[],name:''};}
+/* ===================== CALENTAMIENTO GUIADO (usa motor de secuencias) ===================== */
+function startWarmup(rid){
+  const r=DB.routines.find(x=>x.id===rid);if(!r)return;
+  const seq=warmupFor(r);const mins=Math.round(seq.reduce((a,p)=>a+p.sec,0)/60);
+  runSequence(`Calentamiento · ${r.name}`,seq,()=>{toast('🔥 Calentado. ¡A entrenar!');});
+}
 
 /* ===================== CRONÓMETRO DE INTERVALOS ===================== */
 let IV={running:false,sec:0,phase:'work',round:1,id:null,cfg:null};

@@ -233,8 +233,18 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 
 <!-- CUERPO -->
 <section class="view" id="v-run">
-  <div id="runLive"></div>
-  <div class="card"><h3>🏃 Mi plan de carrera</h3><div id="runView"></div></div>
+  <div class="tabs"><button class="on" onclick="cardioTab('spin',this)">🚴 Spinning</button><button onclick="cardioTab('run',this)">🏃 Carrera</button><button onclick="cardioTab('hist',this)">📊 Historial</button></div>
+  <div id="cardio-spin">
+    <div id="spinLive"></div>
+    <div class="card"><h3>🚴 Cardio guiado</h3><div id="spinView"></div></div>
+  </div>
+  <div id="cardio-run" style="display:none">
+    <div id="runLive"></div>
+    <div class="card"><h3>🏃 Mi plan de carrera</h3><div id="runView"></div></div>
+  </div>
+  <div id="cardio-hist" style="display:none">
+    <div class="card"><h3>📊 Historial de cardio</h3><div id="cardioHist"></div></div>
+  </div>
 </section>
 
 <section class="view" id="v-body">
@@ -282,7 +292,7 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 <nav>
   <button class="on" onclick="nav('home',this)"><span class="ic">📊</span>Panel</button>
   <button onclick="nav('train',this)"><span class="ic">💪</span>Entreno</button>
-  <button onclick="nav('run',this)"><span class="ic">🏃</span>Carrera</button>
+  <button onclick="nav('run',this)"><span class="ic">🫀</span>Cardio</button>
   <button onclick="nav('body',this)"><span class="ic">📏</span>Cuerpo</button>
   <button onclick="nav('mind',this)"><span class="ic">🧠</span>Mente</button>
 </nav>
