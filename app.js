@@ -94,7 +94,7 @@ let DB={
   goalWeight:105, lastBackup:null,
   goals:[], checkins:{},
   running:{setup:false,target:'10K',daysWeek:2,history:[],currentPlan:null,activeSession:null},
-  spin:{history:[]}, coreLog:[],
+  spin:{history:[]}, coreLog:[], diet:{log:{}},
   pain:{}, tourDone:false
 };
 const DEF_HAB=[{id:'h1',ic:'💧',name:'3 L de agua'},{id:'h2',ic:'🌞',name:'Luz natural 10 min'},{id:'h3',ic:'🧠',name:'Ritual de mañana'},{id:'h4',ic:'🥩',name:'Proteína en cada comida'},{id:'h5',ic:'📵',name:'Pausa de pantalla cada hora'},{id:'h6',ic:'😴',name:'Dormir 7-8 h'}];
@@ -172,10 +172,10 @@ const BOX_SESSION={
 };
 
 /* ===== navegación ===== */
-function nav(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));el.classList.add('on');window.scrollTo(0,0);if(v==='home')renderDashboard();if(v==='mind'){renderVideoCats();renderHabits();}if(v==='body')renderBody();if(v==='run'){renderSpinView();renderSpinLive();}if(v==='train'){renderCycle();renderTodayReady();renderExtra();}}
+function nav(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));el.classList.add('on');window.scrollTo(0,0);if(v==='home')renderDashboard();if(v==='mind'){renderMorning();renderVideoCats();renderHabits();}if(v==='body')renderBody();if(v==='run'){renderSpinView();renderSpinLive();}if(v==='train'){renderCycle();renderTodayReady();renderExtra();}}
 function navBtn(i){return document.querySelectorAll('nav button')[i];}
 function trainTab(t,el){['hoy','prog','retos','rutinas'].forEach(x=>{const e=document.getElementById('train-'+x);if(e)e.style.display='none';});document.getElementById('train-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='prog'){renderDeload();renderStagnation();renderProgSelect();renderVolume();renderE1RM();renderPredictions();renderCycleCompare();renderDensityChart();renderPR();renderHistory();}if(t==='retos'){renderGoals();renderMedals();renderFormatPR();}if(t==='rutinas'){renderRoutines();renderRotation();}if(t==='hoy'){renderCycle();renderTodayReady();renderExtra();}}
-function mindTab(t,el){['video','checkin','ritual','habits'].forEach(x=>{const e=document.getElementById('mind-'+x);if(e)e.style.display='none';});document.getElementById('mind-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='habits'){renderHabits();renderHabitStreak();renderHealthScore();}else if(t==='ritual'){renderMindSteps();renderMindTimer();}else if(t==='checkin'){renderCheckin();renderCheckinTrend();}else{renderVideoCats();}}
+function mindTab(t,el){['morning','video','checkin','ritual','habits'].forEach(x=>{const e=document.getElementById('mind-'+x);if(e)e.style.display='none';});document.getElementById('mind-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='habits'){renderHabits();renderHabitStreak();renderHealthScore();}else if(t==='ritual'){renderMindSteps();renderMindTimer();}else if(t==='checkin'){renderCheckin();renderCheckinTrend();}else if(t==='morning'){renderMorning();}else{renderVideoCats();}}
 function toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),2400);}
 function closeModal(){document.getElementById('modalBg').classList.remove('on');}
 function openModal(h){document.getElementById('modalBox').innerHTML='<button class="close" onclick="closeModal()">×</button>'+h;document.getElementById('modalBg').classList.add('on');}
@@ -233,7 +233,7 @@ function generateCoach(){
   const cur=weekStats(0),prev=weekStats(1);
   const lines=[];const actions=[];
   // entrenos
-  const target=DB.routines.length||3;
+  const target=DB.mode==='fullbody'?2:(DB.routines.length||3);
   if(cur.sessN>=target)lines.push(`Completaste ${cur.sessN} de ${target} entrenamientos. Gran constancia.`);
   else if(cur.sessN>0)lines.push(`Hiciste ${cur.sessN} de ${target} entrenamientos planificados.`);
   else lines.push(`Esta semana no registraste entrenamientos de fuerza.`);
@@ -260,6 +260,9 @@ function generateCoach(){
   if(cur.box+cur.run===0)actions.push(`Mete al menos 1 sesión de cardio (boxeo o carrera) para acelerar la pérdida de grasa.`);
   if(cur.adher!=null&&cur.adher<60)actions.push(`Elige solo 1-2 hábitos clave y céntrate en no fallar dos días seguidos.`);
   const pains=currentPain();if(pains.length)actions.unshift(`Tienes molestia en ${pains.join(', ')}: baja volumen o cambia ejercicios que carguen esa zona hasta que mejore.`);
+  const df=dietFeedback();if(df)actions.unshift('🥗 '+df);
+  // foco pérdida de grasa: tendencia de peso y cintura como prioridad
+  if(cur.weight&&prev.weight&&cur.weight<prev.weight)lines.unshift(`🎯 Vas perdiendo peso: es tu objetivo principal. Lo demás es secundario.`);
   if(!actions.length)actions.push(`Mantén exactamente lo que haces: está funcionando. Sigue así.`);
   return {lines,actions,cur,prev};
 }
@@ -301,7 +304,7 @@ function renderDashboard(){
   const fl=fatLossScore();const fn=document.getElementById('fatNum');const fr=document.getElementById('fatRing');
   if(fl!=null){fn.textContent=fl;const col=fl>=66?'var(--ok)':fl>=40?'var(--gold)':'var(--bad)';fr.style.background=`conic-gradient(${col} ${fl*3.6}deg, var(--bg3) 0)`;document.getElementById('fatMsg').textContent=fl>=66?'vas bien':fl>=40?'aceptable':'aprieta';}
   else{fn.textContent='—';fr.style.background='var(--bg3)';document.getElementById('fatMsg').textContent='mide y entrena';}
-  renderWeekChallenge();renderWeeklySummary();renderTodayHero();renderCoach();renderRecovery();renderInsights();renderGoalProgress();renderBackupReminder();renderCalendar();renderExtraHistory();renderTodayDash();renderWeekView();applyCollapsed();
+  renderWeekChallenge();renderWeeklySummary();renderTodayHero();renderCoach();renderRecovery();renderInsights();renderDietCard();renderGoalProgress();renderBackupReminder();renderCalendar();renderExtraHistory();renderTodayDash();renderWeekView();applyCollapsed();
 }
 function renderExtraHistory(){const el=document.getElementById('extraHistory');if(!el)return;let html='';for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10);const e=DB.extraLog[ds]||{};const sess=DB.sessions.some(s=>s.date===ds);let bg='var(--bg3)',bd='var(--line)';if(e.box){bg='rgba(255,193,50,.3)';bd='var(--gold)';}else if(sess){bg='rgba(255,64,21,.25)';bd='var(--acc)';}else if(e.run){bg='rgba(156,107,255,.25)';bd='var(--viol)';}html+=`<span class="streak-dot" style="background:${bg};border-color:${bd}" title="${ds}${e.box?' 🥊':''}${e.run?' 🏃':''}${sess?' 💪':''}"></span>`;}
   const wk=weekDates();const totBox=Object.keys(DB.extraLog).filter(d=>DB.extraLog[d].box).length;const totRun=Object.keys(DB.extraLog).filter(d=>DB.extraLog[d].run).length;
@@ -676,6 +679,40 @@ function renderPR(){const pr={};DB.sessions.forEach(s=>(s.blocks||[]).forEach(b=
 function renderHistory(){const el=document.getElementById('historyList');el.innerHTML=DB.sessions.length?DB.sessions.slice(0,20).map(s=>`<div class="log-item"><div class="d">${fd(s.date)} · ${s.duration||'?'} min · ⚡${s.density||'—'}</div><div class="t">${s.name} <span class="mini" style="font-family:Barlow">${s.athlete||''}</span></div><details><summary style="cursor:pointer;color:var(--acc2);font-size:12px">ver bloques</summary>${(s.blocks||[]).map(b=>`<div style="margin-top:4px;font-size:13px"><b style="font-family:Anton">${b.label||b.type}</b>${b.result?` · ${b.result}`:''}<br>${b.exercises.map(e=>`${e.name}: ${(e.sets||[]).map(st=>`${st.kg||0}×${st.reps||0}`).join(', ')}`).join('<br>')}</div>`).join('')}</details><button class="btn-sm btn2" style="margin-top:8px" onclick="delSession('${s.id}')">Eliminar</button></div>`).join(''):'<p class="empty">Sin sesiones aún.</p>';}
 function delSession(id){DB.sessions=DB.sessions.filter(s=>s.id!==id);save();renderHistory();renderPR();renderProgChart();renderDensityChart();renderDashboard();}
 
+/* ===================== RUTINAS FULL BODY (perder grasa + tonificar, 2 días/semana) ===================== */
+/* Enfoque: todo el cuerpo cada sesión, rangos 8-15 reps, descansos cortos, densidad.
+   El peso importa menos que hacerlas bien y no fallar los 2 días. Tú eliges los días. */
+function fullBodyRoutines(){
+  return [
+    {id:'fb1',name:'FULL BODY A',day:'',fullbody:true,blocks:[
+      {type:'fuerza',label:'💪 Bloque 1 · BÁSICOS',exercises:[
+        {name:'Sentadilla goblet',sets:3,reps:'10-12',rest:75,rpe:7,kg:24,note:'Dominante de rodilla. Baja controlado.'},
+        {name:'Press banca',sets:3,reps:'8-12',rest:75,rpe:7,kg:DB.profile.bench||60,note:'Empuje horizontal.'},
+        {name:'Remo con barra',sets:3,reps:'10-12',rest:75,rpe:7,kg:50,note:'Tirón horizontal. Aprieta escápulas.'}
+      ]},
+      {type:'hipertrofia',label:'🎯 Bloque 2 · TONIFICAR',superset:true,rest:45,exercises:[
+        {name:'Peso muerto rumano',sets:3,reps:'12-15',kg:60,note:'Bisagra de cadera, femoral y glúteo.'},
+        {name:'Press militar mancuernas',sets:3,reps:'12-15',kg:14,note:'Empuje vertical.'},
+        {name:'Elevaciones laterales',sets:3,reps:'15-20',kg:8,note:'Hombro, estética.'}
+      ]},
+      {type:'finisher',label:'🔥 Bloque 3 · QUEMA',finisher:true,exercises:[{name:'Finisher metabólico',sets:1,reps:'6-8 min',kg:0}]}
+    ]},
+    {id:'fb2',name:'FULL BODY B',day:'',fullbody:true,blocks:[
+      {type:'fuerza',label:'💪 Bloque 1 · BÁSICOS',exercises:[
+        {name:'Peso muerto',sets:3,reps:'8-10',rest:90,rpe:7,kg:DB.profile.dead||90,note:'Bisagra pesada. Técnica primero.'},
+        {name:'Dominadas',sets:3,reps:'6-10',rest:75,rpe:7,kg:0,note:'Tirón vertical. Con goma si hace falta (apunta ayuda en negativo).'},
+        {name:'Zancada con mancuernas',sets:3,reps:'10-12/pierna',rest:75,rpe:7,kg:14,note:'Unilateral, glúteo y equilibrio.'}
+      ]},
+      {type:'hipertrofia',label:'🎯 Bloque 2 · TONIFICAR',superset:true,rest:45,exercises:[
+        {name:'Press inclinado mancuernas',sets:3,reps:'12-15',kg:18,note:'Pecho alto.'},
+        {name:'Curl bíceps',sets:3,reps:'12-15',kg:12,note:'Brazo, estética.'},
+        {name:'Plancha',sets:3,reps:'30-45s',kg:0,note:'Core anti-extensión.'}
+      ]},
+      {type:'finisher',label:'🔥 Bloque 3 · QUEMA',finisher:true,exercises:[{name:'Finisher metabólico',sets:1,reps:'6-8 min',kg:0}]}
+    ]}
+  ];
+}
+
 /* ===================== RUTINAS STRONGMAN (adaptadas a tu nivel) ===================== */
 /* Conceptos: full-body, compuestos primero, carries, TUT 40-70s, sobrecarga progresiva.
    Adaptado a definición y material de gym normal + kettlebells. NADA de dopaje ni prácticas extremas. */
@@ -705,10 +742,12 @@ function strongRoutines(){
 /* ===================== RUTINAS (visual, con sustituciones) ===================== */
 function renderRoutines(){const el=document.getElementById('routineList');if(!el)return;
   const isT=DB.mode==='travel',isS=DB.mode==='strong';
-  let head=`<div class="row" style="margin-bottom:12px"><button class="btn-sm ${DB.mode==='gym'?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('gym')">🏋️ Gym</button><button class="btn-sm ${isS?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('strong')">🪨 Strong</button><button class="btn-sm ${isT?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('travel')">✈️ Viaje</button></div>`;
+  const isFB=DB.mode==='fullbody';
+  let head=`<div class="row" style="margin-bottom:8px"><button class="btn-sm ${isFB?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('fullbody')">🎯 Full Body</button><button class="btn-sm ${DB.mode==='gym'?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('gym')">🏋️ PPL</button><button class="btn-sm ${isS?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('strong')">🪨 Strong</button><button class="btn-sm ${isT?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('travel')">✈️ Viaje</button></div>`;
+  if(isFB)head+=`<div class="note" style="margin-bottom:10px;border-color:var(--acc2)">🎯 <b>Full Body — 2 días/semana.</b> Todo el cuerpo en cada sesión, rangos de 8-15 reps y descansos cortos para perder grasa manteniendo músculo. <b>Tú eliges los días</b> según tu semana. El peso no es lo importante: hazlas bien y no falles los 2 días. Alterna A y B.</div>`;
   if(isT)head+=`<div class="note" style="margin-bottom:10px">Modo viaje: rutinas sin gimnasio con peso corporal, comba, bandas + barra y carrera. Ideal para vacaciones.</div>`;
-  if(isS)head+=`<div class="note" style="margin-bottom:10px">Modo strongman adaptado a tu nivel: compuestos pesados primero, hipertrofia con tiempo bajo tensión (baja lento) y acarreos (farmer walk, zercher). Full-body, gran gasto y músculo funcional. Progresa 2,5 kg cuando cierres todas las series.</div>`;
-  const list=DB.routines.map(r=>`<div class="ex-block"><div class="ex-head"><span class="nm">${r.name} <span class="split-tag">${r.day}</span></span><span><button class="btn-sm btn2" onclick="editRoutine('${r.id}')">✎</button> <button class="btn-sm btn2" onclick="changeDay('${r.id}')">📅</button> <button class="btn-sm btn2" onclick="startFlow('${r.id}')">▶</button></span></div>${r.blocks.map(b=>`<div class="mini" style="margin-top:4px"><b style="color:var(--acc)">${b.label.replace('Bloque','B').replace(' · ',': ')}</b> ${b.exercises.map(e=>e.name+(SUBS[e.name]?` <span style="color:var(--acc2);cursor:pointer" onclick="showSubs('${e.name.replace(/'/g,"")}')">⇄</span>`:'')).join(' · ')}</div>`).join('')}</div>`).join('');
+  if(isS)head+=`<div class="note" style="margin-bottom:10px">Modo strongman adaptado a tu nivel: compuestos pesados primero, hipertrofia con tiempo bajo tensión (baja lento) y acarreos (farmer walk, zercher). Full-body, gran gasto y músculo funcional.</div>`;
+  const list=DB.routines.map(r=>`<div class="ex-block"><div class="ex-head"><span class="nm">${r.name} <span class="split-tag">${r.day||'📅 tú eliges'}</span></span><span><button class="btn-sm btn2" onclick="editRoutine('${r.id}')">✎</button> <button class="btn-sm btn2" onclick="changeDay('${r.id}')">📅</button> <button class="btn-sm btn2" onclick="startFlow('${r.id}')">▶</button></span></div>${r.blocks.map(b=>`<div class="mini" style="margin-top:4px"><b style="color:var(--acc)">${b.label.replace('Bloque','B').replace(' · ',': ')}</b> ${b.exercises.map(e=>e.name+(SUBS[e.name]?` <span style="color:var(--acc2);cursor:pointer" onclick="showSubs('${e.name.replace(/'/g,"")}')">⇄</span>`:'')).join(' · ')}</div>`).join('')}</div>`).join('');
   const box=`<div class="ex-block" style="border-color:var(--gold);margin-top:6px"><div class="ex-head"><span class="nm">🥊 BOXEO TÉCNICA <span class="split-tag" style="color:var(--gold)">guiado</span></span><button class="btn-sm btn-gold" onclick="startBoxSession()">▶ Empezar</button></div><div class="mini" style="margin-top:4px">5 rounds de 3 min con descanso de 1 min. Sombra, drills 1-2, combate imaginario y ráfagas, con vídeo y campana en cada round. Como tener un entrenador.</div></div>`;
   const reset=`<button class="btn2" style="margin-top:10px;width:100%;font-size:12px" onclick="resetRoutines()">🔄 Restaurar rutinas base de este modo</button><p class="mini" style="margin-top:4px;text-align:center">No borra tu historial de sesiones, solo repone las rutinas por defecto (útil si el orden se descuadró).</p>`;
   el.innerHTML=head+list+box+reset;
@@ -716,18 +755,20 @@ function renderRoutines(){const el=document.getElementById('routineList');if(!el
 function resetRoutines(){
   if(!confirm('¿Reponer las rutinas base de este modo? Tu historial de entrenos NO se toca, solo se regeneran las plantillas de rutina.'))return;
   if(DB.mode==='travel')DB.routines=travelRoutines();
+  else if(DB.mode==='fullbody')DB.routines=fullBodyRoutines();
   else if(DB.mode==='strong'){DB.routines=strongRoutines();DB.strongRoutinesSaved=DB.routines;}
   else{DB.routines=buildRoutines(DB.cycle.rotIndex||0);DB.gymRoutinesSaved=DB.routines;}
   save();renderRoutines();renderTodayReady();toast('🔄 Rutinas base restauradas');
 }
 function setMode(m){if(DB.mode==='strong')DB.strongRoutinesSaved=DB.routines;if(DB.mode===m){renderRoutines();return;}
   // guardar las rutinas actuales en su cajón antes de cambiar
-  if(DB.mode==='travel')DB.travelRoutinesSaved=DB.routines;else DB.gymRoutinesSaved=DB.routines;
+  if(DB.mode==='travel')DB.travelRoutinesSaved=DB.routines;else if(DB.mode==='strong')DB.strongRoutinesSaved=DB.routines;else if(DB.mode==='fullbody')DB.fbRoutinesSaved=DB.routines;else DB.gymRoutinesSaved=DB.routines;
   DB.mode=m;
   if(m==='travel')DB.routines=DB.travelRoutinesSaved&&DB.travelRoutinesSaved.length?DB.travelRoutinesSaved:travelRoutines();
   else if(m==='strong')DB.routines=DB.strongRoutinesSaved&&DB.strongRoutinesSaved.length?DB.strongRoutinesSaved:strongRoutines();
+  else if(m==='fullbody')DB.routines=DB.fbRoutinesSaved&&DB.fbRoutinesSaved.length?DB.fbRoutinesSaved:fullBodyRoutines();
   else DB.routines=DB.gymRoutinesSaved&&DB.gymRoutinesSaved.length?DB.gymRoutinesSaved:buildRoutines(DB.cycle.rotIndex||0);
-  save();renderRoutines();renderTodayReady();renderDashboard();toast(m==='travel'?'✈️ Modo viaje activado':m==='strong'?'🪨 Modo strongman activado':'🏋️ Modo gym activado');}
+  save();renderRoutines();renderTodayReady();renderDashboard();toast(m==='travel'?'✈️ Modo viaje':m==='strong'?'🪨 Modo strongman':m==='fullbody'?'🎯 Full Body activado':'🏋️ Modo gym clásico');}
 function changeDay(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;openModal(`<h3>Cambiar día de ${r.name}</h3><p class="mini" style="margin-bottom:10px">Elige el día que mejor te encaje. Si coincide con otra rutina, podrás tenerlas el mismo día sin problema.</p><label>Día</label><select id="cdDay">${DAYS.map(d=>`<option ${d===r.day?'selected':''}>${d}</option>`).join('')}</select><button class="btn" style="margin-top:14px" onclick="saveDay('${rid}')">Guardar</button>`);}
 function saveDay(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;r.day=document.getElementById('cdDay').value;save();closeModal();renderRoutines();renderTodayReady();renderDashboard();toast('📅 Día actualizado');}
 function editRoutine(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;window._editRid=rid;renderRoutineEditor();}
@@ -995,7 +1036,8 @@ const RUN_TYPES={
   tempo:{ic:'🔥',lbl:'Tempo',desc:'Ritmo cómodo pero exigente sostenido. Sube el umbral: correrás rápido más tiempo sin ahogarte.',color:'var(--acc)',fatigue:4},
   fartlek:{ic:'🌊',lbl:'Fartlek',desc:'Cambios de ritmo libres: 1 min fuerte + 2 min suave, varias veces. Divertido y muy efectivo.',color:'var(--acc)',fatigue:3},
   cuestas:{ic:'⛰️',lbl:'Cuestas',desc:'Repeticiones cortas subiendo una pendiente. Fuerza específica de piernas para correr.',color:'var(--gold)',fatigue:5},
-  larga:{ic:'🛣️',lbl:'Tirada larga',desc:'La sesión más larga de la semana a ritmo cómodo. Construye resistencia.',color:'var(--viol)',fatigue:4}
+  larga:{ic:'🛣️',lbl:'Tirada larga',desc:'La sesión más larga de la semana a ritmo cómodo. Construye resistencia.',color:'var(--viol)',fatigue:4},
+  gps:{ic:'📍',lbl:'Carrera libre (GPS)',desc:'Carrera medida por GPS.',color:'var(--acc)',fatigue:3}
 };
 
 /* Plantillas de sesión por tipo. distancia se ajusta según el objetivo del usuario. */
@@ -1113,7 +1155,7 @@ function renderRunView(){
   const totalKm=p.items.reduce((a,x)=>a+(x.session.km||0),0);
   const doneKm=p.items.filter(x=>x.done).reduce((a,x)=>a+(x.actualKm||x.session.km||0),0);
   const stats=(function(){const s=r.history;if(!s.length)return null;const best5=s.filter(x=>x.km>=4.8&&x.km<=5.2).sort((a,b)=>a.duration-b.duration)[0];const best10=s.filter(x=>x.km>=9.5&&x.km<=10.5).sort((a,b)=>a.duration-b.duration)[0];return{best5,best10};})();
-  let html=`<div class="stat-grid c2"><div class="stat"><div class="v acc2">${r.target}</div><div class="l">objetivo</div></div><div class="stat"><div class="v acc">${totalKm.toFixed(1)}</div><div class="l">km planificados</div></div></div>`;
+  let html=`<button class="btn btn-acc" style="width:100%;margin-bottom:12px" onclick="startGpsRun()">📍 Carrera libre con GPS</button><div class="stat-grid c2"><div class="stat"><div class="v acc2">${r.target}</div><div class="l">objetivo</div></div><div class="stat"><div class="v acc">${totalKm.toFixed(1)}</div><div class="l">km planificados</div></div></div>`;
   if(stats){html+=`<div class="row" style="margin-top:8px">${stats.best5?`<div class="stat" style="flex:1"><div class="v gold">${paceStr(stats.best5.duration/stats.best5.km)}</div><div class="l">mejor 5K min/km</div></div>`:''}${stats.best10?`<div class="stat" style="flex:1"><div class="v gold">${paceStr(stats.best10.duration/stats.best10.km)}</div><div class="l">mejor 10K min/km</div></div>`:''}</div>`;}
   html+=`<div class="bar" style="margin-top:10px"><i style="width:${totalKm>0?Math.min(100,Math.round(doneKm/totalKm*100)):0}%;background:var(--acc2)"></i></div><p class="mini" style="margin-top:4px">${doneKm.toFixed(1)} / ${totalKm.toFixed(1)} km esta semana</p>`;
   // sesiones
@@ -1156,6 +1198,107 @@ function saveRunLog(idx){
 }
 
 /* ---------- Ejecutor de carrera con cronómetro e intervalos ---------- */
+/* ===================== CARRERA LIBRE CON GPS (Android) ===================== */
+let GPS={active:false,watchId:null,tickId:null,startTs:0,pauseAccum:0,paused:false,km:0,pts:[],lastPt:null,splits:[],lastSplitKm:0};
+function haversine(a,b){const R=6371e3,t=x=>x*Math.PI/180;const dLat=t(b.lat-a.lat),dLng=t(b.lng-a.lng);const s=Math.sin(dLat/2)**2+Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dLng/2)**2;return 2*R*Math.asin(Math.sqrt(s));}
+function startGpsRun(){
+  if(!navigator.geolocation){toast('Tu navegador no tiene GPS disponible');return;}
+  initAudio();
+  const ov=ensureRunOverlay();ov.style.display='flex';
+  document.getElementById('gpsStat').innerHTML='<div class="mini" style="text-align:center">📡 Buscando señal GPS… sal a cielo abierto y espera unos segundos.</div>';
+  GPS={active:true,watchId:null,tickId:null,startTs:Date.now(),pauseAccum:0,paused:false,km:0,pts:[],lastPt:null,splits:[],lastSplitKm:0};
+  if(DB.settings&&DB.settings.wakeLock!==false)requestWake();
+  speak('Carrera iniciada. Buscando GPS');
+  GPS.watchId=navigator.geolocation.watchPosition(onGpsPos,onGpsErr,{enableHighAccuracy:true,maximumAge:1000,timeout:15000});
+  GPS.tickId=setInterval(renderGpsLive,1000);
+  renderGpsLive();
+}
+function onGpsPos(pos){
+  if(!GPS.active||GPS.paused)return;
+  const p={lat:pos.coords.latitude,lng:pos.coords.longitude,t:Date.now(),acc:pos.coords.accuracy};
+  if(p.acc&&p.acc>40){return;} // descarta lecturas imprecisas
+  if(GPS.lastPt){const d=haversine(GPS.lastPt,p);if(d>1&&d<80){GPS.km+=d/1000;GPS.pts.push(p);
+    // split por km
+    if(Math.floor(GPS.km)>GPS.lastSplitKm){GPS.lastSplitKm=Math.floor(GPS.km);const elapsed=(Date.now()-GPS.startTs-GPS.pauseAccum)/1000;const prevT=GPS.splits.reduce((a,s)=>a+s,0);GPS.splits.push(elapsed-prevT);beep(2,true);speak(`Kilómetro ${GPS.lastSplitKm}. Ritmo ${paceStr(GPS.splits[GPS.splits.length-1])}`);}
+  }}
+  GPS.lastPt=p;
+}
+function onGpsErr(e){const el=document.getElementById('gpsStat');if(el&&GPS.km===0)el.innerHTML=`<div class="mini" style="text-align:center;color:var(--bad)">⚠️ ${e.code===1?'Permiso de ubicación denegado. Actívalo en los ajustes del navegador.':'Señal GPS débil. Sal a cielo abierto.'}</div>`;}
+function currentPace(){const el=(Date.now()-GPS.startTs-GPS.pauseAccum)/1000;return GPS.km>0.05?el/GPS.km:0;}
+function renderGpsLive(){
+  const ov=document.getElementById('runOverlay');if(!ov||!GPS.active)return;
+  const el=(Date.now()-GPS.startTs-GPS.pauseAccum)/1000;const m=Math.floor(el/60),s=Math.floor(el%60);
+  const pace=currentPace();
+  const speed=pace>0?(3600/pace).toFixed(1):'0.0';
+  ov.innerHTML=`<div style="width:100%;max-width:440px;text-align:center">
+    <div class="mini" style="letter-spacing:2px">📍 CARRERA GPS${GPS.paused?' · EN PAUSA':''}</div>
+    <div style="font-family:Anton;font-size:76px;line-height:1;margin:8px 0">${GPS.km.toFixed(2)}<span style="font-size:26px"> km</span></div>
+    <div class="stat-grid" style="margin:10px 0"><div class="stat"><div class="v acc">${pace>0?paceStr(pace):'--:--'}</div><div class="l">ritmo min/km</div></div><div class="stat"><div class="v acc2">${m}:${String(s).padStart(2,'0')}</div><div class="l">tiempo</div></div><div class="stat"><div class="v gold">${speed}</div><div class="l">km/h</div></div></div>
+    <div id="gpsStat"></div>
+    ${GPS.splits.length?`<div class="mini" style="margin-top:8px">Últimos km: ${GPS.splits.slice(-4).map((sp,i)=>`km${GPS.splits.length-GPS.splits.slice(-4).length+i+1} ${paceStr(sp)}`).join(' · ')}</div>`:''}
+    <div class="row" style="margin-top:18px;justify-content:center"><button class="btn2" onclick="pauseGps()">${GPS.paused?'▶ Seguir':'⏸ Pausa'}</button><button class="btn-acc" onclick="finishGps()">✓ Terminar</button></div>
+  </div>`;
+}
+function pauseGps(){if(!GPS.active)return;if(GPS.paused){GPS.paused=false;GPS.pauseAccum+=Date.now()-GPS._pauseStart;GPS.lastPt=null;speak('Seguimos');}else{GPS.paused=true;GPS._pauseStart=Date.now();speak('Pausa');}renderGpsLive();}
+function finishGps(){
+  if(GPS.watchId!=null)navigator.geolocation.clearWatch(GPS.watchId);
+  clearInterval(GPS.tickId);GPS.active=false;
+  const dur=Math.round((Date.now()-GPS.startTs-GPS.pauseAccum)/1000);const km=+GPS.km.toFixed(2);
+  releaseWake();
+  const ov=document.getElementById('runOverlay');if(ov)ov.style.display='none';
+  if(km<0.1){toast('Carrera muy corta, no se guarda');return;}
+  const pace=paceStr(dur/km);
+  openModal(`<h3>🏁 Carrera terminada</h3><div class="stat-grid" style="margin:10px 0"><div class="stat"><div class="v acc">${km}</div><div class="l">km</div></div><div class="stat"><div class="v acc2">${Math.floor(dur/60)}:${String(dur%60).padStart(2,'0')}</div><div class="l">tiempo</div></div><div class="stat"><div class="v gold">${pace}</div><div class="l">ritmo</div></div></div><label>RPE (esfuerzo 1-10)</label><input id="gpsRpe" type="number" value="6"><label style="margin-top:8px">Nota</label><input id="gpsNote" placeholder="Cómo fue"><button class="btn btn-acc2" style="margin-top:12px" onclick="saveGpsRun(${km},${dur})">Guardar</button>`);
+  speak(`Carrera completada. ${km} kilómetros. Buen trabajo`);beep(3,true);
+}
+function saveGpsRun(km,dur){
+  const rpe=+document.getElementById('gpsRpe').value||6;const note=document.getElementById('gpsNote').value||'';
+  DB.running.history.unshift({date:today(),type:'gps',km,duration:dur,rpe,note,splits:GPS.splits.map(s=>Math.round(s)),gps:true});
+  DB.extraLog[today()]=DB.extraLog[today()]||{};DB.extraLog[today()].run=true;DB.extraLog[today()].runKm=(DB.extraLog[today()].runKm||0)+km;DB.extraLog[today()].runMin=(DB.extraLog[today()].runMin||0)+Math.round(dur/60);
+  save();closeModal();renderRunView();renderDashboard();toast(`🏃 ${km} km guardados · ${paceStr(dur/km)}/km`);
+}
+function ensureRunOverlay(){let ov=document.getElementById('runOverlay');if(!ov){ov=document.createElement('div');ov.id='runOverlay';ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(10,11,15,.98);display:flex;align-items:center;justify-content:center;padding:20px';document.body.appendChild(ov);}return ov;}
+
+/* ===================== RUTINA MATUTINA ===================== */
+/* Despertar el cuerpo por la mañana. Reutiliza el motor de secuencias guiadas.
+   Dos versiones: exprés (con niños, sin tiempo) y completa. */
+const MORNING_QUICK=[
+  {lbl:'Respiración profunda',sec:40,tip:'De pie, inhala 4s por nariz, exhala 6s. Activa el cuerpo con calma',kind:'warm'},
+  {lbl:'Movilidad de cuello y hombros',sec:45,tip:'Círculos suaves de cuello y hombros, desbloquea la noche',kind:'mobility'},
+  {lbl:'Gato-camello',sec:45,tip:'A cuatro patas, arquea y redondea la espalda al ritmo de la respiración',kind:'mobility'},
+  {lbl:'Sentadillas suaves',sec:45,tip:'10-12 lentas, despierta piernas y cadera',kind:'activation'},
+  {lbl:'Estiramiento global',sec:45,tip:'Brazos al cielo, estírate entero, luego toca el suelo',kind:'stretch'}
+];
+const MORNING_FULL=[
+  {lbl:'Respiración y despertar',sec:60,tip:'Inhala 4s, exhala 6s. Nota cómo el cuerpo se enciende',kind:'warm'},
+  {lbl:'Movilidad de cuello',sec:40,tip:'Círculos suaves y oreja al hombro a cada lado',kind:'mobility'},
+  {lbl:'Círculos de hombros y brazos',sec:45,tip:'Grandes, adelante y atrás',kind:'mobility'},
+  {lbl:'Gato-camello',sec:50,tip:'Moviliza toda la columna con la respiración',kind:'mobility'},
+  {lbl:'Rotaciones de cadera',sec:45,tip:'De pie, círculos amplios a cada lado',kind:'mobility'},
+  {lbl:'Zancada con rotación',sec:50,tip:'Zancada y gira el torso: abre cadera y espalda',kind:'mobility'},
+  {lbl:'Sentadillas al aire',sec:45,tip:'12-15 lentas y profundas',kind:'activation'},
+  {lbl:'Plancha suave',sec:35,tip:'Activa el core, cuerpo en línea',kind:'core'},
+  {lbl:'Estiramiento global',sec:50,tip:'Estírate entero hacia el cielo y luego al suelo',kind:'stretch'},
+  {lbl:'Respiración final',sec:40,tip:'3 respiraciones lentas. Listo para el día',kind:'cool'}
+];
+function startMorning(full){
+  const seq=(full?MORNING_FULL:MORNING_QUICK).map(p=>({...p}));
+  runSequence(full?'Rutina matutina completa':'Rutina matutina exprés',seq,()=>{
+    DB.morningLog=DB.morningLog||[];if(!DB.morningLog.includes(today()))DB.morningLog.push(today());save();renderMorning();renderDashboard();
+  });
+}
+function renderMorning(){
+  const el=document.getElementById('morningView');if(!el)return;
+  DB.morningLog=DB.morningLog||[];
+  const wk=weekDates();const doneWk=wk.filter(d=>DB.morningLog.includes(d)).length;
+  const doneToday=DB.morningLog.includes(today());
+  el.innerHTML=`<p class="mini" style="margin-bottom:10px">Despierta el cuerpo nada más levantarte: moviliza articulaciones, activa músculos y arranca el día con energía. La app te guía paso a paso con voz.</p>
+  ${doneToday?'<div class="note" style="border-color:var(--ok);margin-bottom:10px">✅ Ya hiciste tu rutina matutina hoy. ¡Bien!</div>':''}
+  <div class="row"><button class="btn btn-acc2" style="flex:1" onclick="startMorning(false)">⚡ Exprés · 4 min</button><button class="btn2" style="flex:1" onclick="startMorning(true)">🌅 Completa · 8 min</button></div>
+  <div class="mini" style="margin-top:10px">Esta semana: <b>${doneWk}</b> ${doneWk===1?'mañana activada':'mañanas activadas'} 🔥</div>`;
+}
+
+/* ===================== RUTINA MATUTINA FIN ===================== */
 let RUN={active:false,idx:null,segIdx:0,startTs:0,pauseAccum:0,pauseTs:0,intv:null,phase:'work',phaseSec:0,phaseRound:1,tickId:null};
 function startRun(idx){
   const it=DB.running.currentPlan.items[idx];
@@ -1655,6 +1798,51 @@ function recoveryPlanFor(sessionName){
   return {stretches,core,lower};
 }
 function coreDoneToday(){DB.coreLog=DB.coreLog||[];if(!DB.coreLog.includes(today()))DB.coreLog.push(today());save();}
+
+/* ===================== NUTRICIÓN · MÉTODO DEL PLATO ===================== */
+/* Sin contar calorías ni pesar comida. Decisiones visuales + proteína en cada toma.
+   El seguimiento real es peso y cintura, no gramos. Diseñado para vida con niños. */
+const MEALS=[['desayuno','🌅'],['comida','☀️'],['merienda','🥪'],['cena','🌙']];
+function proteinTargetG(){const w=DB.body[0]?.peso||DB.profile.weight||115;return Math.round(w*1.3);} // ~1.3 g/kg, objetivo pérdida de grasa manteniendo músculo
+function renderDietCard(){
+  const el=document.getElementById('dietCard');if(!el)return;
+  const d=today();DB.diet=DB.diet||{log:{}};const log=DB.diet.log[d]||{};
+  const done=MEALS.filter(m=>log[m[0]]).length;
+  const gTarget=proteinTargetG();
+  el.innerHTML=`<div class="card" style="border-color:var(--ok)"><h3>🥗 Dieta de hoy <span class="tag" style="color:var(--ok)">método del plato</span></h3>
+    <div class="mini" style="margin-bottom:10px">Proteína en cada comida (palma de la mano). Objetivo: ~${gTarget} g/día. Toca cada comida al meter tu ración de proteína:</div>
+    <div class="row" style="gap:6px">${MEALS.map(m=>`<button class="btn-sm ${log[m[0]]?'btn-acc2':'btn2'}" style="flex:1;flex-direction:column;padding:10px 4px" onclick="toggleMeal('${m[0]}')">${m[1]}<br><span style="font-size:10px">${m[0]}</span>${log[m[0]]?'<br>✓':''}</button>`).join('')}</div>
+    <div class="bar" style="margin-top:10px"><i style="width:${done/4*100}%;background:var(--ok)"></i></div>
+    <div class="mini" style="margin-top:4px">${done}/4 comidas con proteína${done===4?' · ¡día redondo! 💪':''}</div>
+    <button class="btn2" style="margin-top:10px;width:100%;font-size:12px" onclick="openPlateGuide()">📖 Ver cómo montar el plato</button>
+  </div>`;
+}
+function toggleMeal(m){const d=today();DB.diet=DB.diet||{log:{}};DB.diet.log[d]=DB.diet.log[d]||{};DB.diet.log[d][m]=!DB.diet.log[d][m];save();renderDietCard();}
+function openPlateGuide(){
+  openModal(`<h3>🍽️ Tu plato modelo</h3>
+  <p class="mini" style="margin-bottom:12px">En cada comida principal, monta el plato así. Sin pesar nada, solo proporciones visuales:</p>
+  <div class="ex-block"><b style="color:var(--ok)">½ plato · Verdura o ensalada</b><div class="mini" style="margin-top:2px">Te llena sin apenas calorías. Cuanto más color, mejor.</div></div>
+  <div class="ex-block"><b style="color:var(--acc)">¼ plato · Proteína</b><div class="mini" style="margin-top:2px">Del tamaño de tu palma: pollo, huevos, pescado, legumbre, carne magra. Es lo que mantiene el músculo mientras pierdes grasa.</div></div>
+  <div class="ex-block"><b style="color:var(--gold)">¼ plato · Carbohidrato</b><div class="mini" style="margin-top:2px">Un puño: arroz, pasta, patata, pan. Energía para entrenar.</div></div>
+  <div class="ex-block"><b style="color:var(--acc2)">Grasa · con medida</b><div class="mini" style="margin-top:2px">Un chorrito de aceite o medio aguacate (un pulgar). No más.</div></div>
+  <div class="note" style="margin-top:10px">💡 Cocinas una vez para toda la familia: solo ajustas <b>tus proporciones</b> en tu plato. Medio plato de verdura y tu ración de proteína, y el resto encaja solo.</div>
+  <div class="note viol" style="margin-top:8px">🥤 Bebe agua, no calorías. Refrescos y alcohol son el sabotaje silencioso. Un capricho a la semana no rompe nada; la constancia el 90% del tiempo es lo que cuenta.</div>
+  <p class="mini" style="margin-top:10px">Esto son pautas generales sensatas, no una dieta médica. Para algo personalizado, un dietista-nutricionista colegiado.</p>`);
+}
+/* Feedback nutricional: si adherencia buena pero peso estancado varias semanas, sugerir ajuste */
+function dietFeedback(){
+  const series=[...DB.body].filter(b=>b.peso).sort((a,b)=>a.date.localeCompare(b.date));
+  if(series.length<3)return null;
+  const last3=series.slice(-3);const change=last3[2].peso-last3[0].peso;
+  // adherencia media de las últimas 2 semanas
+  const wk=weekDates();DB.diet=DB.diet||{log:{}};
+  const days=Object.keys(DB.diet.log);const recent=days.filter(d=>{const dd=new Date(d);return (Date.now()-dd)/864e5<=14;});
+  if(!recent.length)return null;
+  const adher=recent.reduce((a,d)=>a+MEALS.filter(m=>DB.diet.log[d][m[0]]).length,0)/(recent.length*4);
+  if(adher>=0.7&&change>=-0.3)return 'Llevas buena adherencia a la dieta pero el peso no baja. Reduce un poco la ración de carbohidrato en la cena, o añade una caminata diaria. Pequeño ajuste, no pasar hambre.';
+  if(change<=-0.4)return 'El peso baja y mantienes la proteína: vas perfecto, sigue así.';
+  return null;
+}
 
 /* ===================== CHECK-IN DIARIO · HEALTH SCORE ===================== */
 const CHECKIN_Q=[

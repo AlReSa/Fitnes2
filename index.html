@@ -186,6 +186,7 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
   <div id="coachCard"></div>
   <div class="card"><h3>🔋 Recovery Score</h3><div id="recoveryView"></div></div>
   <div id="insightsCard"></div>
+  <div id="dietCard"></div>
   <div class="card"><h3>🎯 Camino a tu meta</h3><div id="goalProgress"></div></div>
   <div class="card"><h3>🎯 Reto de la semana</h3><div id="weekChallenge"></div></div>
   <div class="card"><h3>📅 Resumen semanal</h3><div id="weeklySummary"></div></div>
@@ -259,12 +260,15 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 
 <!-- MENTE -->
 <section class="view" id="v-mind">
-  <div class="tabs"><button class="on" onclick="mindTab('video',this)">Guiado</button><button onclick="mindTab('checkin',this)">Check-in</button><button onclick="mindTab('ritual',this)">Ritual</button><button onclick="mindTab('habits',this)">Hábitos</button></div>
+  <div class="tabs"><button class="on" onclick="mindTab('morning',this)">🌅 Mañana</button><button onclick="mindTab('video',this)">Guiado</button><button onclick="mindTab('checkin',this)">Check-in</button><button onclick="mindTab('ritual',this)">Ritual</button><button onclick="mindTab('habits',this)">Hábitos</button></div>
+  <div id="mind-morning">
+    <div class="card" style="border-color:var(--acc2)"><h3>🌅 Rutina matutina</h3><div id="morningView"></div></div>
+  </div>
   <div id="mind-checkin" style="display:none">
     <div class="card" style="border-color:var(--viol)"><h3>📝 Check-in diario <span class="tag v">30 segundos</span></h3><p class="mini">Cómo te encuentras hoy. Sin escribir, solo tocar. Ayuda a la app a cuidar tu recuperación.</p><div id="checkinView" style="margin-top:10px"></div></div>
     <div class="card"><h3>📈 Tu semana de ánimo</h3><div id="checkinTrend"></div></div>
   </div>
-  <div id="mind-video">
+  <div id="mind-video" style="display:none">
     <div class="card" style="border-color:var(--viol)"><h3>🎬 Activación guiada <span class="tag v">en vídeo</span></h3>
       <p class="mini">Elige cómo arrancar el día y sigue el vídeo. Cada día propone uno distinto para no aburrir. Al terminar, marca completado.</p>
       <div id="videoCats" style="margin-top:10px"></div>
