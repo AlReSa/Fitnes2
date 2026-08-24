@@ -1,4 +1,4 @@
-const CACHE='forja-v38';
+const CACHE='forja-v39';
 const ASSETS=['index.html','app.js','manifest.json','icon-192.png','icon-512.png',
   'https://fonts.googleapis.com/css2?family=Anton&family=Barlow:wght@400;500;600;700&display=swap'];
 self.addEventListener('install',e=>{self.skipWaiting();e.waitUntil(caches.open(CACHE).then(c=>c.addAll(ASSETS).catch(()=>{})));});

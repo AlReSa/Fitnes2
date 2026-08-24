@@ -172,7 +172,7 @@ const BOX_SESSION={
 };
 
 /* ===== navegación ===== */
-function nav(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));el.classList.add('on');window.scrollTo(0,0);if(v==='home')renderDashboard();if(v==='mind'){renderMorning();renderVideoCats();renderHabits();}if(v==='body')renderBody();if(v==='run'){renderSpinView();renderSpinLive();}if(v==='train'){renderCycle();renderTodayReady();renderExtra();}}
+function nav(v,el){document.querySelectorAll('.view').forEach(x=>x.classList.remove('on'));document.getElementById('v-'+v).classList.add('on');document.querySelectorAll('nav button').forEach(b=>b.classList.remove('on'));el.classList.add('on');window.scrollTo(0,0);if(v==='home')renderDashboard();if(v==='mind'){renderMorning();renderVideoCats();renderHabits();}if(v==='body')renderBody();if(v==='run'){renderSpinView();renderSpinLive();}if(v==='train'){renderCycle();renderTodayReady();renderExtra();}if(v==='food')renderFood();}
 function navBtn(i){return document.querySelectorAll('nav button')[i];}
 function trainTab(t,el){['hoy','prog','retos','rutinas'].forEach(x=>{const e=document.getElementById('train-'+x);if(e)e.style.display='none';});document.getElementById('train-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='prog'){renderDeload();renderStagnation();renderProgSelect();renderVolume();renderE1RM();renderPredictions();renderCycleCompare();renderDensityChart();renderPR();renderHistory();}if(t==='retos'){renderGoals();renderMedals();renderFormatPR();}if(t==='rutinas'){renderRoutines();renderRotation();}if(t==='hoy'){renderCycle();renderTodayReady();renderExtra();}}
 function mindTab(t,el){['morning','video','checkin','ritual','habits'].forEach(x=>{const e=document.getElementById('mind-'+x);if(e)e.style.display='none';});document.getElementById('mind-'+t).style.display='block';el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');if(t==='habits'){renderHabits();renderHabitStreak();renderHealthScore();}else if(t==='ritual'){renderMindSteps();renderMindTimer();}else if(t==='checkin'){renderCheckin();renderCheckinTrend();}else if(t==='morning'){renderMorning();}else{renderVideoCats();}}
@@ -397,8 +397,13 @@ function renderRotation(){const idx=(DB.cycle.rotIndex||0);document.getElementBy
 /* ===================== MODO ATLETA + FLUJO SESIÓN ===================== */
 function renderTodayReady(){const td=DAYS[(new Date().getDay()+6)%7];const r=DB.routines.find(x=>x.day===td);const el=document.getElementById('todayReady');document.getElementById('readyTitle').textContent='📅 '+td;
   if(DB.session){el.innerHTML='<p class="mini">Sesión en curso abajo 👇</p>';return;}
-  if(r){const hasLast=!!lastSessionFor(r.id);el.innerHTML=`<div class="day-row"><div class="dd">💪</div><div class="di"><b>${r.name}</b><div class="mini">4 bloques · Fuerza · Hipertrofia · Densidad · Finisher</div></div><button class="btn-sm btn-acc2" onclick="startFlow('${r.id}')">Empezar</button></div><div class="row" style="margin-top:8px"><button class="btn2" style="flex:1" onclick="startWarmup('${r.id}')">🔥 Calentamiento</button>${hasLast?`<button class="btn2" style="flex:1" onclick="repeatLast('${r.id}')">↺ Repetir última</button><button class="btn2" style="flex:1" onclick="repeatProgress('${r.id}')">↺⬆ Repetir y subir</button>`:''}</div>`;}
-  else el.innerHTML=`<p class="mini">Hoy (${td}) sin rutina. Descanso o empieza una manual:</p><div style="margin-top:8px">${DB.routines.map(x=>`<button class="btn-sm btn2" style="margin:2px" onclick="startFlow('${x.id}')">${x.name}</button>`).join('')}</div>`;
+  if(r){const hasLast=!!lastSessionFor(r.id);
+    el.innerHTML=`<div class="mini" style="margin-bottom:8px;letter-spacing:1px">CICLO DE HOY · 🔥 calienta → 💪 entrena → 🧘 recupera</div>
+    <div class="day-row"><div class="dd">🔥</div><div class="di"><b>1 · Preparación</b><div class="mini">Calienta 5-8 min antes de cargar</div></div><span style="display:flex;gap:4px"><button class="btn-sm btn2" onclick="startWarmup('${r.id}')">▶ Guiado</button><button class="btn-sm btn2" onclick="warmupVideo('${r.id}')">🎬</button></span></div>
+    <div class="day-row" style="margin-top:6px"><div class="dd">💪</div><div class="di"><b>2 · ${r.name}</b><div class="mini">4 bloques · Fuerza · Hipertrofia · Densidad · Finisher</div></div><button class="btn-sm btn-acc2" onclick="startFlow('${r.id}')">Empezar</button></div>
+    ${hasLast?`<div class="row" style="margin-top:6px"><button class="btn2" style="flex:1" onclick="repeatLast('${r.id}')">↺ Repetir última</button><button class="btn2" style="flex:1" onclick="repeatProgress('${r.id}')">↺⬆ Repetir y subir</button></div>`:''}
+    <div class="day-row" style="border-top:1px solid var(--line);margin-top:8px;padding-top:10px"><div class="dd">🧘</div><div class="di"><b>3 · Recuperación</b><div class="mini">Estirar + abdominales al terminar</div></div><button class="btn-sm btn2" onclick="openRecoveryMenu()">Abrir</button></div>`;}
+  else el.innerHTML=`<p class="mini">Hoy (${td}) sin rutina fija. Descanso o empieza una manual:</p><div style="margin-top:8px">${DB.routines.map(x=>`<button class="btn-sm btn2" style="margin:2px" onclick="startFlow('${x.id}')">${x.name}</button>`).join('')}</div><div class="row" style="margin-top:8px"><button class="btn2" style="flex:1" onclick="openRecoveryMenu()">🧘 Estirar / abdominales</button></div>`;
 }
 function startFlow(rid){window._pendingRid=rid;openModal(`<h3>Modo Atleta</h3><p class="mini" style="margin-bottom:6px">¿Cómo llegas hoy? La sesión se ajusta a tu estado.</p><div class="athlete-opt"><button class="fresco" onclick="pickAthlete('fresco')"><span class="e">🔋</span>Fresco</button><button class="normal" onclick="pickAthlete('normal')"><span class="e">⚡</span>Normal</button><button class="fatigado" onclick="pickAthlete('fatigado')"><span class="e">🪫</span>Fatigado</button></div><p class="mini" style="margin-top:10px">Fresco: +volumen e intensidad · Normal: plan estándar · Fatigado: menos volumen, más descanso, finisher suave.</p>`);}
 function pickAthlete(state){DB.athlete=state;closeModal();startSession(window._pendingRid,state);}
@@ -456,8 +461,8 @@ function renderSessionBody(){const s=DB.session;if(!s)return;let html='';
     b.exercises.forEach((ex,ei)=>{
       let prevTxt=ex.prev?`<div class="prev">↺ ${ex.prev.map(p=>`${p.kg||0}×${p.reps||0}`).join(', ')}</div>`:'';
       const showRpe=b.type==='fuerza';
-      let sug=showRpe?rpeSuggestion(ex.name):null;
-      let sugTxt=sug?`<div class="prev" style="color:var(--gold)">🎯 Sugerencia: ${sug}</div>`:'';
+      let sug=progressionTip(ex.name);
+      let sugTxt=sug?`<div class="prev" style="color:${sug.level==='pain'?'var(--bad)':'var(--gold)'}">${sug.icon} ${sug.level==='pain'?sug.txt:'Sugerencia: '+sug.txt}</div>`:'';
       const noteVal=DB.exNotes&&DB.exNotes[ex.name]||'';
       const noteTxt=`<input value="${noteVal.replace(/"/g,'&quot;')}" placeholder="📝 nota (agarre, molestia...)" oninput="setExNote('${ex.name.replace(/'/g,"")}',this.value)" style="font-size:12px;padding:7px 10px;margin-top:6px;background:var(--bg)">`;
       const isIso=/plancha|isom|hang|wall ?sit|puente|hollow|dead ?hang|estátic/i.test(ex.name);
@@ -495,6 +500,40 @@ function rpeSuggestion(name){
 }
 function addSet(bi,ei){const ss=DB.session.blocks[bi].exercises[ei].sets;ss.push({kg:ss.length?ss[ss.length-1].kg:'',reps:'',done:false,rpe:''});renderSessionBody();}
 function moveEx(bi,ei,dir){const arr=DB.session.blocks[bi].exercises;const ni=ei+dir;if(ni<0||ni>=arr.length)return;const t=arr[ei];arr[ei]=arr[ni];arr[ni]=t;save();renderSessionBody();}
+/* ===== AUTORREGULACIÓN: analiza notas + RPE + histórico y ajusta peso/reps ===== */
+function noteSentiment(t){t=(t||'').toLowerCase();
+  if(/duele|dolor|molest|pincha|lesion|lesión|cargad|tir[oó]n|incómod|incomod|fatal|fastidi|pinchazo/.test(t))return 'pain';
+  if(/pesad|dif[ií]cil|no pude|no llego|no llegu|fall|flojo|cuesta|duro|dura/.test(t))return 'hard';
+  if(/bien|f[aá]cil|sobrad|genial|fuerte|c[oó]modo|top|perfecto/.test(t))return 'good';
+  return null;
+}
+function lastExData(name){
+  for(const s of DB.sessions){for(const b of (s.blocks||[])){const e=(b.exercises||[]).find(x=>x.name===name);
+    if(e&&e.sets&&e.sets.length){let topKg=0,rpe=0,minReps=Infinity,allReps=true;
+      e.sets.forEach(st=>{const k=+st.kg||0,rp=+st.reps||0;if(k>=topKg){topKg=k;if(+st.rpe)rpe=+st.rpe;}if(rp>0)minReps=Math.min(minReps,rp);else allReps=false;});
+      return {topKg,rpe,minReps:isFinite(minReps)?minReps:0,allReps,type:b.type};}}}
+  return null;
+}
+function progressionTip(name){
+  const sent=noteSentiment(DB.exNotes&&DB.exNotes[name]);
+  if(sent==='pain')return {level:'pain',icon:'⚠️',txt:'Molestia anotada. Baja el peso ~15% y cuida la técnica; si sigue doliendo, cámbialo (toca el nombre → ⇄).'};
+  const d=lastExData(name);
+  if(!d)return sent==='hard'?{level:'tip',icon:'🎯',txt:'La última fue dura: repite el mismo peso y busca 1 rep más.'}:null;
+  if(d.topKg>0&&d.rpe>0){
+    let base;
+    if(d.rpe<=6)base=`fácil la última (RPE ${d.rpe}): sube a ~${Math.round(d.topKg*1.05/1.25)*1.25} kg`;
+    else if(d.rpe<=8)base=`RPE ${d.rpe}: repite ~${d.topKg} kg o +2,5`;
+    else base=`RPE ${d.rpe}: mantén ${d.topKg} kg y afina la técnica`;
+    if(sent==='hard')base=`fue dura: mantén ${d.topKg} kg hasta que salga limpia`;
+    return {level:'tip',icon:'🎯',txt:base};
+  }
+  if(d.topKg>0){
+    if(d.allReps&&d.minReps>=12)return {level:'tip',icon:'🎯',txt:`hiciste ${d.minReps}+ reps en todas: sube +2,5 kg y vuelve a 8-10 reps`};
+    return {level:'tip',icon:'🎯',txt:`última: ${d.topKg} kg. Suma 1-2 reps en cada serie respecto a la anterior`};
+  }
+  if(d.minReps>0)return {level:'tip',icon:'🎯',txt:`última: ${d.minReps} reps. Intenta 1-2 más por serie`};
+  return null;
+}
 function toggleSet(bi,ei,j){const ex=DB.session.blocks[bi].exercises[ei];const st=ex.sets[j];st.done=!st.done;
   if(st.done){
     // autocompletar: si no tecleaste nada, asume que repetiste lo de la última vez
@@ -1128,6 +1167,64 @@ function generateRunPlan(force){
   DB.running.currentPlan={createdAt:today(),weekStart:wk[0],items:plan};
   save();
 }
+/* ===================== PLAN DE CARRERA PERIODIZADO (10/15/21K) ===================== */
+const RACE_DIST={'10K':{km:10,peakLong:12,ic:'🏃'},'15K':{km:15,peakLong:16,ic:'🏃'},'21K':{km:21.1,peakLong:19,ic:'🏅'}};
+function currentWeeklyKm(){
+  const h=(DB.running.history||[]).filter(x=>x.km>0);if(!h.length)return 0;
+  const now=Date.now();const recent=h.filter(x=>{const d=new Date(x.date);return isFinite(d)&&(now-d)/6048e5<=3;});
+  if(!recent.length)return 0;
+  return Math.round(recent.reduce((a,x)=>a+x.km,0)/3);
+}
+function buildRacePlan(distKey,weeks,daysWeek){
+  const R=RACE_DIST[distKey]||RACE_DIST['10K'];const peak=R.peakLong;
+  const base=currentWeeklyKm();
+  let startLong=Math.min(peak,Math.max(6,Math.round(base?base*0.5:6)));
+  const taper=weeks>=6?2:1;const buildWeeks=Math.max(1,weeks-taper);
+  const qualityRot=['tempo','series','fartlek'];const out=[];
+  for(let w=1;w<=weeks;w++){
+    let phase,longKm;const sessions=[];const isTaper=w>weeks-taper;
+    if(!isTaper){
+      const prog=(w-1)/Math.max(1,buildWeeks-1);
+      longKm=Math.round(startLong+(peak-startLong)*prog);
+      if(w%4===0)longKm=Math.round(longKm*0.8); // semana de descarga
+      phase=w<=2?'Base':w<=Math.round(buildWeeks*0.7)?'Construcción':'Pico';
+    }else{
+      const tw=w-(weeks-taper);
+      longKm=Math.round(peak*(taper===2?(tw===1?0.6:0.4):0.5));
+      phase='Afinamiento';
+    }
+    sessions.push({type:'long',km:longKm,lbl:'Tirada larga'});
+    if(daysWeek>=2)sessions.push({type:qualityRot[(w-1)%qualityRot.length],km:Math.max(5,Math.round(longKm*0.6)),lbl:'Calidad'});
+    if(daysWeek>=3)sessions.push({type:'easy',km:Math.max(4,Math.round(longKm*0.5)),lbl:'Rodaje suave'});
+    out.push({n:w,phase,sessions,race:w===weeks});
+  }
+  out[out.length-1].sessions=[{type:'easy',km:3,lbl:'Activación (2-3 días antes)'},{type:'race',km:R.km,lbl:'🏁 DÍA DE CARRERA · '+distKey}];
+  return {distance:distKey,weeks,daysWeek,createdAt:today(),plan:out};
+}
+function openRacePlanSetup(){
+  const base=currentWeeklyKm();
+  openModal(`<h3>🏁 Plan de carrera</h3><p class="mini" style="margin-bottom:10px">Plan progresivo desde hoy hasta el día de la carrera: base → construcción → pico → afinamiento. Tiene en cuenta lo que ya corres${base?` (~${base} km/sem)`:''} y sube la carga poco a poco.</p>
+  <label>Distancia objetivo</label><select id="rpDist"><option value="10K">10 km</option><option value="15K">15 km</option><option value="21K">21 km (media maratón)</option></select>
+  <label style="margin-top:8px">Semanas hasta la carrera</label><select id="rpWeeks"><option value="6">6 semanas</option><option value="8" selected>8 semanas</option><option value="10">10 semanas</option><option value="12">12 semanas</option></select>
+  <label style="margin-top:8px">Días de carrera por semana</label><select id="rpDays"><option value="2">2 días</option><option value="3" selected>3 días</option></select>
+  <button class="btn" style="margin-top:14px" onclick="genRacePlan()">Generar plan</button>`);
+}
+function genRacePlan(){
+  const dist=document.getElementById('rpDist').value,weeks=+document.getElementById('rpWeeks').value,days=+document.getElementById('rpDays').value;
+  DB.running.racePlan=buildRacePlan(dist,weeks,days);save();closeModal();renderRunView();toast('🏁 Plan de '+dist+' creado');
+}
+function startPlannedRun(type,km){
+  if(type==='long'||type==='race'){toast(`Objetivo: ${km} km. Mídelo con 📍 Carrera libre (GPS).`);startGpsRun();return;}
+  const map={tempo:'tempo',series:'int400',fartlek:'fartlek',easy:'easy5'};
+  if(typeof previewRunWorkout==='function')previewRunWorkout(map[type]||'easy5');else startGpsRun();
+}
+function renderRacePlan(){
+  const rp=DB.running.racePlan;if(!rp)return '';
+  return `<div class="card" style="border-color:var(--viol);margin-top:14px"><div style="display:flex;justify-content:space-between;align-items:center"><h3>🏁 Plan ${rp.distance} · ${rp.weeks} sem</h3><button class="btn-sm btn2" onclick="openRacePlanSetup()">Rehacer</button></div>
+  <p class="mini" style="margin:4px 0 8px">${rp.daysWeek} días/semana. Corre las largas los días sin gym para no acumular fatiga.</p>
+  ${rp.plan.map(w=>`<div class="ex-block" style="margin-top:8px${w.race?';border-color:var(--gold)':''}"><b>Semana ${w.n} · <span style="color:${w.race?'var(--gold)':'var(--viol)'}">${w.phase}</span></b>${w.sessions.map(s=>`<div class="sub-opt"><span>${s.lbl}${s.km?` <span class="mini">${s.km} km</span>`:''}</span>${s.type!=='race'?`<button class="btn-sm btn2" style="padding:3px 8px" onclick="startPlannedRun('${s.type}',${s.km||0})">▶</button>`:'<span>🏁</span>'}</div>`).join('')}</div>`).join('')}
+  <p class="mini" style="margin-top:8px;color:var(--dim)">Las tiradas largas y la carrera, con 📍 Carrera libre (GPS). Si un día llegas cansado, cámbialo por rodaje suave: progresar sin lesionarte es lo que cuenta. Orientativo, no plan médico.</p></div>`;
+}
 /* Adaptación diaria: si Recovery bajo, mutar el tipo del día a algo más suave */
 function adaptForToday(item){
   const rc=recoveryScore();const clone=JSON.parse(JSON.stringify(item));
@@ -1171,6 +1268,8 @@ function renderRunView(){
   });
   html+='</div>';
   html+=`<div class="row" style="margin-top:10px"><button class="btn2" style="flex:1" onclick="openRunSetup()">⚙️ Ajustar objetivo</button><button class="btn2" style="flex:1" onclick="regenPlan()">🔄 Replanificar</button></div>`;
+  if(!DB.running.racePlan)html+=`<button class="btn btn-viol" style="margin-top:10px;width:100%" onclick="openRacePlanSetup()">🏁 Preparar una carrera (10K · 15K · 21K)</button>`;
+  html+=renderRacePlan();
   // últimas carreras
   if(r.history.length){html+=`<div class="card" style="margin-top:14px"><h3>📚 Últimas carreras</h3>${r.history.slice(0,5).map(h=>`<div class="sub-opt"><span>${RUN_TYPES[h.type]?.ic||'🏃'} ${fd(h.date)} · ${h.km} km · ${Math.round(h.duration/60)}min</span><span class="mini">${paceStr(h.duration/h.km)}/km</span></div>`).join('')}</div>`;}
   el.innerHTML=html;
@@ -2053,8 +2152,7 @@ function renderDietCard(){
     <div class="row" style="gap:6px">${MEALS.map(m=>`<button class="btn-sm ${log[m[0]]?'btn-acc2':'btn2'}" style="flex:1;flex-direction:column;padding:10px 4px" onclick="toggleMeal('${m[0]}')">${m[1]}<br><span style="font-size:10px">${m[0]}</span>${log[m[0]]?'<br>✓':''}</button>`).join('')}</div>
     <div class="bar" style="margin-top:10px"><i style="width:${done/4*100}%;background:var(--ok)"></i></div>
     <div class="mini" style="margin-top:4px">${done}/4 comidas con proteína${done===4?' · ¡día redondo! 💪':''}</div>
-    <button class="btn" style="margin-top:10px;width:100%" onclick="openFoodHub()">🍽️ ¿Qué preparo hoy?</button>
-    <button class="btn2" style="margin-top:6px;width:100%;font-size:12px" onclick="openPlateGuide()">📖 Cómo montar el plato</button>
+    <button class="btn" style="margin-top:10px;width:100%" onclick="document.querySelector('nav button:nth-child(4)').click()">🍽️ Abrir mi Dieta (ideas, pesar, guía)</button>
   </div>`;
 }
 function toggleMeal(m){const d=today();DB.diet=DB.diet||{log:{}};DB.diet.log[d]=DB.diet.log[d]||{};DB.diet.log[d][m]=!DB.diet.log[d][m];save();renderDietCard();}
@@ -2092,7 +2190,26 @@ const DISHES=[
   // SNACKS
   {cat:'snack',emoji:'🥛',name:'Batido de proteína y fruta',kcal:200,prot:25,min:3,tags:['rapido','altoproteina','pocosingr','despuesent'],ingr:[['Proteína en polvo','30 g','1 cazo'],['Leche o bebida vegetal','250 ml','1 vaso'],['Fruta','1','1']],prep:'Bate todo. Ideal justo después de entrenar.',fam:'Es tu snack post-entreno. Para los peques, mejor fruta + yogur natural.'},
   {cat:'snack',emoji:'🥜',name:'Yogur con frutos secos',kcal:230,prot:18,min:2,tags:['rapido','pocosingr','familia'],ingr:[['Yogur griego','150 g','1 vaso'],['Frutos secos','20 g','1 pulgar']],prep:'Yogur con un puñado pequeño de frutos secos. Saciante entre horas.',fam:'Para los peques: yogur natural con fruta troceada (los frutos secos enteros no, riesgo de atragantamiento).'},
-  {cat:'snack',emoji:'🍎',name:'Fruta y pavo',kcal:180,prot:16,min:2,tags:['rapido','pocosingr','antesent','familia'],ingr:[['Fruta','1','1'],['Pavo lonchas','60 g','1 palma fina']],prep:'Una pieza de fruta con unas lonchas de pavo. Perfecto antes de entrenar.',fam:'Merienda perfecta para toda la familia: fruta troceada + pavo en tiras.'}
+  {cat:'snack',emoji:'🍎',name:'Fruta y pavo',kcal:180,prot:16,min:2,tags:['rapido','pocosingr','antesent','familia'],ingr:[['Fruta','1','1'],['Pavo lonchas','60 g','1 palma fina']],prep:'Una pieza de fruta con unas lonchas de pavo. Perfecto antes de entrenar.',fam:'Merienda perfecta para toda la familia: fruta troceada + pavo en tiras.'},
+  // MÁS DESAYUNOS
+  {cat:'desayuno',emoji:'🥞',name:'Tortitas de avena y huevo',kcal:420,prot:32,min:12,tags:['altoproteina','despuesent','familia'],ingr:[['Avena','60 g','1 puño grande'],['Huevos','2','2'],['Clara de huevo','2','2'],['Plátano','1','1'],['Canela','al gusto','']],prep:'Tritura avena, huevos, claras y plátano. Cuaja como tortitas en la sartén. Muy saciantes.',fam:'A los peques les encantan: hazlas pequeñitas y sin canela si no la quieren.'},
+  {cat:'desayuno',emoji:'🍅',name:'Tostada de tomate, aceite y huevo',kcal:360,prot:22,min:8,tags:['rapido','pocosingr','familia'],ingr:[['Pan integral','2 rebanadas','2 puños'],['Tomate maduro','1','1'],['Huevo','2','2'],['Aceite de oliva','1 chorrito','1 pulgar']],prep:'Pan a la tostadora, tomate rallado y un hilo de aceite. Huevo a la plancha o pasado por agua encima. Desayuno mediterráneo clásico.',fam:'Media tostada en tiras para los peques. Sin sal añadida.'},
+  {cat:'desayuno',emoji:'🥛',name:'Requesón con fruta y nueces',kcal:340,prot:28,min:3,tags:['rapido','altoproteina','pocosingr'],ingr:[['Requesón o queso fresco batido','200 g','1 vaso'],['Fruta','1','1 puño'],['Nueces','15 g','½ pulgar'],['Miel (opcional)','1 cdta','']],prep:'Requesón con fruta troceada y unas nueces. Muchísima proteína y muy saciante.'},
+  // MÁS COMIDAS
+  {cat:'comida',emoji:'🍤',name:'Garbanzos con espinacas y huevo',kcal:490,prot:30,min:20,tags:['altoproteina','mealprep','familia'],ingr:[['Garbanzos cocidos','200 g','1 puño grande'],['Espinacas','150 g','2 puños'],['Huevo','2','2'],['Aceite de oliva','1 chorrito','1 pulgar'],['Ajo y pimentón','al gusto','']],prep:'Saltea ajo, añade espinacas y garbanzos, y corona con huevo. Potaje ligero muy mediterráneo.',fam:'Para los peques: garbanzos aplastados con las espinacas bien picadas.'},
+  {cat:'comida',emoji:'🐟',name:'Merluza al horno con patata',kcal:470,prot:40,min:30,tags:['altoproteina','pocosingr','familia'],ingr:[['Merluza','200 g','1 palma grande'],['Patata','200 g','1 puño grande'],['Cebolla y pimiento','100 g','1 puño'],['Aceite de oliva','1 chorrito','1 pulgar']],prep:'Patata en rodajas + verdura de cama, merluza encima, aceite y al horno 20-25 min. Plato de domingo, sano y para todos.',fam:'Merluza sin espinacas desmenuzada y patata chafada para los peques.'},
+  {cat:'comida',emoji:'🍚',name:'Arroz con pollo y verduras (tipo paella)',kcal:560,prot:38,min:30,tags:['mealprep','familia','despuesent'],ingr:[['Arroz','80 g seco','1 puño'],['Pollo','150 g','1 palma'],['Verduras (pimiento, judía, alcachofa)','200 g','2 puños'],['Caldo y azafrán','','']],prep:'Sofríe pollo y verduras, añade arroz y caldo, cuece. Un arroz mediterráneo que come toda la familia.',fam:'El plato familiar por excelencia. Para los peques, ración pequeña y pollo desmenuzado.'},
+  {cat:'comida',emoji:'🥗',name:'Ensalada de garbanzos, atún y huevo',kcal:450,prot:34,min:12,tags:['rapido','altoproteina','mealprep'],ingr:[['Garbanzos cocidos','150 g','1 puño'],['Atún al natural','1 lata','1 palma'],['Huevo duro','1','1'],['Tomate, cebolla, pepino','libre','½ plato'],['Aceite de oliva','1 chorrito','1 pulgar']],prep:'Mezcla todo en frío. Ideal para llevar en táper y no pasar hambre.'},
+  {cat:'comida',emoji:'🌯',name:'Wrap integral de pollo y verduras',kcal:520,prot:36,min:15,tags:['rapido','familia','despuesent'],ingr:[['Tortilla integral','1 grande','2 puños'],['Pollo','150 g','1 palma'],['Verduras (lechuga, tomate, pimiento)','libre','½ plato'],['Yogur o hummus','1 cda','1 pulgar']],prep:'Rellena la tortilla con pollo a tiras, verdura y una cucharada de yogur o hummus. Enrolla.',fam:'Para los peques, mini-wrap cortado en rueditas.'},
+  // MÁS CENAS
+  {cat:'cena',emoji:'🍲',name:'Crema de verduras con huevo y jamón',kcal:320,prot:24,min:20,tags:['pocosingr','familia'],ingr:[['Verduras (puerro, calabacín, zanahoria)','300 g','3 puños'],['Huevo duro','2','2'],['Jamón/pavo en taquitos','60 g','1 palma fina'],['Aceite de oliva','1 chorrito','1 pulgar']],prep:'Hierve y tritura las verduras. Sirve con huevo duro picado y taquitos de jamón por encima para dar proteína. Cena calentita y ligera.',fam:'La crema es perfecta para los peques. A ellos, sin el jamón si no lo quieren.'},
+  {cat:'cena',emoji:'🐙',name:'Sepia o calamar a la plancha con ensalada',kcal:300,prot:34,min:15,tags:['altoproteina','pocosingr'],ingr:[['Sepia o calamar','200 g','1 palma grande'],['Ensalada','libre','½ plato'],['Ajo y perejil','al gusto',''],['Aceite de oliva','1 chorrito','1 pulgar']],prep:'Sepia a la plancha con ajo y perejil, ensalada de acompañamiento. Muchísima proteína, muy pocas calorías.'},
+  {cat:'cena',emoji:'🥦',name:'Salmón con brócoli al vapor',kcal:420,prot:38,min:18,tags:['altoproteina','pocosingr','familia'],ingr:[['Salmón','170 g','1 palma'],['Brócoli','200 g','2 puños'],['Aceite de oliva','1 chorrito','1 pulgar'],['Limón','½','']],prep:'Brócoli al vapor y salmón a la plancha con limón. Cena de 15 minutos, saciante y completa.',fam:'Salmón desmenuzado sin espinas y brócoli bien blandito para los peques.'},
+  {cat:'cena',emoji:'🍳',name:'Tortilla francesa con jamón y ensalada',kcal:350,prot:28,min:10,tags:['rapido','altoproteina','pocosingr','familia'],ingr:[['Huevos','3','3'],['Jamón serrano/york','50 g','1 palma fina'],['Ensalada','libre','½ plato'],['Aceite de oliva','1 chorrito','1 pulgar']],prep:'Tortilla francesa con taquitos de jamón y ensalada al lado. Rápida y resuelve la cena.',fam:'Tortilla partida en trozos para los peques.'},
+  // MÁS MERIENDAS / SNACKS
+  {cat:'snack',emoji:'🥕',name:'Hummus con crudités',kcal:220,prot:10,min:5,tags:['rapido','familia'],ingr:[['Hummus','60 g','1 pulgar grande'],['Zanahoria, pepino, pimiento','libre','1 puño'],['Palitos integrales (opcional)','20 g','']],prep:'Bastones de verdura para mojar en hummus. Snack saciante y con fibra.',fam:'A los peques les divierte mojar los bastoncitos.'},
+  {cat:'snack',emoji:'🧀',name:'Tostada de queso fresco y pavo',kcal:250,prot:22,min:4,tags:['rapido','altoproteina','pocosingr','familia'],ingr:[['Pan integral','1 rebanada','1 puño'],['Queso fresco batido','60 g','1 pulgar'],['Pavo','50 g','1 palma fina']],prep:'Pan con queso fresco y pavo. Merienda con proteína que no engorda.'},
+  {cat:'snack',emoji:'🍌',name:'Plátano con crema de cacahuete',kcal:260,prot:9,min:2,tags:['rapido','pocosingr','antesent'],ingr:[['Plátano','1','1'],['Crema de cacahuete 100%','1 cda','1 pulgar']],prep:'Plátano con una cucharada de crema de cacahuete. Energía antes de entrenar (ojo con la ración de crema).'}
 ];
 const DIET_FILTERS=[['todos','Todos'],['desayuno','🍳 Desayuno'],['comida','☀️ Comida'],['cena','🌙 Cena'],['snack','🥛 Snack'],['altoproteina','💪 Alto proteína'],['rapido','⚡ Rápido'],['familia','👨‍👩‍👧‍👦 Familia'],['pocosingr','🥄 Pocos ingr.'],['mealprep','🍱 Meal prep'],['antesent','🔋 Antes entrenar'],['despuesent','🏋️ Después entrenar']];
 let dietFilter='todos';
@@ -2179,6 +2296,121 @@ function renderFoodSources(){
   return `<p class="mini" style="margin-bottom:10px">FORJA no se inventa los menús: sigue criterios nutricionales reconocidos. Aquí tienes las fuentes para coger ideas (se abren en el navegador, necesitan internet):</p>
   ${FOOD_SOURCES.map(s=>`<a href="${s[3]}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit"><div class="ex-block" style="cursor:pointer"><div style="display:flex;align-items:center;gap:10px"><div style="font-size:26px">${s[0]}</div><div style="flex:1"><b>${s[1]}</b><div class="mini">${s[2]}</div></div><div style="color:var(--acc2)">↗</div></div></div></a>`).join('')}
   <p class="mini" style="margin-top:10px;color:var(--dim)">Jerarquía de FORJA: Harvard (estructura del plato) + Dieta Mediterránea (ideas de menús) + AEP/Sant Joan de Déu (adaptación a los niños). Todo son pautas generales, no una dieta médica; para algo personalizado, un dietista-nutricionista colegiado.</p>`;
+}
+
+/* ===================== ALIMENTOS PARA PESAR (lo calórico) ===================== */
+/* Valores por 100 g de alimento tal como se come (cocido salvo indicación). Orientativos.
+   Solo lo que aporta calorías de verdad: proteína, carbo, legumbre, grasa, fruta, lácteo.
+   La VERDURA no se pesa: va «a voluntad», llena medio plato. */
+const FOOD_DB=[
+  // PROTEÍNA
+  {e:'🍗',n:'Pechuga de pollo',cat:'proteina',kcal:165,p:31,c:0,f:4},
+  {e:'🦃',n:'Pavo',cat:'proteina',kcal:135,p:29,c:0,f:1},
+  {e:'🥩',n:'Ternera magra',cat:'proteina',kcal:180,p:26,c:0,f:8},
+  {e:'🐖',n:'Lomo de cerdo',cat:'proteina',kcal:165,p:27,c:0,f:6},
+  {e:'🥚',n:'Huevo (100 g ≈ 2 uds)',cat:'proteina',kcal:155,p:13,c:1,f:11},
+  {e:'🐟',n:'Atún al natural',cat:'proteina',kcal:116,p:26,c:0,f:1},
+  {e:'🐟',n:'Salmón',cat:'proteina',kcal:208,p:20,c:0,f:13},
+  {e:'🐟',n:'Merluza / pescado blanco',cat:'proteina',kcal:90,p:18,c:0,f:2},
+  {e:'🍤',n:'Gambas',cat:'proteina',kcal:99,p:24,c:0,f:0.3},
+  {e:'🦑',n:'Sepia / calamar',cat:'proteina',kcal:92,p:16,c:3,f:1},
+  {e:'🥛',n:'Queso fresco batido / requesón',cat:'proteina',kcal:90,p:12,c:4,f:3},
+  {e:'🥛',n:'Yogur griego natural',cat:'proteina',kcal:97,p:9,c:4,f:5},
+  {e:'🍖',n:'Jamón serrano',cat:'proteina',kcal:240,p:31,c:0,f:12},
+  {e:'🥓',n:'Pavo / jamón york',cat:'proteina',kcal:105,p:18,c:1,f:3},
+  {e:'🥤',n:'Proteína en polvo (cazo ≈ 30 g)',cat:'proteina',kcal:380,p:80,c:8,f:6},
+  {e:'🧈',n:'Tofu',cat:'proteina',kcal:145,p:16,c:3,f:8},
+  // CARBOHIDRATO
+  {e:'🍚',n:'Arroz cocido',cat:'carbo',kcal:130,p:2.7,c:28,f:0.3},
+  {e:'🍝',n:'Pasta cocida',cat:'carbo',kcal:158,p:6,c:31,f:1},
+  {e:'🥔',n:'Patata cocida',cat:'carbo',kcal:87,p:2,c:20,f:0.1},
+  {e:'🍠',n:'Boniato cocido',cat:'carbo',kcal:90,p:2,c:21,f:0.1},
+  {e:'🍞',n:'Pan integral',cat:'carbo',kcal:250,p:9,c:45,f:3},
+  {e:'🌾',n:'Quinoa cocida',cat:'carbo',kcal:120,p:4.4,c:21,f:1.9},
+  {e:'🥣',n:'Avena (cruda)',cat:'carbo',kcal:380,p:13,c:60,f:7},
+  {e:'🍥',n:'Cuscús cocido',cat:'carbo',kcal:112,p:3.8,c:23,f:0.2},
+  {e:'🌯',n:'Tortilla integral (wrap)',cat:'carbo',kcal:300,p:8,c:50,f:7},
+  // LEGUMBRE
+  {e:'🫘',n:'Lentejas cocidas',cat:'legumbre',kcal:116,p:9,c:20,f:0.4},
+  {e:'🫛',n:'Garbanzos cocidos',cat:'legumbre',kcal:164,p:9,c:27,f:2.6},
+  {e:'🫘',n:'Alubias cocidas',cat:'legumbre',kcal:127,p:9,c:22,f:0.5},
+  {e:'🟢',n:'Guisantes',cat:'legumbre',kcal:84,p:5,c:14,f:0.4},
+  {e:'🥣',n:'Hummus',cat:'legumbre',kcal:170,p:8,c:15,f:10},
+  // GRASA
+  {e:'🫒',n:'Aceite de oliva (cda ≈ 10 g)',cat:'grasa',kcal:884,p:0,c:0,f:100},
+  {e:'🥑',n:'Aguacate',cat:'grasa',kcal:160,p:2,c:9,f:15},
+  {e:'🥜',n:'Frutos secos',cat:'grasa',kcal:620,p:15,c:12,f:55},
+  {e:'🥜',n:'Crema de cacahuete',cat:'grasa',kcal:590,p:25,c:20,f:50},
+  {e:'🫒',n:'Aceitunas',cat:'grasa',kcal:145,p:1,c:6,f:15},
+  // FRUTA
+  {e:'🍌',n:'Plátano',cat:'fruta',kcal:89,p:1,c:23,f:0.3},
+  {e:'🍎',n:'Manzana',cat:'fruta',kcal:52,p:0.3,c:14,f:0.2},
+  {e:'🍊',n:'Naranja',cat:'fruta',kcal:47,p:0.9,c:12,f:0.1},
+  {e:'🍓',n:'Fresas',cat:'fruta',kcal:32,p:0.7,c:8,f:0.3},
+  {e:'🍇',n:'Uvas',cat:'fruta',kcal:69,p:0.7,c:18,f:0.2},
+  // LÁCTEO
+  {e:'🥛',n:'Leche semidesnatada',cat:'lacteo',kcal:47,p:3.3,c:5,f:1.6},
+  {e:'🥛',n:'Yogur natural',cat:'lacteo',kcal:60,p:4,c:5,f:3}
+];
+const FOOD_CATS=[['proteina','🍗 Proteína'],['carbo','🍚 Carbohidrato'],['legumbre','🫘 Legumbre'],['grasa','🫒 Grasa'],['fruta','🍎 Fruta'],['lacteo','🥛 Lácteo']];
+let weighCat='proteina', weighPlate=[]; // [{i:indexFOOD_DB, g:gramos}]
+/* Referencia de déficit suave (orientativa, no médica) */
+function currentWeight(){return (DB.body&&DB.body[0]&&DB.body[0].peso)||DB.profile.weight||118;}
+function gentleTargets(){
+  const w=currentWeight(), h=DB.profile.height||183, age=DB.profile.age||38;
+  const bmr=Math.round(10*w+6.25*h-5*age+5);       // Mifflin-St Jeor (hombre)
+  const maint=Math.round(bmr*1.5);                   // actividad moderada-alta
+  const defLo=Math.round((maint-500)/10)*10, defHi=Math.round((maint-300)/10)*10; // -300 a -500
+  const objW=(DB.goalWeight||105);
+  const protLo=Math.round(objW*1.6), protHi=Math.round(objW*2); // 1.6-2 g/kg del peso objetivo
+  return {w,maint,defLo,defHi,protLo,protHi};
+}
+/* ===================== PÁGINA DE DIETA (hoja propia) ===================== */
+let foodPage='ideas';
+function renderFood(){
+  const el=document.getElementById('foodBody');if(!el)return;
+  const tabs=[['ideas','🍽️ Ideas'],['construye','🎨 Construye'],['pesar','⚖️ Pesa tu plato'],['guia','📅 Cómo comer'],['fuentes','📚 Fuentes']];
+  document.getElementById('foodTabs').innerHTML=tabs.map(t=>`<button class="btn-sm ${foodPage===t[0]?'btn-acc2':'btn2'}" style="white-space:nowrap" onclick="setFoodPage('${t[0]}')">${t[1]}</button>`).join('');
+  if(foodPage==='ideas'){el.innerHTML=`<div id="foodExplorer"></div>`;renderFoodExplorer();}
+  else if(foodPage==='construye'){el.innerHTML=`<div id="comboBuilder"></div>`;renderCombo();}
+  else if(foodPage==='pesar'){el.innerHTML=renderWeighShell();renderWeigh();}
+  else if(foodPage==='guia'){el.innerHTML=renderMealGuide();}
+  else if(foodPage==='fuentes'){el.innerHTML=renderFoodSources();}
+}
+function setFoodPage(p){foodPage=p;renderFood();}
+function renderWeighShell(){
+  const t=gentleTargets();
+  return `<div class="note gold" style="margin-bottom:10px">🎯 <b>Tu referencia (orientativa)</b><br>Mantenimiento ≈ <b>${t.maint}</b> kcal/día. Para adelgazar sin sufrir: <b>${t.defLo}–${t.defHi}</b> kcal/día. Proteína: <b>${t.protLo}–${t.protHi} g/día</b>.<br><span class="mini">Déficit suave (−300 a −500 kcal). No cuentes cada caloría: pesa lo calórico, llena ½ plato de verdura y prioriza proteína. Así no pasas hambre.</span></div>
+  <p class="mini" style="margin-bottom:6px">Elige categoría, pesa el alimento (g) y añádelo. La <b>verdura no se pesa</b>: va a voluntad.</p>
+  <div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px" id="weighCats"></div>
+  <div id="weighList"></div>
+  <div id="weighPlate"></div>`;
+}
+function renderWeigh(){
+  const cats=document.getElementById('weighCats');if(cats)cats.innerHTML=FOOD_CATS.map(c=>`<button class="btn-sm ${weighCat===c[0]?'btn-acc2':'btn2'}" style="white-space:nowrap" onclick="setWeighCat('${c[0]}')">${c[1]}</button>`).join('');
+  const list=document.getElementById('weighList');
+  if(list){const items=FOOD_DB.map((f,i)=>({f,i})).filter(x=>x.f.cat===weighCat);
+    list.innerHTML=`<div style="display:flex;flex-direction:column;gap:5px;margin:8px 0">${items.map(x=>`<div class="sub-opt" style="align-items:center"><span>${x.f.e} ${x.f.n} <span class="mini">(${x.f.kcal} kcal · ${x.f.p}g P / 100g)</span></span><span style="display:flex;gap:4px;align-items:center"><input type="number" inputmode="numeric" id="wg_${x.i}" placeholder="g" style="width:64px;padding:6px"><button class="btn-sm btn-acc2" onclick="addWeigh(${x.i})">+</button></span></div>`).join('')}</div>`;
+  }
+  renderWeighPlate();
+}
+function setWeighCat(c){weighCat=c;renderWeigh();}
+function addWeigh(i){const inp=document.getElementById('wg_'+i);const g=+(inp&&inp.value);if(!g||g<=0){toast('Pon los gramos');return;}weighPlate.push({i,g});if(inp)inp.value='';renderWeighPlate();}
+function removeWeigh(k){weighPlate.splice(k,1);renderWeighPlate();}
+function clearWeigh(){weighPlate=[];renderWeighPlate();}
+function renderWeighPlate(){
+  const el=document.getElementById('weighPlate');if(!el)return;
+  if(!weighPlate.length){el.innerHTML=`<div class="empty">Tu plato está vacío. Añade alimentos arriba y ve sumando.</div>`;return;}
+  let kcal=0,p=0,c=0,f=0;
+  const rows=weighPlate.map((it,k)=>{const fd=FOOD_DB[it.i];const K=fd.kcal*it.g/100,P=fd.p*it.g/100,C=fd.c*it.g/100,F=fd.f*it.g/100;kcal+=K;p+=P;c+=C;f+=F;return `<div class="sub-opt"><span>${fd.e} ${fd.n} · <b>${it.g} g</b></span><span style="display:flex;gap:8px;align-items:center"><span class="mini">${Math.round(K)} kcal · ${Math.round(P)}g P</span><button class="btn-sm btn2" style="padding:3px 8px" onclick="removeWeigh(${k})">✕</button></span></div>`;}).join('');
+  const t=gentleTargets();const pct=Math.min(100,Math.round(kcal/t.defHi*100));
+  el.innerHTML=`<div class="card" style="border-color:var(--acc2);margin-top:8px"><b style="font-family:Anton">🍽️ Tu plato</b>${rows}
+    <div class="stat-grid" style="margin:10px 0;grid-template-columns:repeat(3,1fr)"><div class="stat"><div class="v acc">${Math.round(kcal)}</div><div class="l">kcal</div></div><div class="stat"><div class="v acc2">${Math.round(p)} g</div><div class="l">proteína</div></div><div class="stat"><div class="v gold">${Math.round(c)}/${Math.round(f)}</div><div class="l">carb/grasa g</div></div></div>
+    <div class="mini">+ ½ plato de verdura a voluntad (apenas suma calorías y te llena).</div>
+    <div class="bar" style="margin-top:8px"><i style="width:${pct}%;background:var(--acc2)"></i></div>
+    <div class="mini" style="margin-top:3px">Vas por ${Math.round(kcal)} kcal de una comida. Referencia del día: ${t.defLo}–${t.defHi} kcal.</div>
+    <button class="btn2" style="margin-top:10px;width:100%" onclick="clearWeigh()">🗑️ Vaciar plato</button></div>
+    <p class="mini" style="margin-top:8px;color:var(--dim)">Valores orientativos por 100 g. No es una dieta médica; para un plan personalizado, dietista-nutricionista colegiado.</p>`;
 }
 
 /* Feedback nutricional: si adherencia buena pero peso estancado varias semanas, sugerir ajuste */
@@ -2292,6 +2524,7 @@ function repeatProgress(rid){
   const s=DB.session;if(!s)return;let subidos=0;
   s.blocks.forEach(b=>{if(b.type!=='fuerza'&&b.type!=='hipertrofia')return;b.exercises.forEach(e=>{
     const prev=e.prev;if(!prev||!prev.length)return;
+    if(noteSentiment(DB.exNotes&&DB.exNotes[e.name])==='pain')return; // no subir si hay molestia anotada
     const allDone=prev.every(p=>(+p.reps||0)>0);const maxRpe=Math.max(...prev.map(p=>+p.rpe||0));
     if(allDone&&maxRpe>0&&maxRpe<=8){e.sets.forEach((st,i)=>{const base=+((prev[i]||prev[0]).kg)||0;if(base>0){st.kg=Math.round((base+2.5)*4)/4;subidos++;}});}
   });});
@@ -2632,6 +2865,14 @@ function startWarmup(rid){
   const r=DB.routines.find(x=>x.id===rid);if(!r)return;
   const seq=warmupFor(r);const mins=Math.round(seq.reduce((a,p)=>a+p.sec,0)/60);
   runSequence(`Calentamiento · ${r.name}`,seq,()=>{toast('🔥 Calentado. ¡A entrenar!');});
+}
+function ytSearch(q){return 'https://www.youtube.com/results?search_query='+encodeURIComponent(q);}
+function warmupVideo(rid){const r=DB.routines.find(x=>x.id===rid);const nm=r?r.name:'';const zona=/pierna|leg|lower|inferior|sentadilla/i.test(nm)?'piernas':/push|pull|torso|upper|superior|press|espalda|pecho/i.test(nm)?'tren superior':'cuerpo completo';try{window.open(ytSearch('calentamiento dinámico antes de entrenar '+zona),'_blank');}catch(e){}}
+function startStretchFull(){closeModal();const seq=[...ST_LOWER,...ST_UPPER].map(p=>({...p}));runSequence('Estiramientos completos',seq,()=>renderDashboard());}
+function openRecoveryMenu(){
+  openModal(`<h3>🧘 Recuperación</h3><p class="mini" style="margin-bottom:10px">Estira y trabaja el abdomen al terminar de entrenar. Elige zona (o míralo en vídeo si prefieres ver la forma):</p>
+  <div class="ex-block" style="border-color:var(--acc2)"><b>🧘 Estiramientos</b><div class="row" style="gap:6px;margin-top:8px"><button class="btn-sm btn-acc2" onclick="startStretch(true)">Tren inferior</button><button class="btn-sm btn-acc2" onclick="startStretch(false)">Tren superior</button><button class="btn-sm btn2" onclick="startStretchFull()">Completo</button></div><a class="exvid-link" href="${ytSearch('rutina de estiramientos post entreno guiada')}" target="_blank">🎬 Ver en vídeo</a></div>
+  <div class="ex-block" style="border-color:var(--viol)"><b>🔥 Abdominales / core</b><div class="row" style="gap:6px;margin-top:8px"><button class="btn-sm btn-viol" onclick="startCore()">▶ Rutina de core guiada</button></div><a class="exvid-link" href="${ytSearch('rutina de abdominales core sin material guiada')}" target="_blank">🎬 Ver en vídeo</a></div>`);
 }
 
 /* ===================== CRONÓMETRO DE INTERVALOS ===================== */
