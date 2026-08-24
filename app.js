@@ -1155,7 +1155,7 @@ function renderRunView(){
   const totalKm=p.items.reduce((a,x)=>a+(x.session.km||0),0);
   const doneKm=p.items.filter(x=>x.done).reduce((a,x)=>a+(x.actualKm||x.session.km||0),0);
   const stats=(function(){const s=r.history;if(!s.length)return null;const best5=s.filter(x=>x.km>=4.8&&x.km<=5.2).sort((a,b)=>a.duration-b.duration)[0];const best10=s.filter(x=>x.km>=9.5&&x.km<=10.5).sort((a,b)=>a.duration-b.duration)[0];return{best5,best10};})();
-  let html=`<button class="btn btn-acc" style="width:100%;margin-bottom:12px" onclick="startGpsRun()">📍 Carrera libre con GPS</button><div class="stat-grid c2"><div class="stat"><div class="v acc2">${r.target}</div><div class="l">objetivo</div></div><div class="stat"><div class="v acc">${totalKm.toFixed(1)}</div><div class="l">km planificados</div></div></div>`;
+  let html=`<div class="row" style="margin-bottom:12px"><button class="btn btn-acc" style="flex:1" onclick="openRunWorkouts()">🎯 Entreno guiado</button><button class="btn btn-acc2" style="flex:1" onclick="startGpsRun()">📍 Carrera libre</button></div><div class="stat-grid c2"><div class="stat"><div class="v acc2">${r.target}</div><div class="l">objetivo</div></div><div class="stat"><div class="v acc">${totalKm.toFixed(1)}</div><div class="l">km planificados</div></div></div>`;
   if(stats){html+=`<div class="row" style="margin-top:8px">${stats.best5?`<div class="stat" style="flex:1"><div class="v gold">${paceStr(stats.best5.duration/stats.best5.km)}</div><div class="l">mejor 5K min/km</div></div>`:''}${stats.best10?`<div class="stat" style="flex:1"><div class="v gold">${paceStr(stats.best10.duration/stats.best10.km)}</div><div class="l">mejor 10K min/km</div></div>`:''}</div>`;}
   html+=`<div class="bar" style="margin-top:10px"><i style="width:${totalKm>0?Math.min(100,Math.round(doneKm/totalKm*100)):0}%;background:var(--acc2)"></i></div><p class="mini" style="margin-top:4px">${doneKm.toFixed(1)} / ${totalKm.toFixed(1)} km esta semana</p>`;
   // sesiones
@@ -1258,6 +1258,169 @@ function saveGpsRun(km,dur){
   save();closeModal();renderRunView();renderDashboard();toast(`🏃 ${km} km guardados · ${paceStr(dur/km)}/km`);
 }
 function ensureRunOverlay(){let ov=document.getElementById('runOverlay');if(!ov){ov=document.createElement('div');ov.id='runOverlay';ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(10,11,15,.98);display:flex;align-items:center;justify-content:center;padding:20px';document.body.appendChild(ov);}return ov;}
+
+/* ===================== CARRERA ESTRUCTURADA (GPS + ritmo objetivo + feedback) ===================== */
+/* Ritmo base tomado de TU historial. Nunca impone ritmos irreales.
+   Feedback en vivo: 🟢 dentro / 🟡 acelera / 🔴 afloja, con voz. */
+function myBasePace(){
+  // mediana de ritmo de las carreras guardadas; fallback 6:30/km
+  const hist=(DB.running.history||[]).filter(h=>h.km>=1&&h.duration>0);
+  if(!hist.length)return 390; // 6:30/km por defecto, prudente
+  const paces=hist.map(h=>h.duration/h.km).sort((a,b)=>a-b);
+  return Math.round(paces[Math.floor(paces.length/2)]);
+}
+/* Genera la sesión estructurada. Cada fase: {lbl,kind,km?,sec?,targetLo?,targetHi?,tip} */
+function buildRunWorkout(type){
+  const base=myBasePace(); // s/km cómodo
+  const easy=Math.round(base*1.05), mod=base, fast=Math.round(base*0.88), sprint=Math.round(base*0.80);
+  const P=(p)=>paceStr(p);
+  const warm={lbl:'CALENTAMIENTO',kind:'warm',sec:480,targetLo:easy+30,targetHi:easy+90,tip:'Trote suave, movilidad y algún progresivo'};
+  const cool={lbl:'VUELTA A LA CALMA',kind:'cool',sec:300,targetLo:easy+30,targetHi:easy+120,tip:'Trota muy suave y respira'};
+  const rec=(sec)=>({lbl:'RECUPERA',kind:'rest',sec,targetLo:easy+60,targetHi:easy+180,tip:'Trote muy suave o camina'});
+  let mid=[];
+  if(type==='easy5'){mid=[{lbl:'RODAJE CÓMODO',kind:'work',km:5,targetLo:easy-15,targetHi:easy+30,tip:'Ritmo conversado, sin ahogarte'}];}
+  else if(type==='prog5'){mid=[{lbl:'PROGRESIVO 1',kind:'work',km:2,targetLo:easy,targetHi:easy+30,tip:'Empieza cómodo'},{lbl:'PROGRESIVO 2',kind:'work',km:2,targetLo:mod,targetHi:mod+20,tip:'Sube un punto'},{lbl:'PROGRESIVO 3',kind:'work',km:1,targetLo:fast,targetHi:mod,tip:'Termina fuerte'}];}
+  else if(type==='int400'){for(let i=1;i<=6;i++){mid.push({lbl:`400 m FUERTE (${i}/6)`,kind:'interval',km:0.4,targetLo:fast-10,targetHi:fast+10,tip:'Rápido pero controlado'});if(i<6)mid.push(rec(120));}}
+  else if(type==='int800'){for(let i=1;i<=5;i++){mid.push({lbl:`800 m FUERTE (${i}/5)`,kind:'interval',km:0.8,targetLo:fast,targetHi:fast+15,tip:'Ritmo exigente sostenible'});if(i<5)mid.push(rec(150));}}
+  else if(type==='tempo'){mid=[{lbl:'TEMPO SOSTENIDO',kind:'work',km:4,targetLo:mod-10,targetHi:mod+10,tip:'Cómodo pero exigente, sin ahogarte'}];}
+  else if(type==='fartlek'){for(let i=1;i<=6;i++){mid.push({lbl:`1 min FUERTE (${i}/6)`,kind:'interval',sec:60,targetLo:fast,targetHi:fast+20,tip:'Cambia de ritmo'});mid.push({lbl:'2 min suave',kind:'rest',sec:120,targetLo:easy,targetHi:easy+60,tip:'Recupera trotando'});}}
+  else if(type==='tecnica'){mid=[{lbl:'DRILLS + PROGRESIVOS',kind:'work',sec:300,targetLo:easy,targetHi:easy+60,tip:'Skipping, talones, zancada amplia'},{lbl:'CARRERA CONTINUA',kind:'work',km:3,targetLo:easy-10,targetHi:easy+30,tip:'Aplica la técnica'}];}
+  else if(type==='long10'){mid=[{lbl:'TIRADA LARGA',kind:'work',km:10,targetLo:easy,targetHi:easy+40,tip:'Ritmo cómodo y constante, construye resistencia'}];}
+  return [warm,...mid,cool];
+}
+const RUN_WORKOUTS=[
+  {id:'easy5',ic:'🏃',lbl:'5 km fácil'},
+  {id:'prog5',ic:'📈',lbl:'5 km progresivo'},
+  {id:'int400',ic:'⚡',lbl:'Intervalos 400 m'},
+  {id:'int800',ic:'🔥',lbl:'Intervalos 800 m'},
+  {id:'tempo',ic:'🫀',lbl:'Tempo'},
+  {id:'fartlek',ic:'🌊',lbl:'Fartlek'},
+  {id:'tecnica',ic:'🦵',lbl:'Técnica + carrera'},
+  {id:'long10',ic:'🛣️',lbl:'10 km'}
+];
+function openRunWorkouts(){
+  const base=myBasePace();
+  const rc=recoveryScore();
+  let warn='';
+  if(rc<50)warn=`<div class="note" style="border-color:var(--gold);margin-bottom:10px">⚠️ Tu Recovery está bajo (${rc}). Hoy mejor un rodaje fácil que series duras.</div>`;
+  openModal(`<h3>🏃 Entrenamiento guiado por GPS</h3><p class="mini" style="margin-bottom:10px">Ritmo objetivo calculado desde tus carreras (tu base: <b>${paceStr(base)}/km</b>). La app te marcará el objetivo de cada bloque y te dirá en vivo si vas 🟢 bien, 🟡 rápido o 🔴 lento.</p>${warn}<div style="display:flex;flex-direction:column;gap:6px">${RUN_WORKOUTS.map(w=>`<button class="btn2" onclick="previewRunWorkout('${w.id}')">${w.ic} ${w.lbl}</button>`).join('')}</div>`);
+}
+function previewRunWorkout(type){
+  const seq=buildRunWorkout(type);const w=RUN_WORKOUTS.find(x=>x.id===type);
+  const totalKm=seq.reduce((a,s)=>a+(s.km||0),0);
+  openModal(`<h3>${w.ic} ${w.lbl}</h3><p class="mini" style="margin-bottom:10px">Vista previa. Cada bloque con su ritmo objetivo:</p><div style="max-height:280px;overflow:auto">${seq.map(s=>`<div class="sub-opt"><span>${s.lbl} <span class="mini">${s.tip}</span></span><span class="mini">${s.km?s.km+' km':Math.round(s.sec/60)+':'+String(s.sec%60).padStart(2,'0')}${s.targetLo&&s.kind!=='rest'&&s.kind!=='warm'&&s.kind!=='cool'?' · '+paceStr(s.targetHi)+'-'+paceStr(s.targetLo):''}</span></div>`).join('')}</div><p class="mini" style="margin-top:8px">${totalKm>0?'≈ '+totalKm.toFixed(1)+' km + calentamiento':''}</p><button class="btn btn-acc" style="margin-top:12px;width:100%" onclick="startRunWorkout('${type}')">▶ EMPEZAR con GPS</button>`);
+}
+let RW=null;
+function startRunWorkout(type){
+  if(!navigator.geolocation){toast('Tu navegador no tiene GPS');return;}
+  initAudio();closeModal();
+  const phases=buildRunWorkout(type);
+  RW={type,phases,idx:0,phaseKm:0,phaseSec:0,phaseStartKm:0,phaseStartTs:Date.now(),lastFb:'',fbTs:0};
+  GPS={active:true,watchId:null,tickId:null,startTs:Date.now(),pauseAccum:0,paused:false,km:0,pts:[],lastPt:null,splits:[],lastSplitKm:0,workout:true};
+  if(DB.settings&&DB.settings.wakeLock!==false)requestWake();
+  const ov=ensureRunOverlay();ov.style.display='flex';
+  const ph=phases[0];
+  speak(`${ph.lbl}. ${ph.tip}`);beep(2);
+  GPS.watchId=navigator.geolocation.watchPosition(onRunWorkoutPos,onGpsErr,{enableHighAccuracy:true,maximumAge:1000,timeout:15000});
+  GPS.tickId=setInterval(runWorkoutTick,1000);
+  renderRunWorkout();
+}
+function onRunWorkoutPos(pos){
+  if(!GPS.active||GPS.paused)return;
+  const p={lat:pos.coords.latitude,lng:pos.coords.longitude,t:Date.now(),acc:pos.coords.accuracy};
+  if(p.acc&&p.acc>40)return;
+  if(GPS.lastPt){const d=haversine(GPS.lastPt,p);if(d>1&&d<80){GPS.km+=d/1000;RW.phaseKm=GPS.km-RW.phaseStartKm;
+    if(Math.floor(GPS.km)>GPS.lastSplitKm){GPS.lastSplitKm=Math.floor(GPS.km);const elapsed=(Date.now()-GPS.startTs-GPS.pauseAccum)/1000;const prevT=GPS.splits.reduce((a,s)=>a+s,0);GPS.splits.push(elapsed-prevT);}
+  }}
+  GPS.lastPt=p;
+}
+function phasePace(){const dt=(Date.now()-RW.phaseStartTs)/1000;return RW.phaseKm>0.03?dt/RW.phaseKm:0;}
+function runWorkoutTick(){
+  if(GPS.paused)return;
+  const ph=RW.phases[RW.idx];RW.phaseSec=(Date.now()-RW.phaseStartTs)/1000;
+  // ¿fase terminada? por distancia o por tiempo
+  const doneKm=ph.km&&RW.phaseKm>=ph.km;
+  const doneSec=ph.sec&&RW.phaseSec>=ph.sec;
+  if(doneKm||doneSec){nextRunPhase();return;}
+  // feedback de ritmo en fases con objetivo de trabajo
+  if((ph.kind==='work'||ph.kind==='interval')&&ph.targetLo){
+    const pace=phasePace();
+    if(pace>0&&Date.now()-RW.fbTs>8000&&RW.phaseKm>0.08){
+      let fb;
+      if(pace>ph.targetLo+12){fb='slow';}      // más lento que el objetivo (número mayor)
+      else if(pace<ph.targetHi-12){fb='fast';} // más rápido
+      else fb='ok';
+      if(fb!==RW.lastFb){RW.lastFb=fb;RW.fbTs=Date.now();
+        if(fb==='slow'){speak('Acelera un poco');beep(1);}
+        else if(fb==='fast'){speak('Afloja un poco');beep(1);}
+        else{speak('Ritmo perfecto');}
+      }
+    }
+  }
+  // aviso de últimos segundos en fases por tiempo
+  if(ph.sec){const left=ph.sec-RW.phaseSec;if(left<=3&&left>2){beep(1);}}
+  renderRunWorkout();
+}
+function nextRunPhase(){
+  RW.idx++;
+  if(RW.idx>=RW.phases.length){finishRunWorkout();return;}
+  RW.phaseStartKm=GPS.km;RW.phaseKm=0;RW.phaseStartTs=Date.now();RW.phaseSec=0;RW.lastFb='';RW.fbTs=Date.now();
+  const ph=RW.phases[RW.idx];const last=RW.idx===RW.phases.length-1;
+  beep(3,true);try{if(navigator.vibrate)navigator.vibrate([200,80,200]);}catch(e){}
+  speak(`${ph.lbl}. ${ph.tip}${last?'. Última parte':''}`);
+  renderRunWorkout();
+}
+function fbBadge(){
+  if(!RW)return '';const ph=RW.phases[RW.idx];
+  if((ph.kind!=='work'&&ph.kind!=='interval')||!ph.targetLo)return '';
+  const map={ok:['🟢','DENTRO DEL OBJETIVO','var(--ok)'],fast:['🔴','VAS RÁPIDO · afloja','var(--bad)'],slow:['🟡','VAS LENTO · acelera','var(--gold)']};
+  const m=map[RW.lastFb];if(!m)return '';
+  return `<div style="font-family:Anton;font-size:20px;color:${m[2]};margin:6px 0">${m[0]} ${m[1]}</div>`;
+}
+function renderRunWorkout(){
+  const ov=document.getElementById('runOverlay');if(!ov||!GPS.active||!RW)return;
+  const ph=RW.phases[RW.idx];const col={warm:'var(--acc2)',work:'var(--acc)',interval:'var(--gold)',rest:'var(--ok)',cool:'var(--ok)'}[ph.kind]||'var(--acc)';
+  const pace=phasePace();
+  const totalT=(Date.now()-GPS.startTs-GPS.pauseAccum)/1000;
+  // progreso de fase
+  let prog=0,goal='';
+  if(ph.km){prog=Math.min(100,RW.phaseKm/ph.km*100);goal=`${RW.phaseKm.toFixed(2)} / ${ph.km} km`;}
+  else if(ph.sec){prog=Math.min(100,RW.phaseSec/ph.sec*100);goal=`${Math.floor(RW.phaseSec)} / ${ph.sec}s`;}
+  const tgt=ph.targetLo&&(ph.kind==='work'||ph.kind==='interval')?`🎯 ${paceStr(ph.targetHi)}–${paceStr(ph.targetLo)}/km`:'';
+  const next=RW.phases[RW.idx+1];
+  ov.innerHTML=`<div style="width:100%;max-width:440px;text-align:center">
+    <div class="mini" style="letter-spacing:2px">🏃 ${RUN_WORKOUTS.find(w=>w.id===RW.type)?.lbl||''} · fase ${RW.idx+1}/${RW.phases.length}</div>
+    <div style="font-family:Anton;font-size:26px;color:${col};margin-top:4px">${ph.lbl}</div>
+    <div style="font-size:13px;color:var(--dim);margin:2px 0 6px">${ph.tip}</div>
+    ${tgt?`<div class="tag" style="color:var(--gold);font-size:14px">${tgt}</div>`:''}
+    ${fbBadge()}
+    <div style="font-family:Anton;font-size:60px;line-height:1;margin:6px 0">${pace>0?paceStr(pace):'--:--'}<span style="font-size:20px">/km</span></div>
+    <div class="stat-grid" style="margin:8px 0"><div class="stat"><div class="v acc">${GPS.km.toFixed(2)}</div><div class="l">km total</div></div><div class="stat"><div class="v acc2">${Math.floor(totalT/60)}:${String(Math.floor(totalT%60)).padStart(2,'0')}</div><div class="l">tiempo</div></div><div class="stat"><div class="v gold">${goal.split(' / ')[0]}</div><div class="l">en fase</div></div></div>
+    <div style="height:10px;background:var(--bg3);border-radius:5px;margin:0 20px"><div style="height:100%;background:${col};border-radius:5px;width:${prog}%;transition:width .3s"></div></div>
+    <div class="mini" style="margin-top:6px">${goal}${next?` · sigue: ${next.lbl}`:' · última fase'}</div>
+    <div id="gpsStat"></div>
+    <div class="row" style="margin-top:14px;justify-content:center"><button class="btn2" onclick="skipRunPhase()">Saltar fase ▶</button><button class="btn2" onclick="pauseRunWorkout()">${GPS.paused?'▶':'⏸'}</button><button class="btn-acc" onclick="stopRunWorkout()">Terminar</button></div>
+  </div>`;
+}
+function skipRunPhase(){if(RW)nextRunPhase();}
+function pauseRunWorkout(){if(!GPS.active)return;if(GPS.paused){GPS.paused=false;GPS.pauseAccum+=Date.now()-GPS._pauseStart;GPS.lastPt=null;RW.phaseStartTs+=Date.now()-GPS._pauseStart;speak('Seguimos');}else{GPS.paused=true;GPS._pauseStart=Date.now();speak('Pausa');}renderRunWorkout();}
+function stopRunWorkout(){if(!confirm('¿Terminar el entrenamiento?'))return;finishRunWorkout();}
+function finishRunWorkout(){
+  if(GPS.watchId!=null)navigator.geolocation.clearWatch(GPS.watchId);
+  clearInterval(GPS.tickId);GPS.active=false;
+  const dur=Math.round((Date.now()-GPS.startTs-GPS.pauseAccum)/1000);const km=+GPS.km.toFixed(2);
+  releaseWake();const ov=document.getElementById('runOverlay');if(ov)ov.style.display='none';
+  const wlbl=RUN_WORKOUTS.find(w=>w.id===RW.type)?.lbl||'Entrenamiento';
+  if(km<0.1){RW=null;toast('Carrera muy corta, no se guarda');return;}
+  openModal(`<h3>🏁 ${wlbl}</h3><div class="stat-grid" style="margin:10px 0"><div class="stat"><div class="v acc">${km}</div><div class="l">km</div></div><div class="stat"><div class="v acc2">${Math.floor(dur/60)}:${String(dur%60).padStart(2,'0')}</div><div class="l">tiempo</div></div><div class="stat"><div class="v gold">${paceStr(dur/km)}</div><div class="l">ritmo medio</div></div></div><label>RPE (1-10)</label><input id="gpsRpe" type="number" value="7"><label style="margin-top:8px">Nota</label><input id="gpsNote" placeholder="Cómo fue"><button class="btn btn-acc2" style="margin-top:12px" onclick="saveRunWorkout(${km},${dur})">Guardar</button>`);
+  speak(`${wlbl} completado. ${km} kilómetros. Muy bien`);beep(3,true);
+}
+function saveRunWorkout(km,dur){
+  const rpe=+document.getElementById('gpsRpe').value||7;const note=document.getElementById('gpsNote').value||'';
+  DB.running.history.unshift({date:today(),type:RW.type,km,duration:dur,rpe,note,splits:GPS.splits.map(s=>Math.round(s)),gps:true,structured:true});
+  DB.extraLog[today()]=DB.extraLog[today()]||{};DB.extraLog[today()].run=true;DB.extraLog[today()].runKm=(DB.extraLog[today()].runKm||0)+km;DB.extraLog[today()].runMin=(DB.extraLog[today()].runMin||0)+Math.round(dur/60);
+  RW=null;save();closeModal();renderRunView();renderDashboard();toast(`🏃 ${km} km guardados`);
+}
 
 /* ===================== RUTINA MATUTINA ===================== */
 /* Despertar el cuerpo por la mañana. Reutiliza el motor de secuencias guiadas.
@@ -1577,18 +1740,43 @@ function startSpin(type,min,mode){
 function spinTick(){
   SPIN.left--;
   const nextPh=SPIN.phases[SPIN.idx+1];
+  const ph=SPIN.phases[SPIN.idx];
   // aviso previo de 5 segundos
   if(SPIN.left===5&&nextPh){speak(`Cambio en 5`);beep(1);}
   if(SPIN.left===4||SPIN.left===3||SPIN.left===2||SPIN.left===1){if(nextPh){beep(1);try{if(navigator.vibrate)navigator.vibrate(60);}catch(e){}}}
+  // microinstrucciones de coach a mitad de fase (solo fases largas de trabajo)
+  const elapsed=ph.sec-SPIN.left;
+  if(ph.sec>=40&&(ph.kind==='work'||ph.kind==='sprint')){
+    if(SPIN.left===10)speak('Últimos 10 segundos, aguanta');
+    else if(elapsed===15&&ph.sec>=60)speak(spinCue(ph));
+    else if(SPIN.left===Math.floor(ph.sec/2)&&ph.sec>=50)speak('Mantén, vas muy bien');
+  }
+  if(ph.kind==='rest'&&SPIN.left===Math.floor(ph.sec/2)&&ph.sec>=30)speak('Recupera, respira');
   if(SPIN.left<=0){
     SPIN.idx++;
     if(SPIN.idx>=SPIN.phases.length){finishSpin();return;}
-    const ph=SPIN.phases[SPIN.idx];SPIN.left=ph.sec;
+    const np=SPIN.phases[SPIN.idx];SPIN.left=np.sec;
     beep(3,true);try{if(navigator.vibrate)navigator.vibrate([200,80,200]);}catch(e){}
     const last=SPIN.idx===SPIN.phases.length-2;
-    speak(`${ph.lbl}. Erre pe e ${ph.rpe}. ${ph.tip}${last?'. Última parte':''}`);
+    speak(`${np.lbl}. ${spinCue(np)}${last?'. Última parte':''}`);
   }
   renderSpinLive();
+}
+/* Microinstrucción según el tipo de fase (coaching relativo, no números de resistencia) */
+function spinCue(ph){
+  if(ph.kind==='warm')return 'Resistencia baja, cadencia cómoda, entra en calor';
+  if(ph.kind==='cool')return 'Baja resistencia, suelta las piernas';
+  if(ph.kind==='rest')return 'Recupera, respira hondo';
+  if(ph.kind==='sprint')return 'De pie, sube resistencia, a tope';
+  // work: variar según intensidad (rpe)
+  if(ph.rpe>=7)return 'Sube resistencia un punto, mantén la cadencia';
+  if(ph.rpe>=5)return 'Cadencia firme, resistencia media';
+  return 'Pedaleo controlado';
+}
+function spinRoad(kind){
+  // fondo visual de ruta: terreno según fase
+  const map={warm:['🌅','llano suave'],cool:['🌇','llano, bajando'],rest:['🛣️','llano, recupera'],work:['⛰️','subida'],sprint:['🏔️','cima / sprint']};
+  return map[kind]||['🛣️','ruta'];
 }
 function spinPhaseColor(kind){return {warm:'var(--acc2)',cool:'var(--ok)',rest:'var(--acc2)',work:'var(--acc)',sprint:'var(--gold)'}[kind]||'var(--acc)';}
 function renderSpinLive(){
@@ -1599,12 +1787,18 @@ function renderSpinLive(){
   const pct=Math.round((ph.sec-SPIN.left)/ph.sec*100);
   const next=SPIN.phases[SPIN.idx+1];
   const totalLeft=SPIN.phases.slice(SPIN.idx).reduce((a,p,i)=>a+(i===0?SPIN.left:p.sec),0);
+  const road=spinRoad(ph.kind);
+  // perfil de ruta: una barra por fase, altura según intensidad (rpe), la actual parpadea
+  const profile=SPIN.phases.map((p,i)=>{const h=6+(p.rpe||3)*3.5;const active=i===SPIN.idx;const done=i<SPIN.idx;return `<div style="flex:1;height:${h}px;background:${done?'var(--dim)':active?spinPhaseColor(p.kind):'var(--bg3)'};border-radius:2px 2px 0 0;${active?'box-shadow:0 0 8px '+spinPhaseColor(p.kind):''};transition:all .3s"></div>`;}).join('');
   el.innerHTML=`<div class="card" style="border-color:${col};margin-bottom:10px">
+    <div style="display:flex;align-items:flex-end;gap:2px;height:52px;margin-bottom:6px;padding:0 2px">${profile}</div>
     <div style="text-align:center">
+      <div style="font-size:26px">${road[0]}</div>
       <div style="font-family:Anton;font-size:26px;color:${col};letter-spacing:1px">${ph.lbl}</div>
+      <div class="mini" style="color:${col}">${road[1]}</div>
       <div style="font-family:Anton;font-size:64px;line-height:1;margin:4px 0">${m}:${String(s).padStart(2,'0')}</div>
-      <div class="tag" style="color:${col};font-size:14px">RPE ${ph.rpe} · esfuerzo ${['','muy suave','muy suave','suave','moderado','moderado','sostenido','fuerte','fuerte','muy fuerte','máximo'][ph.rpe]||''}</div>
-      <div style="font-size:13px;color:var(--dim);margin-top:6px">${ph.tip}</div>
+      <div class="tag" style="color:${col};font-size:14px">RPE ${ph.rpe} · ${['','muy suave','muy suave','suave','moderado','moderado','sostenido','fuerte','fuerte','muy fuerte','máximo'][ph.rpe]||''}</div>
+      <div style="font-size:14px;color:var(--fg);margin-top:8px;font-weight:600">💬 ${spinCue(ph)}</div>
       <div style="height:8px;background:var(--bg3);border-radius:4px;margin:10px 0 0"><div style="height:100%;background:${col};border-radius:4px;width:${pct}%;transition:width .3s"></div></div>
       ${next?`<div class="mini" style="margin-top:8px">Siguiente: ${next.lbl} · ${Math.floor(next.sec/60)}:${String(next.sec%60).padStart(2,'0')}</div>`:'<div class="mini" style="margin-top:8px">¡Última fase!</div>'}
       <div class="mini">Fase ${SPIN.idx+1}/${SPIN.phases.length} · quedan ~${Math.ceil(totalLeft/60)} min</div>
@@ -1657,14 +1851,57 @@ function cardioTab(t,el){
   else if(t==='hist'){renderCardioHist();}
 }
 
+/* ===================== BIBLIOTECA VISUAL DE EJERCICIOS (SVG animado, offline) ===================== */
+/* Cada animación es un SVG ligero (~1KB) con figura esquemática y movimiento CSS.
+   Se referencian por clave desde calentamiento, core, matutina, estiramientos.
+   Fallback: si no hay animación específica, figura genérica + botón a YouTube. */
+const EX_ANIM={
+  tobillo:`<g class="an-rock"><circle cx="50" cy="30" r="10"/><line x1="50" y1="40" x2="50" y2="70"/><line x1="50" y1="70" x2="35" y2="95"/><line x1="50" y1="70" x2="68" y2="92"/><line x1="35" y1="95" x2="30" y2="95"/></g>`,
+  cadera:`<g class="an-circle" style="transform-origin:50px 55px"><circle cx="50" cy="25" r="9"/><line x1="50" y1="34" x2="50" y2="62"/><line x1="50" y1="62" x2="40" y2="92"/><line x1="50" y1="62" x2="60" y2="92"/><line x1="50" y1="44" x2="34" y2="52"/><line x1="50" y1="44" x2="66" y2="52"/></g>`,
+  hombros:`<g><circle cx="50" cy="26" r="9"/><line x1="50" y1="35" x2="50" y2="70"/><line x1="50" y1="70" x2="42" y2="95"/><line x1="50" y1="70" x2="58" y2="95"/><line class="an-armL" x1="50" y1="42" x2="30" y2="42" style="transform-origin:50px 42px"/><line class="an-armR" x1="50" y1="42" x2="70" y2="42" style="transform-origin:50px 42px"/></g>`,
+  gato:`<g class="an-catcamel"><ellipse cx="50" cy="55" rx="26" ry="10"/><line x1="26" y1="58" x2="24" y2="80"/><line x1="74" y1="58" x2="76" y2="80"/><line x1="34" y1="60" x2="33" y2="80"/><line x1="66" y1="60" x2="67" y2="80"/><circle cx="80" cy="48" r="6"/></g>`,
+  sentadilla:`<g class="an-squat"><circle cx="50" cy="22" r="9"/><line x1="50" y1="31" x2="50" y2="58"/><line x1="50" y1="58" x2="40" y2="78"/><line x1="40" y1="78" x2="42" y2="95"/><line x1="50" y1="58" x2="60" y2="78"/><line x1="60" y1="78" x2="58" y2="95"/><line x1="50" y1="40" x2="36" y2="46"/><line x1="50" y1="40" x2="64" y2="46"/></g>`,
+  estiramiento:`<g class="an-reach"><circle cx="50" cy="28" r="9"/><line x1="50" y1="37" x2="50" y2="72"/><line x1="50" y1="72" x2="42" y2="96"/><line x1="50" y1="72" x2="58" y2="96"/><line class="an-up" x1="50" y1="45" x2="42" y2="18" style="transform-origin:50px 45px"/><line class="an-up" x1="50" y1="45" x2="58" y2="18" style="transform-origin:50px 45px"/></g>`,
+  plancha:`<g class="an-plank"><line x1="18" y1="70" x2="82" y2="58" stroke-width="5"/><circle cx="84" cy="56" r="6"/><line x1="24" y1="70" x2="22" y2="92"/><line x1="70" y1="61" x2="72" y2="92"/><line x1="30" y1="69" x2="28" y2="88"/></g>`,
+  deadbug:`<g><ellipse cx="50" cy="60" rx="8" ry="18"/><line class="an-armL" x1="48" y1="46" x2="34" y2="30" style="transform-origin:48px 46px"/><line class="an-armR" x1="52" y1="46" x2="66" y2="30" style="transform-origin:52px 46px"/><line class="an-legR" x1="52" y1="74" x2="68" y2="88" style="transform-origin:52px 74px"/><line class="an-legL" x1="48" y1="74" x2="34" y2="88" style="transform-origin:48px 74px"/></g>`,
+  sidePlank:`<g class="an-fade"><line x1="20" y1="82" x2="78" y2="40" stroke-width="5"/><circle cx="80" cy="37" r="6"/><line x1="22" y1="82" x2="22" y2="60"/><line class="an-up" x1="50" y1="61" x2="52" y2="34" style="transform-origin:50px 61px"/></g>`,
+  hollow:`<g class="an-hollow"><path d="M25 60 Q50 48 75 60" fill="none" stroke-width="5"/><circle cx="20" cy="60" r="6"/><line x1="26" y1="59" x2="14" y2="46"/><line x1="74" y1="60" x2="86" y2="48"/></g>`,
+  zancada:`<g class="an-lunge"><circle cx="50" cy="24" r="9"/><line x1="50" y1="33" x2="50" y2="60"/><line x1="50" y1="60" x2="34" y2="76"/><line x1="34" y1="76" x2="34" y2="95"/><line x1="50" y1="60" x2="68" y2="80"/><line x1="68" y1="80" x2="60" y2="95"/></g>`,
+  respira:`<g class="an-breathe" style="transform-origin:50px 50px"><circle cx="50" cy="50" r="24" fill="none" stroke-width="3"/><circle cx="50" cy="50" r="12"/></g>`,
+  generic:`<g class="an-fade"><circle cx="50" cy="28" r="10"/><line x1="50" y1="38" x2="50" y2="70"/><line x1="50" y1="70" x2="40" y2="95"/><line x1="50" y1="70" x2="60" y2="95"/><line x1="50" y1="48" x2="34" y2="58"/><line x1="50" y1="48" x2="66" y2="58"/></g>`
+};
+function exSVG(key){
+  const g=EX_ANIM[key]||EX_ANIM.generic;
+  return `<svg viewBox="0 0 100 100" style="width:150px;height:150px" fill="none" stroke="var(--acc2)" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">${g}</svg>`;
+}
+
 /* ===================== MOTOR DE SECUENCIAS GUIADAS (universal) ===================== */
 /* Reutiliza el patrón del cardio: una lista de fases {lbl,sec,tip,kind} guiada con
    cuenta atrás, aviso de 5s, sonido, vibración y voz. Sirve para calentamiento,
    estiramientos y core. Se muestra en un overlay para funcionar desde cualquier vista. */
 let SEQ={active:false,id:null,phases:[],idx:0,left:0,title:'',onDone:null};
+function autoAnim(lbl){
+  const s=(lbl||'').toLowerCase();
+  if(/tobillo/.test(s))return{anim:'tobillo',ex:'movilidad de tobillo'};
+  if(/cadera|glúteo|gluteo/.test(s))return{anim:'cadera',ex:'movilidad de cadera'};
+  if(/hombro|escápula|escapula|manguito/.test(s))return{anim:'hombros',ex:'movilidad de hombros'};
+  if(/gato|camello|columna|torácica|toracica/.test(s))return{anim:'gato',ex:'gato camello ejercicio'};
+  if(/sentadilla|squat/.test(s))return{anim:'sentadilla',ex:'sentadilla peso corporal'};
+  if(/zancada|lunge/.test(s))return{anim:'zancada',ex:'zancada'};
+  if(/dead ?bug/.test(s))return{anim:'deadbug',ex:'dead bug ejercicio'};
+  if(/plancha lateral|side plank/.test(s))return{anim:'sidePlank',ex:'plancha lateral'};
+  if(/plancha|plank/.test(s))return{anim:'plancha',ex:'plancha abdominal'};
+  if(/hollow/.test(s))return{anim:'hollow',ex:'hollow hold'};
+  if(/estira|estíra|cuádriceps|cuadriceps|isquios|gemelo|dorsal|tríceps|triceps|pecho|cuello/.test(s))return{anim:'estiramiento',ex:lbl+' estiramiento'};
+  if(/respira|respiración|respiracion|breathe/.test(s))return{anim:'respira',ex:''};
+  if(/jumping|jack|cardio|progres|dinámica|dinamica|balanceo/.test(s))return{anim:'sentadilla',ex:''};
+  return{anim:'generic',ex:lbl};
+}
 function runSequence(title,phases,onDone){
   if(!phases||!phases.length){if(onDone)onDone();return;}
   initAudio();
+  // enriquecer cada fase con animación si no la trae
+  phases=phases.map(p=>{if(p.anim)return p;if(p.kind==='rest'||p.kind==='cool'&&/calma/.test(p.lbl||''))return{...p,anim:'respira',ex:''};const a=autoAnim(p.lbl);return{...p,anim:a.anim,ex:a.ex};});
   SEQ={active:true,id:null,phases,idx:0,left:phases[0].sec,title,onDone};
   if(DB.settings&&DB.settings.wakeLock)requestWake();
   let ov=document.getElementById('seqOverlay');
@@ -1696,13 +1933,15 @@ function renderSeq(){
   const totalLeft=SEQ.phases.slice(SEQ.idx).reduce((a,p,i)=>a+(i===0?SEQ.left:p.sec),0);
   ov.innerHTML=`<div style="width:100%;max-width:440px;text-align:center">
     <div class="mini" style="letter-spacing:2px;text-transform:uppercase">${SEQ.title}</div>
-    <div style="font-family:Anton;font-size:30px;color:${col};letter-spacing:1px;margin-top:6px">${ph.lbl}</div>
-    <div style="font-family:Anton;font-size:88px;line-height:1;margin:10px 0">${m}:${String(s).padStart(2,'0')}</div>
-    ${ph.tip?`<div style="font-size:15px;color:var(--dim);margin-bottom:10px">${ph.tip}</div>`:''}
+    <div style="font-family:Anton;font-size:26px;color:${col};letter-spacing:1px;margin-top:4px">${ph.lbl}</div>
+    <div style="display:flex;justify-content:center;margin:6px 0">${exSVG(ph.anim||'generic')}</div>
+    ${ph.ex?`<a class="exvid-link" href="https://www.youtube.com/results?search_query=${encodeURIComponent(ph.ex+' ejercicio técnica')}" target="_blank">🎬 Ver en vídeo</a>`:''}
+    <div style="font-family:Anton;font-size:64px;line-height:1;margin:4px 0">${m}:${String(s).padStart(2,'0')}</div>
+    ${ph.tip?`<div style="font-size:14px;color:var(--dim);margin-bottom:8px">${ph.tip}</div>`:''}
     <div style="height:10px;background:var(--bg3);border-radius:5px;margin:0 20px"><div style="height:100%;background:${col};border-radius:5px;width:${pct}%;transition:width .3s"></div></div>
-    ${next?`<div class="mini" style="margin-top:12px">Siguiente: ${next.lbl} · ${next.sec}s</div>`:'<div class="mini" style="margin-top:12px">¡Última!</div>'}
+    ${next?`<div class="mini" style="margin-top:10px">Siguiente: ${next.lbl} · ${next.sec}s</div>`:'<div class="mini" style="margin-top:10px">¡Última!</div>'}
     <div class="mini">Paso ${SEQ.idx+1}/${SEQ.phases.length} · quedan ~${Math.ceil(totalLeft/60)} min</div>
-    <div class="row" style="margin-top:20px;justify-content:center"><button class="btn2" onclick="skipSeq()">Saltar ▶</button><button class="btn2" onclick="pauseSeq()" id="seqPauseBtn">${SEQ.id?'Pausa':'Seguir'}</button><button class="btn2" onclick="quitSequence()">Salir</button></div>
+    <div class="row" style="margin-top:16px;justify-content:center"><button class="btn2" onclick="skipSeq()">Saltar ▶</button><button class="btn2" onclick="pauseSeq()" id="seqPauseBtn">${SEQ.id?'Pausa':'Seguir'}</button><button class="btn2" onclick="quitSequence()">Salir</button></div>
   </div>`;
 }
 function skipSeq(){if(SEQ.active)SEQ.left=1;}
@@ -1814,7 +2053,8 @@ function renderDietCard(){
     <div class="row" style="gap:6px">${MEALS.map(m=>`<button class="btn-sm ${log[m[0]]?'btn-acc2':'btn2'}" style="flex:1;flex-direction:column;padding:10px 4px" onclick="toggleMeal('${m[0]}')">${m[1]}<br><span style="font-size:10px">${m[0]}</span>${log[m[0]]?'<br>✓':''}</button>`).join('')}</div>
     <div class="bar" style="margin-top:10px"><i style="width:${done/4*100}%;background:var(--ok)"></i></div>
     <div class="mini" style="margin-top:4px">${done}/4 comidas con proteína${done===4?' · ¡día redondo! 💪':''}</div>
-    <button class="btn2" style="margin-top:10px;width:100%;font-size:12px" onclick="openPlateGuide()">📖 Ver cómo montar el plato</button>
+    <button class="btn" style="margin-top:10px;width:100%" onclick="openFoodHub()">🍽️ ¿Qué preparo hoy?</button>
+    <button class="btn2" style="margin-top:6px;width:100%;font-size:12px" onclick="openPlateGuide()">📖 Cómo montar el plato</button>
   </div>`;
 }
 function toggleMeal(m){const d=today();DB.diet=DB.diet||{log:{}};DB.diet.log[d]=DB.diet.log[d]||{};DB.diet.log[d][m]=!DB.diet.log[d][m];save();renderDietCard();}
@@ -1827,8 +2067,120 @@ function openPlateGuide(){
   <div class="ex-block"><b style="color:var(--acc2)">Grasa · con medida</b><div class="mini" style="margin-top:2px">Un chorrito de aceite o medio aguacate (un pulgar). No más.</div></div>
   <div class="note" style="margin-top:10px">💡 Cocinas una vez para toda la familia: solo ajustas <b>tus proporciones</b> en tu plato. Medio plato de verdura y tu ración de proteína, y el resto encaja solo.</div>
   <div class="note viol" style="margin-top:8px">🥤 Bebe agua, no calorías. Refrescos y alcohol son el sabotaje silencioso. Un capricho a la semana no rompe nada; la constancia el 90% del tiempo es lo que cuenta.</div>
-  <p class="mini" style="margin-top:10px">Esto son pautas generales sensatas, no una dieta médica. Para algo personalizado, un dietista-nutricionista colegiado.</p>`);
+  <div class="note gold" style="margin-top:8px">⚠️ Ojo: este reparto es para <b>comida y cena</b>. El desayuno y las meriendas tienen su propia lógica (energía + proteína + fruta). Míralo en «¿Qué preparo hoy?» → Por comida.</div>
+  <p class="mini" style="margin-top:10px">Basado en el <b>Plato para Comer Saludable de Harvard</b> y la dieta mediterránea. Son pautas generales sensatas, no una dieta médica. Para algo personalizado, un dietista-nutricionista colegiado.</p>`);
 }
+/* ===================== NUTRICIÓN VISUAL · BIBLIOTECA DE PLATOS ===================== */
+/* Platos reales por categoría con ingredientes, cantidades (modo preciso/rápido) y proteína.
+   Referencia visual con emoji grande (offline, sin peso). Filtros y generador de combos.
+   "Tengo que comer ahora, ¿qué preparo?" */
+const DISHES=[
+  // DESAYUNOS
+  {cat:'desayuno',emoji:'🥣',name:'Yogur, avena y fruta',kcal:380,prot:28,min:5,tags:['rapido','altoproteina','pocosingr','familia'],ingr:[['Yogur griego natural','200 g','1 vaso'],['Avena','40 g','1 puño'],['Fruta (plátano/frutos rojos)','1 pieza','1 puño'],['Proteína en polvo (opcional)','20 g','1 cazo']],prep:'Mezcla el yogur con la avena, añade fruta troceada. Si quieres más proteína, una cucharada de proteína en polvo.',fam:'Para los peques: el mismo bol con menos avena y la fruta bien troceada. Sin proteína en polvo.'},
+  {cat:'desayuno',emoji:'🍳',name:'Huevos revueltos con pan',kcal:400,prot:30,min:8,tags:['rapido','altoproteina','pocosingr','antesent','familia'],ingr:[['Huevos','3','3'],['Pan integral','2 rebanadas','2 puños'],['Aceite de oliva','1 chorrito','1 pulgar'],['Tomate','1','1']],prep:'Revuelve los huevos a fuego suave. Tuesta el pan, frota tomate y un hilo de aceite.',fam:'Para los peques: 1 huevo revuelto y pan en trocitos. Les encanta.'},
+  {cat:'desayuno',emoji:'🥪',name:'Tostada de pavo y aguacate',kcal:420,prot:26,min:5,tags:['rapido','pocosingr','familia'],ingr:[['Pan integral','2 rebanadas','2 puños'],['Pavo/jamón','80 g','1 palma'],['Aguacate','½','1 pulgar']],prep:'Tuesta el pan, extiende el aguacate y pon el pavo encima.',fam:'Para los peques: media tostada cortada en tiras (les es más fácil de coger).'},
+  // COMIDAS
+  {cat:'comida',emoji:'🍗',name:'Pollo, arroz y verduras',kcal:520,prot:45,min:25,tags:['altoproteina','mealprep','despuesent','familia'],ingr:[['Pollo','180 g','1 palma grande'],['Arroz cocido','150 g','1 puño'],['Verduras salteadas','200 g','2 puños'],['Aceite de oliva','1 chorrito','1 pulgar']],prep:'Cocina el pollo a la plancha. Hierve el arroz. Saltea las verduras. Plato ideal de meal prep: multiplica cantidades y guarda en táperes.',fam:'La misma cazuela para todos. Tú: ½ plato de verdura. Peques: más arroz, verdura blandita y pollo desmenuzado.'},
+  {cat:'comida',emoji:'🐟',name:'Lentejas con atún',kcal:480,prot:38,min:15,tags:['altoproteina','pocosingr','mealprep','familia'],ingr:[['Lentejas cocidas','200 g','1 puño grande'],['Atún al natural','1 lata','1 palma'],['Verdura (cebolla, pimiento)','100 g','1 puño'],['Aceite de oliva','1 chorrito','1 pulgar']],prep:'Mezcla las lentejas ya cocidas con el atún escurrido y la verdura picada. Frío o templado.',fam:'Para los peques: lentejas con la verdura muy picada; el atún aparte si no les gusta mezclado.'},
+  {cat:'comida',emoji:'🥩',name:'Ternera con patata y ensalada',kcal:550,prot:42,min:25,tags:['altoproteina','despuesent','familia'],ingr:[['Ternera magra','170 g','1 palma'],['Patata','250 g','2 puños'],['Ensalada','libre','½ plato']],prep:'Ternera a la plancha, patata cocida o al horno, ensalada grande de acompañamiento.',fam:'Para los peques: ternera en trocitos pequeños y patata chafada. La ensalada, en bastones de zanahoria/pepino.'},
+  {cat:'comida',emoji:'🍝',name:'Pasta con pollo y verdura',kcal:560,prot:40,min:20,tags:['despuesent','mealprep','familia'],ingr:[['Pasta integral','80 g seca','1 puño'],['Pollo','150 g','1 palma'],['Verduras','150 g','1 puño'],['Tomate triturado','100 g','']],prep:'Cuece la pasta. Saltea el pollo troceado con verduras y tomate. Mezcla.',fam:'Plato estrella familiar: la verdura triturada en el tomate «desaparece» y los peques ni la notan.'},
+  // CENAS
+  {cat:'cena',emoji:'🐟',name:'Salmón, patata y ensalada',kcal:500,prot:38,min:25,tags:['altoproteina','pocosingr','familia'],ingr:[['Salmón','170 g','1 palma'],['Patata','200 g','1 puño grande'],['Ensalada','libre','½ plato']],prep:'Salmón al horno o plancha, patata cocida, ensalada. Cena completa y ligera.',fam:'Para los peques: salmón sin espinas desmenuzado y patata chafada con un hilo de aceite.'},
+  {cat:'cena',emoji:'🍳',name:'Tortilla de verduras',kcal:360,prot:26,min:15,tags:['rapido','pocosingr','altoproteina','familia'],ingr:[['Huevos','3','3'],['Verduras (calabacín, cebolla)','150 g','1 puño'],['Aceite','1 chorrito','1 pulgar']],prep:'Saltea las verduras, añade los huevos batidos y cuaja la tortilla. Rápida y saciante.',fam:'Cena familiar por excelencia: la verdura rallada fina pasa desapercibida. Un trozo para cada uno.'},
+  {cat:'cena',emoji:'🥗',name:'Ensalada de pollo completa',kcal:400,prot:38,min:12,tags:['rapido','altoproteina','despuesent'],ingr:[['Pollo','150 g','1 palma'],['Ensalada variada','libre','½ plato'],['Garbanzos cocidos','80 g','½ puño'],['Aceite','1 chorrito','1 pulgar']],prep:'Pollo a tiras sobre ensalada abundante con un puñado de garbanzos. Ligera pero con proteína.',fam:'Para los peques: el pollo y los garbanzos aparte, la verdura en bastoncitos.'},
+  {cat:'cena',emoji:'🍤',name:'Revuelto de gambas y verduras',kcal:340,prot:32,min:12,tags:['rapido','altoproteina','pocosingr'],ingr:[['Gambas','150 g','1 palma'],['Verduras salteadas','200 g','2 puños'],['Huevo','1','1']],prep:'Saltea gambas y verduras, añade un huevo para ligar. Muy proteico y bajo en calorías.',fam:'Para los peques mejor otra opción (marisco): tortilla francesa con la misma verdura.'},
+  // SNACKS
+  {cat:'snack',emoji:'🥛',name:'Batido de proteína y fruta',kcal:200,prot:25,min:3,tags:['rapido','altoproteina','pocosingr','despuesent'],ingr:[['Proteína en polvo','30 g','1 cazo'],['Leche o bebida vegetal','250 ml','1 vaso'],['Fruta','1','1']],prep:'Bate todo. Ideal justo después de entrenar.',fam:'Es tu snack post-entreno. Para los peques, mejor fruta + yogur natural.'},
+  {cat:'snack',emoji:'🥜',name:'Yogur con frutos secos',kcal:230,prot:18,min:2,tags:['rapido','pocosingr','familia'],ingr:[['Yogur griego','150 g','1 vaso'],['Frutos secos','20 g','1 pulgar']],prep:'Yogur con un puñado pequeño de frutos secos. Saciante entre horas.',fam:'Para los peques: yogur natural con fruta troceada (los frutos secos enteros no, riesgo de atragantamiento).'},
+  {cat:'snack',emoji:'🍎',name:'Fruta y pavo',kcal:180,prot:16,min:2,tags:['rapido','pocosingr','antesent','familia'],ingr:[['Fruta','1','1'],['Pavo lonchas','60 g','1 palma fina']],prep:'Una pieza de fruta con unas lonchas de pavo. Perfecto antes de entrenar.',fam:'Merienda perfecta para toda la familia: fruta troceada + pavo en tiras.'}
+];
+const DIET_FILTERS=[['todos','Todos'],['desayuno','🍳 Desayuno'],['comida','☀️ Comida'],['cena','🌙 Cena'],['snack','🥛 Snack'],['altoproteina','💪 Alto proteína'],['rapido','⚡ Rápido'],['familia','👨‍👩‍👧‍👦 Familia'],['pocosingr','🥄 Pocos ingr.'],['mealprep','🍱 Meal prep'],['antesent','🔋 Antes entrenar'],['despuesent','🏋️ Después entrenar']];
+let dietFilter='todos';
+function renderFoodExplorer(){
+  const el=document.getElementById('foodExplorer');if(!el)return;
+  const dishes=DISHES.filter(d=>dietFilter==='todos'||d.cat===dietFilter||(d.tags||[]).includes(dietFilter));
+  el.innerHTML=`<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px">${DIET_FILTERS.map(f=>`<button class="btn-sm ${dietFilter===f[0]?'btn-acc2':'btn2'}" style="white-space:nowrap" onclick="setDietFilter('${f[0]}')">${f[1]}</button>`).join('')}</div>
+  <div style="display:flex;flex-direction:column;gap:8px">${dishes.map((d,i)=>`<div class="ex-block" style="cursor:pointer" onclick="openDish(${DISHES.indexOf(d)})"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:38px">${d.emoji}</div><div style="flex:1"><b>${d.name}${(d.tags||[]).includes('familia')?' <span title="Adaptable a los peques">👨‍👩‍👧‍👦</span>':''}</b><div class="mini">${d.kcal} kcal · ${d.prot} g proteína${d.min?' · ⏱️ '+d.min+' min':''}</div><div class="mini" style="color:var(--acc2)">${(d.tags||[]).filter(t=>t!=='familia').slice(0,3).map(t=>({altoproteina:'alto proteína',rapido:'rápido',pocosingr:'pocos ingr.',mealprep:'meal prep',antesent:'pre-entreno',despuesent:'post-entreno'}[t]||t)).join(' · ')}</div></div><div style="color:var(--acc)">›</div></div></div>`).join('')}</div>
+  ${dishes.length===0?'<p class="empty">No hay platos con ese filtro.</p>':''}`;
+}
+function setDietFilter(f){dietFilter=f;renderFoodExplorer();}
+function openDish(idx){
+  const d=DISHES[idx];const precise=DB.diet&&DB.diet.mode!=='rapido';
+  const main=d.cat==='comida'||d.cat==='cena';
+  openModal(`<div style="text-align:center;font-size:64px">${d.emoji}</div><h3 style="text-align:center">${d.name}</h3>
+  <div class="stat-grid" style="margin:10px 0;grid-template-columns:repeat(3,1fr)"><div class="stat"><div class="v acc">${d.kcal}</div><div class="l">kcal aprox</div></div><div class="stat"><div class="v acc2">${d.prot} g</div><div class="l">proteína</div></div><div class="stat"><div class="v gold">${d.min||'-'}</div><div class="l">min</div></div></div>
+  <div class="row" style="gap:6px;margin-bottom:8px"><button class="btn-sm ${precise?'btn-acc2':'btn2'}" style="flex:1" onclick="setDietMode('precision',${idx})">⚖️ Precisión</button><button class="btn-sm ${!precise?'btn-acc2':'btn2'}" style="flex:1" onclick="setDietMode('rapido',${idx})">✋ Rápido</button></div>
+  <b style="font-family:Anton;font-size:13px">Ingredientes</b>
+  ${d.ingr.map(i=>`<div class="sub-opt"><span>${i[0]}</span><span class="mini" style="color:var(--acc2)">${precise?i[1]:(i[2]||i[1])}</span></div>`).join('')}
+  <b style="font-family:Anton;font-size:13px;display:block;margin-top:10px">Preparación</b>
+  <p class="mini" style="margin-top:4px">${d.prep}</p>
+  ${d.fam?`<div class="note" style="margin-top:10px;border-color:var(--viol)"><b style="color:var(--viol)">👨‍👩‍👧‍👦 Para los peques</b><div class="mini" style="margin-top:3px">${d.fam}</div></div>`:''}
+  ${main?`<div class="note gold" style="margin-top:8px">🍽️ <b>Encaja con el plato saludable</b>: proteína del tamaño de tu palma, ¼ de hidrato (un puño) y llena ½ plato de verdura. Grasa buena: un hilo de aceite de oliva.</div>`:''}
+  <p class="mini" style="margin-top:10px;color:var(--dim)">Cantidades y calorías orientativas. ${precise?'Modo precisión: pesa para aprender las raciones.':'Modo rápido: usa la mano como medida (palma=proteína, puño=carbo, pulgar=grasa).'}</p>
+  <p class="mini" style="color:var(--dim)">Basado en el Plato para Comer Saludable (Harvard) y la dieta mediterránea. Pautas generales, no dieta médica.</p>`);
+}
+function setDietMode(m,idx){DB.diet=DB.diet||{log:{}};DB.diet.mode=m;save();openDish(idx);}
+/* Generador «Construye tu plato»: 1 proteína + 1 hidrato + 1-2 verduras + 1 fruta (patrón plato saludable de Harvard) */
+const COMBO_PROT=[['🍗','Pollo','1 palma','40 g prot'],['🥩','Ternera','1 palma','38 g'],['🐟','Pescado','1 palma','35 g'],['🥚','Huevos (3)','3','20 g'],['🫘','Legumbres','1 puño','18 g'],['🥫','Atún','1 lata','25 g']];
+const COMBO_CARB=[['🍚','Arroz','1 puño'],['🥔','Patata','1 puño grande'],['🍝','Pasta','1 puño'],['🍞','Pan','2 puños'],['🍠','Boniato','1 puño'],['—','Sin carbo (más verdura)','']];
+const COMBO_VEG=[['🥦','Brócoli',''],['🥗','Ensalada',''],['🥕','Verduras salteadas',''],['🍅','Pisto/tomate',''],['🫑','Pimientos',''],['🥬','Espinacas','']];
+const COMBO_FRUIT=[['🍎','Manzana'],['🍌','Plátano'],['🍊','Naranja'],['🍓','Frutos rojos'],['🍐','Pera'],['—','Sin fruta']];
+let combo={p:0,c:0,v:0,f:0};
+function renderCombo(){
+  const el=document.getElementById('comboBuilder');if(!el)return;
+  el.innerHTML=`<p class="mini" style="margin-bottom:8px">Elige <b>1 proteína + 1 hidrato + 1-2 verduras + 1 fruta</b>. FORJA arma el plato y calcula la proteína aproximada.</p>
+  <b style="font-family:Anton;font-size:12px;color:var(--acc)">PROTEÍNA (¼ plato)</b><div style="display:flex;gap:6px;overflow-x:auto;padding:4px 0">${COMBO_PROT.map((x,i)=>`<button class="btn-sm ${combo.p===i?'btn-acc2':'btn2'}" style="white-space:nowrap" onclick="setCombo('p',${i})">${x[0]} ${x[1]}</button>`).join('')}</div>
+  <b style="font-family:Anton;font-size:12px;color:var(--gold)">HIDRATO (¼ plato)</b><div style="display:flex;gap:6px;overflow-x:auto;padding:4px 0">${COMBO_CARB.map((x,i)=>`<button class="btn-sm ${combo.c===i?'btn-gold':'btn2'}" style="white-space:nowrap" onclick="setCombo('c',${i})">${x[0]} ${x[1]}</button>`).join('')}</div>
+  <b style="font-family:Anton;font-size:12px;color:var(--ok)">VERDURA (½ plato)</b><div style="display:flex;gap:6px;overflow-x:auto;padding:4px 0">${COMBO_VEG.map((x,i)=>`<button class="btn-sm ${combo.v===i?'btn-acc2':'btn2'}" style="white-space:nowrap" onclick="setCombo('v',${i})">${x[0]} ${x[1]}</button>`).join('')}</div>
+  <b style="font-family:Anton;font-size:12px;color:var(--viol)">FRUTA (postre)</b><div style="display:flex;gap:6px;overflow-x:auto;padding:4px 0">${COMBO_FRUIT.map((x,i)=>`<button class="btn-sm ${combo.f===i?'btn-viol':'btn2'}" style="white-space:nowrap" onclick="setCombo('f',${i})">${x[0]} ${x[1]}</button>`).join('')}</div>
+  <div class="note" style="margin-top:10px;border-color:var(--acc2)"><div style="font-size:40px;text-align:center">${COMBO_PROT[combo.p][0]}${COMBO_CARB[combo.c][0]!=='—'?COMBO_CARB[combo.c][0]:''}${COMBO_VEG[combo.v][0]}${COMBO_FRUIT[combo.f][0]!=='—'?COMBO_FRUIT[combo.f][0]:''}</div><b>${COMBO_PROT[combo.p][1]} + ${COMBO_CARB[combo.c][1]} + ${COMBO_VEG[combo.v][1]}${COMBO_FRUIT[combo.f][1]!=='Sin fruta'?' + '+COMBO_FRUIT[combo.f][1]:''}</b><div class="mini" style="margin-top:4px">Proteína aprox: <b style="color:var(--acc2)">${COMBO_PROT[combo.p][3]}</b> · Raciones: ${COMBO_PROT[combo.p][2]} proteína, ${COMBO_CARB[combo.c][2]||'—'} hidrato, ½ plato verdura, grasa: 1 hilo de aceite</div><div class="mini" style="margin-top:4px;color:var(--viol)">👨‍👩‍👧‍👦 Toda la familia come esto: tú ajustas proporciones, los peques con raciones más pequeñas y la verdura blandita.</div></div>
+  <p class="mini" style="margin-top:8px;color:var(--dim)">Estructura del Plato para Comer Saludable (Harvard). Añade agua como bebida.</p>`;
+}
+function setCombo(k,i){combo[k]=i;renderCombo();}
+
+/* ===================== HUB DE NUTRICIÓN (¿Qué como hoy?) ===================== */
+let foodTab='platos';
+function openFoodHub(){foodTab='platos';openModal(`<h3>🍽️ ¿Qué como hoy?</h3><div id="foodSeg" style="display:flex;gap:6px;overflow-x:auto;padding-bottom:8px;margin-bottom:6px"></div><div id="foodHubBody"></div>`);renderFoodHub();}
+function setFoodTab(t){foodTab=t;renderFoodHub();}
+function renderFoodHub(){
+  const tabs=[['platos','🍽️ Platos'],['combina','🎨 Construye'],['comida','📅 Por comida'],['fuentes','📚 Fuentes']];
+  const seg=document.getElementById('foodSeg');
+  if(seg)seg.innerHTML=tabs.map(t=>`<button class="btn-sm ${foodTab===t[0]?'btn-acc2':'btn2'}" style="white-space:nowrap" onclick="setFoodTab('${t[0]}')">${t[1]}</button>`).join('');
+  const body=document.getElementById('foodHubBody');if(!body)return;
+  if(foodTab==='platos'){body.innerHTML=`<div id="foodExplorer"></div>`;renderFoodExplorer();}
+  else if(foodTab==='combina'){body.innerHTML=`<div id="comboBuilder"></div>`;renderCombo();}
+  else if(foodTab==='comida'){body.innerHTML=renderMealGuide();}
+  else if(foodTab==='fuentes'){body.innerHTML=renderFoodSources();}
+}
+/* Guía por comida: no todas las comidas se montan igual (el error del ½+¼+¼ en el desayuno) */
+const MEAL_GUIDE=[
+  ['🥣','Desayuno','Energía + proteína + fruta/fibra','Avena con yogur y plátano · Huevos con pan y tomate · Tostada de pavo y aguacate'],
+  ['🍎','Media mañana','Algo sencillo y saciante','Fruta + yogur · Puñado de frutos secos · Bocadillo pequeño'],
+  ['🍛','Comida','Plato completo (el del plato saludable)','½ verdura + ¼ proteína + ¼ hidrato · Pollo con arroz y verduras · Lentejas con atún'],
+  ['🥛','Merienda','Recuperar energía sin excesos','Yogur + fruta · Tostada + queso · Batido si has entrenado'],
+  ['🍽️','Cena','Completa pero más ligera que la comida','Pescado + patata + verduras · Tortilla de verduras · Ensalada de pollo']
+];
+function renderMealGuide(){
+  return `<div class="note" style="margin-bottom:10px">No todas las comidas se montan igual. El «½ verdura + ¼ proteína + ¼ hidrato» es para <b>comida y cena</b>. El desayuno y las meriendas tienen su propia lógica:</div>
+  ${MEAL_GUIDE.map(m=>`<div class="ex-block"><div style="display:flex;align-items:center;gap:10px"><div style="font-size:30px">${m[0]}</div><div style="flex:1"><b>${m[1]}</b><div class="mini" style="color:var(--acc2)">${m[2]}</div></div></div><div class="mini" style="margin-top:6px">💡 ${m[3]}</div></div>`).join('')}
+  <div class="note gold" style="margin-top:10px">🍽️ <b>El plato saludable (comida y cena)</b><br>🥦 ½ plato verdura · 🍗 ¼ proteína (tu palma) · 🍚 ¼ hidrato (un puño) · 🫒 grasa buena (aceite de oliva) · 🍎 fruta de postre · 💧 agua de bebida.</div>
+  <div class="note viol" style="margin-top:8px">👨‍👩‍👧‍👦 <b>Una sola cocina para todos.</b> Cocinas el mismo plato para la familia: tú ajustas <b>tus</b> proporciones (más verdura, tu ración de proteína). Los peques: raciones más pequeñas, verdura blandita o triturada, y sin picante.</div>
+  <button class="btn2" style="margin-top:10px;width:100%" onclick="openPlateGuide()">📖 Ver el plato modelo en detalle</button>`;
+}
+/* Fuentes reales para inspirarse (necesitan internet, se abren en el navegador) */
+const FOOD_SOURCES=[
+  ['🥇','El Plato para Comer Saludable — Harvard','La estructura del plato, en español. La base de todo.','https://nutritionsource.hsph.harvard.edu/healthy-eating-plate/translations/spanish-spain/'],
+  ['🇪🇸','Fundación Dieta Mediterránea','Menús semanales completos y buscador de recetas mediterráneas.','https://dietamediterranea.com/'],
+  ['👨‍👩‍👧‍👦','En Familia — AEP','Asociación Española de Pediatría: alimentación y raciones para niños.','https://enfamilia.aeped.es/'],
+  ['🏥','FAROS — Hospital Sant Joan de Déu','Alimentación infantil y familiar, orientado a padres.','https://faros.hsjdbcn.org/'],
+  ['🥗','Recetario EINA Salut','Recetas mediterráneas saludables y menús por temporada.','https://einasalut.caib.es/web/ciudadania-activa/recetario']
+];
+function renderFoodSources(){
+  return `<p class="mini" style="margin-bottom:10px">FORJA no se inventa los menús: sigue criterios nutricionales reconocidos. Aquí tienes las fuentes para coger ideas (se abren en el navegador, necesitan internet):</p>
+  ${FOOD_SOURCES.map(s=>`<a href="${s[3]}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit"><div class="ex-block" style="cursor:pointer"><div style="display:flex;align-items:center;gap:10px"><div style="font-size:26px">${s[0]}</div><div style="flex:1"><b>${s[1]}</b><div class="mini">${s[2]}</div></div><div style="color:var(--acc2)">↗</div></div></div></a>`).join('')}
+  <p class="mini" style="margin-top:10px;color:var(--dim)">Jerarquía de FORJA: Harvard (estructura del plato) + Dieta Mediterránea (ideas de menús) + AEP/Sant Joan de Déu (adaptación a los niños). Todo son pautas generales, no una dieta médica; para algo personalizado, un dietista-nutricionista colegiado.</p>`;
+}
+
 /* Feedback nutricional: si adherencia buena pero peso estancado varias semanas, sugerir ajuste */
 function dietFeedback(){
   const series=[...DB.body].filter(b=>b.peso).sort((a,b)=>a.date.localeCompare(b.date));

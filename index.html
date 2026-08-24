@@ -86,6 +86,29 @@ nav button .ic{font-size:20px}nav button.on{color:var(--acc)}
 hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 .split-tag{font-size:11px;padding:3px 9px;border-radius:6px;background:var(--bg);color:var(--acc);border:1px solid var(--line);font-family:'Anton'}
 .timer-hero{background:linear-gradient(135deg,#191c24,#0e1014);border:1px solid var(--line);border-radius:16px;padding:16px;text-align:center;margin-bottom:13px}
+@keyframes anRock{0%,100%{transform:rotate(-8deg)}50%{transform:rotate(10deg)}}
+@keyframes anCircle{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}
+@keyframes anArmUp{0%,100%{transform:rotate(0)}50%{transform:rotate(-60deg)}}
+@keyframes anArmUpR{0%,100%{transform:rotate(0)}50%{transform:rotate(60deg)}}
+@keyframes anCatCamel{0%,100%{transform:translateY(0) scaleY(1)}50%{transform:translateY(-6px) scaleY(.8)}}
+@keyframes anSquat{0%,100%{transform:translateY(0)}50%{transform:translateY(14px)}}
+@keyframes anReach{0%,100%{transform:translateY(3px)}50%{transform:translateY(-6px)}}
+@keyframes anBreathe{0%,100%{transform:scale(.8)}50%{transform:scale(1.15)}}
+@keyframes anFade{0%,100%{opacity:.55}50%{opacity:1}}
+@keyframes anLunge{0%,100%{transform:translateY(0)}50%{transform:translateY(10px)}}
+@keyframes anHollow{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.an-rock{animation:anRock 1.6s ease-in-out infinite;transform-origin:50px 70px}
+.an-circle{animation:anCircle 3s linear infinite}
+.an-armL,.an-up{animation:anArmUp 2s ease-in-out infinite}
+.an-armR,.an-legR{animation:anArmUpR 2s ease-in-out infinite}
+.an-legL{animation:anArmUp 2s ease-in-out infinite}
+.an-catcamel{animation:anCatCamel 2.4s ease-in-out infinite}
+.an-squat{animation:anSquat 2s ease-in-out infinite}
+.an-reach{animation:anReach 2.4s ease-in-out infinite}
+.an-breathe{animation:anBreathe 4s ease-in-out infinite}
+.an-fade,.an-plank,.an-hollow{animation:anFade 2s ease-in-out infinite}
+.an-lunge{animation:anLunge 2.2s ease-in-out infinite}
+.exvid-link{display:inline-block;margin-top:6px;color:var(--acc2);font-size:12px;text-decoration:none}
 .timer-hero .phase{font-family:'Anton';font-size:13px;letter-spacing:.1em;color:var(--acc2)}
 .timer-hero .clock{font-family:'Anton';font-size:48px;line-height:1;margin:5px 0;font-variant-numeric:tabular-nums}
 .timer-hero .sub{font-size:12px;color:var(--dim)}
