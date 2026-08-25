@@ -257,7 +257,7 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
 
 <!-- CUERPO -->
 <section class="view" id="v-run">
-  <div class="tabs"><button class="on" onclick="cardioTab('spin',this)">🚴 Spinning</button><button onclick="cardioTab('run',this)">🏃 Carrera</button><button onclick="cardioTab('hist',this)">📊 Historial</button></div>
+  <div class="tabs"><button class="on" onclick="cardioTab('spin',this)">🚴 Spinning</button><button onclick="cardioTab('run',this)">🏃 Carrera</button><button onclick="cardioTab('swim',this)">🏊 Piscina</button><button onclick="cardioTab('hist',this)">📊 Historial</button></div>
   <div id="cardio-spin">
     <div id="spinLive"></div>
     <div class="card"><h3>🚴 Cardio guiado</h3><div id="spinView"></div></div>
@@ -265,6 +265,9 @@ hr{border:none;border-top:1px solid var(--line);margin:13px 0}
   <div id="cardio-run" style="display:none">
     <div id="runLive"></div>
     <div class="card"><h3>🏃 Mi plan de carrera</h3><div id="runView"></div></div>
+  </div>
+  <div id="cardio-swim" style="display:none">
+    <div class="card"><h3>🏊 Piscina</h3><div id="swimView"></div></div>
   </div>
   <div id="cardio-hist" style="display:none">
     <div class="card"><h3>📊 Historial de cardio</h3><div id="cardioHist"></div></div>

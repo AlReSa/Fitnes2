@@ -1927,6 +1927,7 @@ function saveSpin(dur,load){
 /* Historial de cardio (carrera + todas las modalidades de máquina) */
 function cardioTypeLabel(h){
   if(h.mode==='run')return {ic:'🏃',lbl:RUN_TYPES[h.type]?.lbl||'Carrera'};
+  if(h.mode==='swim')return {ic:'🏊',lbl:h.swimName||'Piscina'};
   const m=CARDIO_MODES[h.mode||'spin'];return {ic:m?.ic||'🚴',lbl:(m&&m.types[h.type]?.lbl)||'Cardio'};
 }
 function renderCardioHist(){
@@ -1942,15 +1943,91 @@ function renderCardioHist(){
 }
 
 function cardioTab(t,el){
-  ['spin','run','hist'].forEach(x=>{const e=document.getElementById('cardio-'+x);if(e)e.style.display='none';});
+  ['spin','run','swim','hist'].forEach(x=>{const e=document.getElementById('cardio-'+x);if(e)e.style.display='none';});
   document.getElementById('cardio-'+t).style.display='block';
   el.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('on'));el.classList.add('on');
   if(t==='spin'){renderSpinView();renderSpinLive();}
   else if(t==='run'){renderRunView();renderRunLive();}
+  else if(t==='swim'){renderSwimView();}
   else if(t==='hist'){renderCardioHist();}
 }
 
-/* ===================== BIBLIOTECA VISUAL DE EJERCICIOS (SVG animado, offline) ===================== */
+/* ===================== 🏊 PISCINA (sesiones prefijadas, móvil fuera del agua) ===================== */
+/* Se entrena leyendo el plan (no en vivo). Distancias en metros → se convierten a largos según tu piscina. */
+const SWIM_WORKOUTS=[
+  {id:'ini',name:'Iniciación suave',ic:'🔰',goal:'Empezar',sets:[
+    {type:'cont',lbl:'Calentamiento suave',m:100},
+    {type:'rep',lbl:'Técnica (crol tranquilo)',reps:8,dist:25,rest:'20"'},
+    {type:'cont',lbl:'Nado continuo cómodo',m:200},
+    {type:'rep',lbl:'Piernas (con tabla si tienes)',reps:4,dist:25,rest:'20"'},
+    {type:'cont',lbl:'Vuelta a la calma',m:100}]},
+  {id:'cont1000',name:'Continuo 1000',ic:'💪',goal:'Fondo',sets:[
+    {type:'cont',lbl:'Calentamiento',m:200},
+    {type:'cont',lbl:'Nado continuo a ritmo constante',m:600},
+    {type:'cont',lbl:'Suave',m:200}]},
+  {id:'s50',name:'Series de 50',ic:'💪',goal:'Fondo',sets:[
+    {type:'cont',lbl:'Calentamiento',m:200},
+    {type:'rep',lbl:'Series fuertes pero controladas',reps:20,dist:50,rest:'25-30"'},
+    {type:'cont',lbl:'Suave',m:100}]},
+  {id:'i100',name:'Intervalos de 100',ic:'⚡',goal:'Calidad',sets:[
+    {type:'cont',lbl:'Calentamiento',m:300},
+    {type:'rep',lbl:'Intervalos a ritmo vivo',reps:10,dist:100,rest:'30"'},
+    {type:'cont',lbl:'Suave',m:200}]},
+  {id:'pir',name:'Pirámide',ic:'⚡',goal:'Calidad',sets:[
+    {type:'cont',lbl:'Calentamiento',m:200},
+    {type:'ladder',lbl:'Pirámide 50-100-150-200-150-100-50',steps:[50,100,150,200,150,100,50],rest:'20-30"'},
+    {type:'cont',lbl:'Suave',m:100}]},
+  {id:'tec',name:'Técnica y patada',ic:'🧘',goal:'Técnica',sets:[
+    {type:'cont',lbl:'Calentamiento',m:200},
+    {type:'rep',lbl:'Técnica de brazada',reps:8,dist:25,rest:'15"'},
+    {type:'rep',lbl:'Patada con tabla',reps:8,dist:25,rest:'20"'},
+    {type:'rep',lbl:'Nado completo suave',reps:4,dist:50,rest:'20"'},
+    {type:'cont',lbl:'Suave',m:100}]},
+  {id:'hiit',name:'HIIT piscina',ic:'⚡',goal:'Calidad',sets:[
+    {type:'cont',lbl:'Calentamiento',m:200},
+    {type:'rep',lbl:'Esprints controlados',reps:16,dist:25,rest:'15-20"'},
+    {type:'cont',lbl:'Suave',m:200}]},
+  {id:'l1500',name:'Fondo 1500',ic:'💪',goal:'Fondo',sets:[
+    {type:'cont',lbl:'Calentamiento',m:300},
+    {type:'cont',lbl:'Nado continuo largo',m:1000},
+    {type:'cont',lbl:'Progresivo (sube ritmo al final)',m:200},
+    {type:'cont',lbl:'Suave',m:100}]}
+];
+function poolLen(){DB.swim=DB.swim||{poolLen:25};return DB.swim.poolLen||25;}
+function swimSetMeters(s){return s.type==='cont'?s.m:s.type==='ladder'?s.steps.reduce((a,b)=>a+b,0):s.reps*s.dist;}
+function swimTotal(w){return w.sets.reduce((a,s)=>a+swimSetMeters(s),0);}
+function swimMinEst(m){return Math.round(m/100*2.5);}
+function swimSetLine(s,pool){
+  if(s.type==='cont'){const l=Math.round(s.m/pool);return `<div class="sub-opt"><span>${s.lbl}</span><span class="mini">${s.m} m · ${l} largo${l>1?'s':''}</span></div>`;}
+  if(s.type==='ladder'){return `<div class="sub-opt" style="align-items:flex-start"><span>${s.lbl}</span><span class="mini" style="text-align:right">${s.steps.map(x=>x/pool+'L').join(' · ')}<br>desc. ${s.rest}</span></div>`;}
+  const each=Math.round(s.dist/pool);return `<div class="sub-opt"><span>${s.lbl}</span><span class="mini">${s.reps} × ${s.dist} m (${each} largo${each>1?'s':''}) · desc. ${s.rest}</span></div>`;
+}
+function renderSwimView(){
+  const el=document.getElementById('swimView');if(!el)return;DB.swim=DB.swim||{poolLen:25};
+  const pool=poolLen();
+  const hist=(DB.spin.history||[]).filter(h=>h.mode==='swim').slice(0,5);
+  el.innerHTML=`<div class="note" style="margin-bottom:10px">📵 <b>El móvil se queda fuera del agua.</b> Elige la sesión, repasa el plan (o memorízalo) antes de meterte, y al salir marca ✓ Hecho. Distancias en largos de tu piscina.</div>
+  <div class="ex-block" style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;align-items:center"><b>🏊 Mi piscina</b><span style="display:flex;gap:5px">${[25,33,50].map(p=>`<button class="btn-sm ${pool===p?'btn-acc2':'btn2'}" onclick="setPool(${p})">${p} m</button>`).join('')}</span></div><div class="mini" style="margin-top:4px">1 largo = ${pool} m. Ajusta si tu piscina mide otra cosa.</div></div>
+  <div style="display:flex;flex-direction:column;gap:8px">${SWIM_WORKOUTS.map(w=>{const m=swimTotal(w);return `<div class="ex-block" style="cursor:pointer" onclick="openSwimPlan('${w.id}')"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:30px">${w.ic}</div><div style="flex:1"><b>${w.name}</b><div class="mini">${m} m · ${Math.round(m/pool)} largos · ~${swimMinEst(m)} min · ${w.goal}</div></div><div style="color:var(--acc)">›</div></div></div>`;}).join('')}</div>
+  ${hist.length?`<div class="card" style="margin-top:12px"><b style="font-family:Anton;font-size:13px">🏊 Últimas piscinas</b>${hist.map(h=>`<div class="sub-opt"><span>${fd(h.date)} · ${h.swimName||'Natación'}</span><span class="mini">${h.meters||0} m · RPE ${h.rpe}</span></div>`).join('')}</div>`:''}`;
+}
+function setPool(p){DB.swim=DB.swim||{};DB.swim.poolLen=p;save();renderSwimView();}
+function openSwimPlan(id){
+  const w=SWIM_WORKOUTS.find(x=>x.id===id);if(!w)return;const pool=poolLen();const m=swimTotal(w);
+  openModal(`<div style="text-align:center;font-size:40px">${w.ic}</div><h3 style="text-align:center">${w.name}</h3>
+  <div class="stat-grid" style="grid-template-columns:repeat(3,1fr);margin:10px 0"><div class="stat"><div class="v acc">${m}</div><div class="l">metros</div></div><div class="stat"><div class="v acc2">${Math.round(m/pool)}</div><div class="l">largos (${pool}m)</div></div><div class="stat"><div class="v gold">~${swimMinEst(m)}</div><div class="l">min aprox</div></div></div>
+  <b style="font-family:Anton;font-size:13px">Plan (léelo antes de entrar)</b>
+  <div style="margin-top:6px">${w.sets.map(s=>swimSetLine(s,pool)).join('')}</div>
+  <div class="note viol" style="margin-top:10px">💡 Respira cada 2-3 brazadas, técnica antes que velocidad. Los descansos son en el borde, mirando el reloj de la piscina.</div>
+  <label style="margin-top:10px">Al terminar, ¿cómo fue? (RPE)</label><select id="swimRpe"><option value="4">4 · muy suave</option><option value="6" selected>6 · cómodo</option><option value="8">8 · exigente</option><option value="9">9 · al límite</option></select>
+  <button class="btn btn-acc2" style="margin-top:12px;width:100%" onclick="logSwim('${w.id}')">✓ Hecho — registrar</button>`);
+}
+function logSwim(id){const w=SWIM_WORKOUTS.find(x=>x.id===id);if(!w)return;const m=swimTotal(w);const rpe=+(document.getElementById('swimRpe')||{}).value||6;
+  DB.spin=DB.spin||{history:[]};DB.spin.history.unshift({date:today(),mode:'swim',min:swimMinEst(m),rpe,load:Math.round(m/100),swimName:w.name,meters:m,poolLen:poolLen()});
+  DB.extraLog=DB.extraLog||{};DB.extraLog[today()]=DB.extraLog[today()]||{};DB.extraLog[today()].run=true;
+  save();closeModal();renderSwimView();renderDashboard&&renderDashboard();toast('🏊 '+m+' m registrados');
+}
+
 /* Cada animación es un SVG ligero (~1KB) con figura esquemática y movimiento CSS.
    Se referencian por clave desde calentamiento, core, matutina, estiramientos.
    Fallback: si no hay animación específica, figura genérica + botón a YouTube. */
@@ -2394,16 +2471,64 @@ const COMPONENTS=[
   // LÁCTEOS
   {k:'yogur_griego',e:'🥛',n:'Yogur griego',cat:'lacteo',b:0},{k:'yogur_nat',e:'🥛',n:'Yogur natural',cat:'lacteo',b:0},{k:'queso_fresco',e:'🧀',n:'Queso fresco',cat:'lacteo',b:0},{k:'requeson',e:'🥛',n:'Requesón',cat:'lacteo',b:0},{k:'leche',e:'🥛',n:'Leche',cat:'lacteo',b:0}
 ];
-const KCAT=[['prot','🥩 Proteínas'],['verdura','🥦 Verduras'],['hidrato','🍚 Hidratos'],['legumbre','🫘 Legumbres'],['salsa','🥑 Salsas/extras'],['fruta','🍎 Frutas'],['lacteo','🥛 Lácteos']];
-const KCAT_LBL={prot:'Proteína',verdura:'Verdura',hidrato:'Hidrato',legumbre:'Legumbre',salsa:'Salsa/extra',fruta:'Fruta',lacteo:'Lácteo'};
+/* Base ampliada: cualquier alimento habitual de compra mediterránea española.
+   Flags: b=batch cooking, oc=consumo ocasional (procesado). cat alimenta el motor; 'especia' se ignora en combos. */
+const FOODMORE=[
+  // CARNES Y AVES
+  {k:'contramuslo_pollo',e:'🍗',n:'Contramuslo de pollo',cat:'prot',b:1},{k:'hamb_pollo',e:'🍔',n:'Hamburguesa de pollo',cat:'prot'},{k:'pechuga_pavo',e:'🦃',n:'Pechuga de pavo',cat:'prot',b:1},{k:'picada_pavo',e:'🦃',n:'Carne picada de pavo',cat:'prot',b:1},
+  {k:'ternera_magra',e:'🥩',n:'Ternera magra',cat:'prot',b:1},{k:'picada_ternera',e:'🥩',n:'Picada de ternera',cat:'prot',b:1},{k:'solomillo_ternera',e:'🥩',n:'Solomillo de ternera',cat:'prot'},{k:'entrecot',e:'🥩',n:'Entrecot',cat:'prot'},
+  {k:'solomillo_cerdo',e:'🐖',n:'Solomillo de cerdo',cat:'prot',b:1},{k:'chuleta_cerdo',e:'🐖',n:'Chuleta de cerdo',cat:'prot'},{k:'picada_cerdo',e:'🐖',n:'Picada de cerdo',cat:'prot',b:1},{k:'conejo',e:'🐰',n:'Conejo',cat:'prot',b:1},{k:'cordero',e:'🐑',n:'Cordero',cat:'prot'},
+  {k:'jamon_serrano',e:'🍖',n:'Jamón serrano',cat:'prot'},{k:'jamon_iberico',e:'🍖',n:'Jamón ibérico',cat:'prot'},{k:'jamon_cocido',e:'🥓',n:'Jamón cocido',cat:'prot'},{k:'pavo_cocido',e:'🥓',n:'Pavo cocido',cat:'prot'},
+  {k:'chorizo',e:'🌶️',n:'Chorizo',cat:'prot',oc:1},{k:'fuet',e:'🌭',n:'Fuet',cat:'prot',oc:1},{k:'salchichon',e:'🌭',n:'Salchichón',cat:'prot',oc:1},
+  // PESCADO AZUL
+  {k:'sardina',e:'🐟',n:'Sardina',cat:'prot'},{k:'caballa',e:'🐟',n:'Caballa',cat:'prot'},{k:'bonito',e:'🐟',n:'Bonito',cat:'prot'},{k:'anchoa',e:'🐟',n:'Anchoa',cat:'prot'},{k:'boqueron',e:'🐟',n:'Boquerón',cat:'prot'},{k:'trucha',e:'🐟',n:'Trucha',cat:'prot'},{k:'jurel',e:'🐟',n:'Jurel',cat:'prot'},
+  // PESCADO BLANCO
+  {k:'bacalao',e:'🐟',n:'Bacalao',cat:'prot'},{k:'lenguado',e:'🐟',n:'Lenguado',cat:'prot'},{k:'dorada',e:'🐟',n:'Dorada',cat:'prot'},{k:'lubina',e:'🐟',n:'Lubina',cat:'prot'},{k:'rape',e:'🐟',n:'Rape',cat:'prot'},{k:'pescadilla',e:'🐟',n:'Pescadilla',cat:'prot'},{k:'gallo',e:'🐟',n:'Gallo',cat:'prot'},{k:'rodaballo',e:'🐟',n:'Rodaballo',cat:'prot'},
+  // CONSERVAS PESCADO
+  {k:'atun_aceite',e:'🥫',n:'Atún en aceite',cat:'prot'},{k:'bonito_aceite',e:'🥫',n:'Bonito en aceite',cat:'prot'},{k:'sardinas_lata',e:'🥫',n:'Sardinas en lata',cat:'prot'},{k:'caballa_lata',e:'🥫',n:'Caballa en lata',cat:'prot'},{k:'mejillones_lata',e:'🥫',n:'Mejillones en lata',cat:'prot'},{k:'anchoas_lata',e:'🥫',n:'Anchoas en lata',cat:'prot'},{k:'berberechos_lata',e:'🥫',n:'Berberechos en lata',cat:'prot'},
+  // MARISCO
+  {k:'langostinos',e:'🦐',n:'Langostinos',cat:'prot'},{k:'calamar',e:'🦑',n:'Calamar',cat:'prot'},{k:'pulpo',e:'🐙',n:'Pulpo',cat:'prot'},{k:'chipirones',e:'🦑',n:'Chipirones',cat:'prot'},{k:'mejillones',e:'🦪',n:'Mejillones',cat:'prot'},{k:'almejas',e:'🦪',n:'Almejas',cat:'prot'},{k:'vieira',e:'🦪',n:'Vieira',cat:'prot'},
+  // HUEVOS
+  {k:'clara_huevo',e:'🥚',n:'Clara de huevo',cat:'prot'},{k:'huevo_codorniz',e:'🥚',n:'Huevo de codorniz',cat:'prot'},
+  // LEGUMBRES
+  {k:'alubias_rojas',e:'🫘',n:'Alubias rojas',cat:'legumbre',b:1},{k:'judias_negras',e:'🫘',n:'Judías negras',cat:'legumbre',b:1},{k:'soja',e:'🫛',n:'Soja',cat:'legumbre'},{k:'edamame',e:'🫛',n:'Edamame',cat:'legumbre'},{k:'guisantes',e:'🟢',n:'Guisantes',cat:'legumbre',b:1},{k:'habas',e:'🫛',n:'Habas',cat:'legumbre'},
+  // CEREALES / HIDRATOS
+  {k:'arroz_integral',e:'🍚',n:'Arroz integral',cat:'hidrato',b:1},{k:'arroz_basmati',e:'🍚',n:'Arroz basmati',cat:'hidrato',b:1},{k:'espaguetis',e:'🍝',n:'Espaguetis',cat:'hidrato',b:1},{k:'macarrones',e:'🍝',n:'Macarrones',cat:'hidrato',b:1},{k:'pasta_integral',e:'🍝',n:'Pasta integral',cat:'hidrato',b:1},{k:'pasta_legumbre',e:'🍝',n:'Pasta de legumbre',cat:'hidrato',b:1},{k:'fideos',e:'🍜',n:'Fideos',cat:'hidrato',b:1},
+  {k:'bulgur',e:'🌾',n:'Bulgur',cat:'hidrato',b:1},{k:'polenta',e:'🌽',n:'Polenta',cat:'hidrato'},{k:'pan_masamadre',e:'🍞',n:'Pan de masa madre',cat:'hidrato'},{k:'pan_centeno',e:'🍞',n:'Pan de centeno',cat:'hidrato'},{k:'pan_espelta',e:'🍞',n:'Pan de espelta',cat:'hidrato'},{k:'pita',e:'🫓',n:'Pan pita',cat:'hidrato'},{k:'tortilla_trigo',e:'🌯',n:'Tortilla de trigo',cat:'hidrato'},{k:'yuca',e:'🥔',n:'Yuca',cat:'hidrato',b:1},
+  // VERDURAS
+  {k:'lechuga',e:'🥬',n:'Lechuga',cat:'verdura'},{k:'rucula',e:'🥬',n:'Rúcula',cat:'verdura'},{k:'acelgas',e:'🥬',n:'Acelgas',cat:'verdura',b:1},{k:'canonigos',e:'🥬',n:'Canónigos',cat:'verdura'},{k:'escarola',e:'🥬',n:'Escarola',cat:'verdura'},{k:'col_rizada',e:'🥬',n:'Col rizada (kale)',cat:'verdura'},{k:'endibia',e:'🥬',n:'Endibia',cat:'verdura'},
+  {k:'coliflor',e:'🥦',n:'Coliflor',cat:'verdura',b:1},{k:'col',e:'🥬',n:'Col',cat:'verdura',b:1},{k:'lombarda',e:'🥬',n:'Col lombarda',cat:'verdura'},{k:'coles_bruselas',e:'🥬',n:'Coles de Bruselas',cat:'verdura',b:1},{k:'romanesco',e:'🥦',n:'Romanesco',cat:'verdura',b:1},
+  {k:'tomate_cherry',e:'🍅',n:'Tomate cherry',cat:'verdura'},{k:'pimiento_verde',e:'🫑',n:'Pimiento verde',cat:'verdura',b:1},{k:'calabaza',e:'🎃',n:'Calabaza',cat:'verdura',b:1},{k:'remolacha',e:'🟣',n:'Remolacha',cat:'verdura',b:1},{k:'nabo',e:'🥔',n:'Nabo',cat:'verdura',b:1},{k:'rabano',e:'🔴',n:'Rábano',cat:'verdura'},{k:'chirivia',e:'🥕',n:'Chirivía',cat:'verdura',b:1},
+  {k:'alcachofa',e:'🌿',n:'Alcachofa',cat:'verdura',b:1},{k:'puerro',e:'🥬',n:'Puerro',cat:'verdura',b:1},{k:'cebolleta',e:'🧅',n:'Cebolleta',cat:'verdura'},{k:'ajo',e:'🧄',n:'Ajo',cat:'verdura'},{k:'apio',e:'🥬',n:'Apio',cat:'verdura'},{k:'pepino',e:'🥒',n:'Pepino',cat:'verdura'},{k:'setas',e:'🍄',n:'Setas',cat:'verdura',b:1},{k:'maiz',e:'🌽',n:'Maíz',cat:'verdura'},{k:'hinojo',e:'🌿',n:'Hinojo',cat:'verdura'},
+  // CONGELADAS Y PREPARACIONES
+  {k:'menestra',e:'🧊',n:'Menestra congelada',cat:'verdura',b:1},{k:'salteado_verduras',e:'🧊',n:'Salteado de verduras',cat:'verdura',b:1},{k:'verduras_asadas',e:'🔥',n:'Verduras asadas (batch)',cat:'verdura',b:1},{k:'crema_verduras',e:'🍲',n:'Crema de verduras',cat:'verdura',b:1},{k:'pure_verduras',e:'🥣',n:'Puré de verduras',cat:'verdura',b:1},{k:'pisto',e:'🍅',n:'Pisto',cat:'verdura',b:1},
+  // TOMATES / DERIVADOS
+  {k:'tomate_triturado',e:'🥫',n:'Tomate triturado',cat:'salsa'},{k:'tomate_frito',e:'🥫',n:'Tomate frito',cat:'salsa'},{k:'passata',e:'🥫',n:'Passata',cat:'salsa'},{k:'tomate_seco',e:'🍅',n:'Tomate seco',cat:'salsa'},
+  // FRUTAS
+  {k:'mandarina',e:'🍊',n:'Mandarina',cat:'fruta'},{k:'limon',e:'🍋',n:'Limón',cat:'fruta'},{k:'pomelo',e:'🍊',n:'Pomelo',cat:'fruta'},{k:'arandanos',e:'🫐',n:'Arándanos',cat:'fruta'},{k:'frambuesas',e:'🍓',n:'Frambuesas',cat:'fruta'},{k:'moras',e:'🍇',n:'Moras',cat:'fruta'},{k:'melocoton',e:'🍑',n:'Melocotón',cat:'fruta'},{k:'nectarina',e:'🍑',n:'Nectarina',cat:'fruta'},{k:'ciruela',e:'🍑',n:'Ciruela',cat:'fruta'},{k:'albaricoque',e:'🍑',n:'Albaricoque',cat:'fruta'},
+  {k:'sandia',e:'🍉',n:'Sandía',cat:'fruta'},{k:'melon',e:'🍈',n:'Melón',cat:'fruta'},{k:'pina',e:'🍍',n:'Piña',cat:'fruta'},{k:'mango',e:'🥭',n:'Mango',cat:'fruta'},{k:'granada',e:'🔴',n:'Granada',cat:'fruta'},{k:'higo',e:'🟣',n:'Higo',cat:'fruta'},{k:'caqui',e:'🟠',n:'Caqui',cat:'fruta'},{k:'datiles',e:'🟤',n:'Dátiles',cat:'fruta'},{k:'pasas',e:'🟤',n:'Pasas',cat:'fruta'},
+  // GRASAS / FRUTOS SECOS / SEMILLAS
+  {k:'almendras',e:'🥜',n:'Almendras',cat:'salsa'},{k:'nueces',e:'🥜',n:'Nueces',cat:'salsa'},{k:'avellanas',e:'🥜',n:'Avellanas',cat:'salsa'},{k:'pistachos',e:'🥜',n:'Pistachos',cat:'salsa'},{k:'anacardos',e:'🥜',n:'Anacardos',cat:'salsa'},{k:'pinones',e:'🌰',n:'Piñones',cat:'salsa'},{k:'tahini',e:'🥣',n:'Tahini',cat:'salsa'},{k:'aceitunas_negras',e:'⚫',n:'Aceitunas negras',cat:'salsa'},
+  {k:'chia',e:'🌱',n:'Semillas de chía',cat:'salsa'},{k:'lino',e:'🌱',n:'Semillas de lino',cat:'salsa'},{k:'sesamo',e:'🌱',n:'Sésamo',cat:'salsa'},{k:'sem_calabaza',e:'🌱',n:'Semillas de calabaza',cat:'salsa'},{k:'sem_girasol',e:'🌻',n:'Semillas de girasol',cat:'salsa'},
+  // LÁCTEOS
+  {k:'leche_entera',e:'🥛',n:'Leche entera',cat:'lacteo'},{k:'kefir',e:'🥛',n:'Kéfir',cat:'lacteo'},{k:'yogur_proteico',e:'🥛',n:'Yogur alto en proteína',cat:'lacteo'},{k:'mozzarella',e:'🧀',n:'Mozzarella',cat:'lacteo'},{k:'feta',e:'🧀',n:'Feta',cat:'lacteo'},{k:'queso_cabra',e:'🧀',n:'Queso de cabra',cat:'lacteo'},{k:'manchego',e:'🧀',n:'Queso manchego',cat:'lacteo'},{k:'queso_curado',e:'🧀',n:'Queso curado',cat:'lacteo'},{k:'parmesano',e:'🧀',n:'Parmesano',cat:'lacteo'},{k:'ricotta',e:'🧀',n:'Ricotta',cat:'lacteo'},
+  // SALSAS / UNTABLES
+  {k:'tzatziki',e:'🥣',n:'Tzatziki',cat:'salsa'},{k:'romesco',e:'🥣',n:'Salsa romesco',cat:'salsa'},{k:'mostaza',e:'🥣',n:'Mostaza',cat:'salsa'},{k:'salsa_soja',e:'🥢',n:'Salsa de soja',cat:'salsa'},{k:'salsa_picante',e:'🌶️',n:'Salsa picante',cat:'salsa'},{k:'baba_ganoush',e:'🍆',n:'Baba ganoush',cat:'salsa'},{k:'crema_berenjena',e:'🍆',n:'Crema de berenjena',cat:'salsa'},
+  {k:'mayonesa',e:'🥚',n:'Mayonesa',cat:'salsa',oc:1},{k:'alioli',e:'🧄',n:'Alioli',cat:'salsa',oc:1},{k:'bbq',e:'🍖',n:'Salsa barbacoa',cat:'salsa',oc:1},
+  // ESPECIAS (no entran en combos)
+  {k:'perejil',e:'🌿',n:'Perejil',cat:'especia'},{k:'albahaca',e:'🌿',n:'Albahaca',cat:'especia'},{k:'oregano',e:'🌿',n:'Orégano',cat:'especia'},{k:'romero',e:'🌿',n:'Romero',cat:'especia'},{k:'tomillo',e:'🌿',n:'Tomillo',cat:'especia'},{k:'cilantro',e:'🌿',n:'Cilantro',cat:'especia'},{k:'laurel',e:'🍃',n:'Laurel',cat:'especia'},{k:'pimienta',e:'⚫',n:'Pimienta negra',cat:'especia'},{k:'pimenton',e:'🌶️',n:'Pimentón',cat:'especia'},{k:'comino',e:'🟤',n:'Comino',cat:'especia'},{k:'curry',e:'🟡',n:'Curry',cat:'especia'},{k:'curcuma',e:'🟡',n:'Cúrcuma',cat:'especia'},{k:'canela',e:'🟤',n:'Canela',cat:'especia'},{k:'ajo_polvo',e:'🧄',n:'Ajo en polvo',cat:'especia'},{k:'hierbas_prov',e:'🌿',n:'Hierbas provenzales',cat:'especia'}
+];
+const FOODBASE=COMPONENTS.concat(FOODMORE);
+const KCAT=[['prot','🥩 Proteínas'],['verdura','🥦 Verduras'],['hidrato','🍚 Hidratos'],['legumbre','🫘 Legumbres'],['salsa','🥑 Salsas/extras'],['fruta','🍎 Frutas'],['lacteo','🥛 Lácteos'],['especia','🌿 Especias']];
+const KCAT_LBL={prot:'Proteína',verdura:'Verdura',hidrato:'Hidrato',legumbre:'Legumbre',salsa:'Salsa/extra',fruta:'Fruta',lacteo:'Lácteo',especia:'Especia'};
 const SALSA_PREF={pollo:['hummus','guacamole','tomate_casero','pesto','cebolla_car','aove'],pinchos_pollo:['hummus','guacamole','pesto','aove'],muslo_pollo:['tomate_casero','cebolla_car','aove'],pavo_fil:['hummus','guacamole','aove'],hamb_pavo:['guacamole','cebolla_car','aove'],salch_pollo:['tomate_casero','aove'],ternera:['tomate_casero','cebolla_car','aove'],lomo:['tomate_casero','cebolla_car','aove'],albondigas:['tomate_casero','aove'],butifarra:['tomate_casero','cebolla_car','aove'],huevos:['aove','tomate_casero','guacamole'],atun:['aove','guacamole'],salmon:['aove','yogurt_sauce','guacamole'],merluza:['aove','yogurt_sauce'],gambas:['aove'],sepia:['aove'],tofu:['aove','guacamole'],jamon:['aove']};
 const BATCH_ITEMS=['boniato','patata','calabacin','pimientos','berenjena','esparragos','judias','zanahoria','brocoli','arroz','quinoa','lentejas','garbanzos','pollo','pinchos_pollo','pavo_fil','ternera','lomo','albondigas'];
-function compByKey(k){return COMPONENTS.find(c=>c.k===k);}
-function kitchenInit(){DB.kitchen=DB.kitchen||{};const K=DB.kitchen;K.inv=K.inv||[];K.shop=K.shop||[];K.eaten=K.eaten||[];K.week=K.week||{};K.favs=K.favs||[];}
+function compByKey(k){return FOODBASE.find(c=>c.k===k)||((DB.kitchen&&DB.kitchen.custom)||[]).find(c=>c.k===k)||null;}
+function kitchenInit(){DB.kitchen=DB.kitchen||{};const K=DB.kitchen;K.inv=K.inv||[];K.shop=K.shop||[];K.eaten=K.eaten||[];K.week=K.week||{};K.favs=K.favs||[];K.custom=K.custom||[];K.recent=K.recent||[];}
 function bumpQty(q){const m=(q||'').match(/^(\d+)/);if(m)return q.replace(m[1],String(+m[1]+1));return q;}
 function addInv(k,qty,batch,pri){kitchenInit();const c=compByKey(k);if(!c)return;const ex=DB.kitchen.inv.find(x=>x.k===k);
   if(ex){ex.qty=bumpQty(ex.qty);if(batch)ex.batch=true;if(pri)ex.pri=pri;save();return;}
-  DB.kitchen.inv.push({id:'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),k,name:c.n,e:c.e,cat:c.cat,qty:qty||'1',pri:pri||'now',batch:!!batch,ts:Date.now()});save();}
+  DB.kitchen.inv.push({id:'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),k,name:c.n,e:c.e,cat:c.cat,oc:!!c.oc,qty:qty||'1',pri:pri||'now',batch:!!batch,ts:Date.now()});save();}
 function delInv(id){DB.kitchen.inv=DB.kitchen.inv.filter(x=>x.id!==id);save();renderFood();}
 function invQty(id,d){const it=DB.kitchen.inv.find(x=>x.id===id);if(!it)return;const m=(it.qty||'').match(/^(\d+)/);let n=m?+m[1]:1;n=Math.max(0,n+d);if(n===0){delInv(id);return;}it.qty=m?it.qty.replace(m[1],String(n)):String(n);save();renderFood();}
 function cycleInvPri(id){const it=DB.kitchen.inv.find(x=>x.id===id);if(!it)return;it.pri=it.pri==='now'?'week':it.pri==='week'?'stock':'now';save();renderFood();}
@@ -2421,7 +2546,7 @@ function suggestMain(meal){
   const eatenP=eatenTodayProt();
   const prot=availCat('prot'),hid=[...availCat('hidrato').filter(x=>x.k!=='avena'),...availCat('legumbre')],veg=availCat('verdura'),sal=availCat('salsa');
   if(!prot.length||(!hid.length&&!veg.length))return [];
-  const rank=x=>priRank(x)+(eatenP.includes(x.k)?5:0)+(x.k==='pan'?3:0); // variedad: comidos hoy y pan bajan
+  const rank=x=>priRank(x)+(eatenP.includes(x.k)?5:0)+(x.k==='pan'?3:0)+(x.oc?8:0); // variedad: comidos hoy, pan y ocasionales bajan
   const S=a=>[...a].sort((x,y)=>rank(x)-rank(y));
   const P=S(prot),H=S(hid),V=S(veg),SA=[...sal].sort((x,y)=>priRank(x)-priRank(y));const out=[];
   P.forEach((p,pi)=>{
@@ -2517,11 +2642,31 @@ function renderMiCasa(){
   html+=`<div class="row" style="gap:8px;margin-top:6px"><button class="btn btn-viol" style="flex:1" onclick="setFoodPage('hoy')">🍽️ Qué puedo comer</button><button class="btn2" style="flex:1" onclick="setFoodPage('compra')">🛒 Qué me falta</button></div>`;
   return html;
 }
-function openAddInv(cat){
-  const items=COMPONENTS.filter(c=>c.cat===cat);
-  openModal(`<h3>＋ Añadir ${KCAT_LBL[cat]||''}</h3><p class="mini" style="margin-bottom:10px">Toca para añadir a tu cocina (cantidad por defecto 1; ajústala luego con − y ＋):</p>
-  <div style="display:flex;flex-wrap:wrap;gap:6px">${items.map(c=>`<button class="btn-sm btn2" onclick="addInv('${c.k}','1',false,'now');closeModal();setFoodPage('casa')">${c.e} ${c.n}</button>`).join('')}</div>`);
+let addCat='all';
+function normTxt(s){return (s||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+function openAddInv(cat){addCat=cat||'all';kitchenInit();
+  openModal(`<h3>🧊 Añadir a mi cocina</h3><p class="mini" style="margin-bottom:8px">Busca y toca varios seguidos (no se cierra). Cantidad por defecto 1; ajústala luego en Mi casa.</p>
+  <input id="invSearch" placeholder="Busca: bro, pollo, buti, merlu, ham..." autocomplete="off" oninput="renderAddResults()" style="width:100%;padding:11px;font-size:15px;margin-bottom:8px;background:var(--bg3);border:1px solid var(--line);border-radius:10px;color:var(--txt)">
+  <div id="invCatChips" style="display:flex;gap:5px;overflow-x:auto;padding-bottom:6px"></div>
+  <div id="invRecent"></div>
+  <div id="invResults" style="max-height:42vh;overflow-y:auto;margin-top:6px"></div>
+  <div class="row" style="gap:8px;margin-top:8px"><button class="btn2" style="flex:1" onclick="openCustomFood()">➕ Personalizado</button><button class="btn btn-acc2" style="flex:1" onclick="closeModal();setFoodPage('casa')">Hecho</button></div>`);
+  renderAddCats();renderAddRecent();renderAddResults();
 }
+function renderAddCats(){const el=document.getElementById('invCatChips');if(!el)return;const cats=[['all','Todo'],...KCAT];el.innerHTML=cats.map(c=>`<button class="btn-sm ${addCat===c[0]?'btn-acc2':'btn2'}" style="white-space:nowrap" onclick="setAddCat('${c[0]}')">${c[1]}</button>`).join('');}
+function setAddCat(c){addCat=c;renderAddCats();renderAddResults();}
+function renderAddRecent(){const el=document.getElementById('invRecent');if(!el)return;const rec=(DB.kitchen.recent||[]).map(compByKey).filter(Boolean).slice(0,8);el.innerHTML=rec.length?`<div class="mini" style="margin:4px 0 2px">Recientes:</div><div style="display:flex;flex-wrap:wrap;gap:5px">${rec.map(c=>`<button class="btn-sm btn2" onclick="addPick('${c.k}')">${c.e} ${c.n}</button>`).join('')}</div>`:'';}
+function renderAddResults(){const el=document.getElementById('invResults');if(!el)return;const q=normTxt((document.getElementById('invSearch')||{}).value);
+  let list=FOODBASE.filter(c=>addCat==='all'||c.cat===addCat);
+  if(q)list=list.filter(c=>normTxt(c.n).includes(q));
+  const total=list.length;list=list.slice(0,80);
+  if(!total){el.innerHTML=`<div class="empty" style="padding:16px">Nada con «${q}». Usa ➕ Personalizado para añadirlo.</div>`;return;}
+  el.innerHTML=`<div style="display:flex;flex-direction:column;gap:4px">${list.map(c=>{const inInv=DB.kitchen.inv.find(x=>x.k===c.k);return `<div class="sub-opt" style="align-items:center"><span>${c.e} ${c.n}${c.oc?' <span class="mini" style="color:var(--bad)">🔴</span>':''}${inInv?` <span class="mini" style="color:var(--ok)">·${inInv.qty} en casa</span>`:''}</span><button class="btn-sm ${inInv?'btn2':'btn-acc2'}" style="padding:3px 10px" onclick="addPick('${c.k}')">${inInv?'＋1':'añadir'}</button></div>`;}).join('')}</div>${total>80?`<div class="mini" style="margin-top:6px;color:var(--dim)">+${total-80} más. Afina la búsqueda.</div>`:''}`;
+}
+function addPick(k){addInv(k,'1',false,'now');DB.kitchen.recent=[k,...(DB.kitchen.recent||[]).filter(x=>x!==k)].slice(0,12);save();renderAddResults();renderAddRecent();toast('✓ añadido');}
+function openCustomFood(){window._cfCat='prot';openModal(`<h3>➕ Alimento personalizado</h3><p class="mini" style="margin-bottom:8px">Para lo que no esté en la lista. FORJA lo recordará.</p><input id="cfName" placeholder="Nombre (ej: Tempeh, Seitán...)" autocomplete="off" style="width:100%;padding:11px;font-size:15px;margin-bottom:8px;background:var(--bg3);border:1px solid var(--line);border-radius:10px;color:var(--txt)"><label>Categoría</label><div id="cfCat" style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px">${KCAT.map(c=>`<button class="btn-sm ${c[0]==='prot'?'btn-acc2':'btn2'}" onclick="pickCfCat('${c[0]}',this)">${c[1]}</button>`).join('')}</div><button class="btn btn-acc2" style="margin-top:14px;width:100%" onclick="saveCustomFood()">Guardar y añadir</button>`);}
+function pickCfCat(c,el){window._cfCat=c;el.parentElement.querySelectorAll('button').forEach(b=>{b.className='btn-sm btn2';});el.className='btn-sm btn-acc2';}
+function saveCustomFood(){const n=((document.getElementById('cfName')||{}).value||'').trim();if(!n){toast('Pon un nombre');return;}const cat=window._cfCat||'prot';const k='c_'+normTxt(n).replace(/[^a-z0-9]/g,'').slice(0,12)+Date.now().toString(36).slice(-3);kitchenInit();DB.kitchen.custom.push({k,e:'🍽️',n,cat,custom:1});addInv(k,'1',false,'now');DB.kitchen.recent=[k,...(DB.kitchen.recent||[])].slice(0,12);save();closeModal();setFoodPage('casa');toast('✓ '+n+' añadido');}
 /* ---- 👨‍🍳 Preparar semana (batch cooking) ---- */
 function renderPreparar(){
   kitchenInit();const inv=DB.kitchen.inv;
