@@ -2292,6 +2292,7 @@ const FOOD_SOURCES=[
   ['🏥','FAROS — Hospital Sant Joan de Déu','Alimentación infantil y familiar, orientado a padres.','https://faros.hsjdbcn.org/'],
   ['🥗','Recetario EINA Salut','Recetas mediterráneas saludables y menús por temporada.','https://einasalut.caib.es/web/ciudadania-activa/recetario']
 ];
+function openMealGuide(){openModal(renderMealGuide());}
 function renderFoodSources(){
   return `<p class="mini" style="margin-bottom:10px">FORJA no se inventa los menús: sigue criterios nutricionales reconocidos. Aquí tienes las fuentes para coger ideas (se abren en el navegador, necesitan internet):</p>
   ${FOOD_SOURCES.map(s=>`<a href="${s[3]}" target="_blank" rel="noopener" style="text-decoration:none;color:inherit"><div class="ex-block" style="cursor:pointer"><div style="display:flex;align-items:center;gap:10px"><div style="font-size:26px">${s[0]}</div><div style="flex:1"><b>${s[1]}</b><div class="mini">${s[2]}</div></div><div style="color:var(--acc2)">↗</div></div></div></a>`).join('')}
@@ -2365,17 +2366,227 @@ function gentleTargets(){
   const protLo=Math.round(objW*1.6), protHi=Math.round(objW*2); // 1.6-2 g/kg del peso objetivo
   return {w,maint,defLo,defHi,protLo,protHi};
 }
+/* ===================== COCINA INTELIGENTE (inventario · batch · motor · compra) =====================
+   FORJA propone, el usuario decide. Flujo: lo que tengo → qué puedo comer → qué falta → qué he comido.
+   Motor de COMPONENTES: pocos componentes generan cientos de platos coherentes con lo que hay en casa. */
+const COMPONENTS=[
+  // PROTEÍNAS (b=batchable: aguanta preparado)
+  {k:'pollo',e:'🍗',n:'Pechuga de pollo',cat:'prot',b:1},{k:'pinchos_pollo',e:'🍢',n:'Pinchos de pollo',cat:'prot',b:1},{k:'muslo_pollo',e:'🍗',n:'Muslo de pollo',cat:'prot',b:1},
+  {k:'pavo_fil',e:'🦃',n:'Pavo',cat:'prot',b:1},{k:'hamb_pavo',e:'🍔',n:'Hamburguesa de pavo',cat:'prot',b:0},{k:'salch_pollo',e:'🌭',n:'Salchichas de pollo',cat:'prot',b:0},
+  {k:'ternera',e:'🥩',n:'Ternera',cat:'prot',b:1},{k:'lomo',e:'🐖',n:'Lomo de cerdo',cat:'prot',b:1},{k:'albondigas',e:'🧆',n:'Albóndigas',cat:'prot',b:1},{k:'butifarra',e:'🌭',n:'Butifarra',cat:'prot',b:0},
+  {k:'huevos',e:'🥚',n:'Huevos',cat:'prot',b:0},{k:'atun',e:'🥫',n:'Atún',cat:'prot',b:0},{k:'salmon',e:'🐟',n:'Salmón',cat:'prot',b:0},{k:'merluza',e:'🐟',n:'Merluza',cat:'prot',b:0},
+  {k:'gambas',e:'🍤',n:'Gambas',cat:'prot',b:0},{k:'sepia',e:'🦑',n:'Sepia/calamar',cat:'prot',b:0},{k:'tofu',e:'🧈',n:'Tofu',cat:'prot',b:1},{k:'jamon',e:'🥓',n:'Pavo/jamón lonchas',cat:'prot',b:0},
+  // HIDRATOS
+  {k:'arroz',e:'🍚',n:'Arroz',cat:'hidrato',b:1},{k:'pasta',e:'🍝',n:'Pasta',cat:'hidrato',b:1},{k:'patata',e:'🥔',n:'Patata',cat:'hidrato',b:1},{k:'boniato',e:'🍠',n:'Boniato',cat:'hidrato',b:1},
+  {k:'quinoa',e:'🌾',n:'Quinoa',cat:'hidrato',b:1},{k:'pan',e:'🍞',n:'Pan integral',cat:'hidrato',b:0},{k:'avena',e:'🥣',n:'Avena',cat:'hidrato',b:0},{k:'cuscus',e:'🍥',n:'Cuscús',cat:'hidrato',b:1},{k:'wrap',e:'🌯',n:'Wrap integral',cat:'hidrato',b:0},
+  // LEGUMBRES (cuentan como hidrato+proteína vegetal)
+  {k:'lentejas',e:'🫘',n:'Lentejas',cat:'legumbre',b:1},{k:'garbanzos',e:'🫛',n:'Garbanzos',cat:'legumbre',b:1},{k:'alubias',e:'🫘',n:'Alubias',cat:'legumbre',b:1},
+  // VERDURAS (libres, no se pesan)
+  {k:'brocoli',e:'🥦',n:'Brócoli',cat:'verdura',b:1},{k:'calabacin',e:'🥒',n:'Calabacín',cat:'verdura',b:1},{k:'pimientos',e:'🫑',n:'Pimientos',cat:'verdura',b:1},{k:'berenjena',e:'🍆',n:'Berenjena',cat:'verdura',b:1},
+  {k:'esparragos',e:'🌱',n:'Espárragos',cat:'verdura',b:1},{k:'judias',e:'🫛',n:'Judías verdes',cat:'verdura',b:1},{k:'zanahoria',e:'🥕',n:'Zanahoria',cat:'verdura',b:1},{k:'espinacas',e:'🥬',n:'Espinacas',cat:'verdura',b:0},
+  {k:'ensalada',e:'🥗',n:'Ensalada',cat:'verdura',b:0},{k:'tomate',e:'🍅',n:'Tomate',cat:'verdura',b:0},{k:'champinones',e:'🍄',n:'Champiñones',cat:'verdura',b:0},{k:'cebolla',e:'🧅',n:'Cebolla',cat:'verdura',b:0},
+  // SALSAS / COMPLEMENTOS
+  {k:'aove',e:'🫒',n:'AOVE',cat:'salsa',b:0},{k:'guacamole',e:'🥑',n:'Guacamole',cat:'salsa',b:0},{k:'hummus',e:'🥣',n:'Hummus',cat:'salsa',b:0},{k:'pesto',e:'🌿',n:'Pesto',cat:'salsa',b:0},
+  {k:'yogurt_sauce',e:'🥛',n:'Salsa de yogur',cat:'salsa',b:0},{k:'tomate_casero',e:'🍅',n:'Tomate casero',cat:'salsa',b:0},{k:'aguacate',e:'🥑',n:'Aguacate',cat:'salsa',b:0},{k:'aceitunas',e:'🫒',n:'Aceitunas',cat:'salsa',b:0},
+  {k:'frutossecos',e:'🥜',n:'Frutos secos',cat:'salsa',b:0},{k:'cebolla_car',e:'🧅',n:'Cebolla caramelizada',cat:'salsa',b:0},
+  // FRUTAS
+  {k:'platano',e:'🍌',n:'Plátano',cat:'fruta',b:0},{k:'manzana',e:'🍎',n:'Manzana',cat:'fruta',b:0},{k:'naranja',e:'🍊',n:'Naranja',cat:'fruta',b:0},{k:'fresas',e:'🍓',n:'Fresas',cat:'fruta',b:0},{k:'pera',e:'🍐',n:'Pera',cat:'fruta',b:0},{k:'kiwi',e:'🥝',n:'Kiwi',cat:'fruta',b:0},{k:'uvas',e:'🍇',n:'Uvas',cat:'fruta',b:0},
+  // LÁCTEOS
+  {k:'yogur_griego',e:'🥛',n:'Yogur griego',cat:'lacteo',b:0},{k:'yogur_nat',e:'🥛',n:'Yogur natural',cat:'lacteo',b:0},{k:'queso_fresco',e:'🧀',n:'Queso fresco',cat:'lacteo',b:0},{k:'requeson',e:'🥛',n:'Requesón',cat:'lacteo',b:0},{k:'leche',e:'🥛',n:'Leche',cat:'lacteo',b:0}
+];
+const KCAT=[['prot','🥩 Proteínas'],['verdura','🥦 Verduras'],['hidrato','🍚 Hidratos'],['legumbre','🫘 Legumbres'],['salsa','🥑 Salsas/extras'],['fruta','🍎 Frutas'],['lacteo','🥛 Lácteos']];
+const KCAT_LBL={prot:'Proteína',verdura:'Verdura',hidrato:'Hidrato',legumbre:'Legumbre',salsa:'Salsa/extra',fruta:'Fruta',lacteo:'Lácteo'};
+const SALSA_PREF={pollo:['hummus','guacamole','tomate_casero','pesto','cebolla_car','aove'],pinchos_pollo:['hummus','guacamole','pesto','aove'],muslo_pollo:['tomate_casero','cebolla_car','aove'],pavo_fil:['hummus','guacamole','aove'],hamb_pavo:['guacamole','cebolla_car','aove'],salch_pollo:['tomate_casero','aove'],ternera:['tomate_casero','cebolla_car','aove'],lomo:['tomate_casero','cebolla_car','aove'],albondigas:['tomate_casero','aove'],butifarra:['tomate_casero','cebolla_car','aove'],huevos:['aove','tomate_casero','guacamole'],atun:['aove','guacamole'],salmon:['aove','yogurt_sauce','guacamole'],merluza:['aove','yogurt_sauce'],gambas:['aove'],sepia:['aove'],tofu:['aove','guacamole'],jamon:['aove']};
+const BATCH_ITEMS=['boniato','patata','calabacin','pimientos','berenjena','esparragos','judias','zanahoria','brocoli','arroz','quinoa','lentejas','garbanzos','pollo','pinchos_pollo','pavo_fil','ternera','lomo','albondigas'];
+function compByKey(k){return COMPONENTS.find(c=>c.k===k);}
+function kitchenInit(){DB.kitchen=DB.kitchen||{};const K=DB.kitchen;K.inv=K.inv||[];K.shop=K.shop||[];K.eaten=K.eaten||[];K.week=K.week||{};K.favs=K.favs||[];}
+function bumpQty(q){const m=(q||'').match(/^(\d+)/);if(m)return q.replace(m[1],String(+m[1]+1));return q;}
+function addInv(k,qty,batch,pri){kitchenInit();const c=compByKey(k);if(!c)return;const ex=DB.kitchen.inv.find(x=>x.k===k);
+  if(ex){ex.qty=bumpQty(ex.qty);if(batch)ex.batch=true;if(pri)ex.pri=pri;save();return;}
+  DB.kitchen.inv.push({id:'i'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),k,name:c.n,e:c.e,cat:c.cat,qty:qty||'1',pri:pri||'now',batch:!!batch,ts:Date.now()});save();}
+function delInv(id){DB.kitchen.inv=DB.kitchen.inv.filter(x=>x.id!==id);save();renderFood();}
+function invQty(id,d){const it=DB.kitchen.inv.find(x=>x.id===id);if(!it)return;const m=(it.qty||'').match(/^(\d+)/);let n=m?+m[1]:1;n=Math.max(0,n+d);if(n===0){delInv(id);return;}it.qty=m?it.qty.replace(m[1],String(n)):String(n);save();renderFood();}
+function cycleInvPri(id){const it=DB.kitchen.inv.find(x=>x.id===id);if(!it)return;it.pri=it.pri==='now'?'week':it.pri==='week'?'stock':'now';save();renderFood();}
+function decInv(id){const it=DB.kitchen.inv.find(x=>x.id===id);if(!it)return;const m=(it.qty||'').match(/^(\d+)/);if(m&&+m[1]>1){it.qty=it.qty.replace(m[1],String(+m[1]-1));}else{DB.kitchen.inv=DB.kitchen.inv.filter(x=>x.id!==id);}}
+const PRI_DOT={now:'🟢',week:'🟡',stock:'🔵'};const PRI_TXT={now:'consumir primero',week:'esta semana',stock:'despensa'};
+/* ---- Motor de combinaciones ---- */
+function availCat(cat){kitchenInit();return DB.kitchen.inv.filter(x=>x.cat===cat);}
+function priRank(x){return x.batch||x.pri==='now'?0:x.pri==='week'?1:2;}
+function pickSalsa(pKey,S){if(!S.length)return null;const pref=SALSA_PREF[pKey]||['aove'];for(const pk of pref){const f=S.find(s=>s.k===pk);if(f)return f;}return S.find(s=>s.k==='aove')||S[0];}
+function invByK(k){kitchenInit();return DB.kitchen.inv.find(x=>x.k===k)||null;}
+function plateName(parts){return parts.filter(p=>p.k!=='aove').map(p=>p.name).join(' + ')||'Plato';}
+function mkPlate(parts,meal,checks){return {name:plateName(parts),e:(parts[0]||{}).e||'🍽️',parts,meal,usesBatch:parts.some(x=>x.batch),checks};}
+function eatenTodayProt(){const t=today();const names=DB.kitchen.eaten.filter(x=>x.date===t).map(x=>x.name);return COMPONENTS.filter(c=>c.cat==='prot'&&names.some(n=>n.includes(c.n))).map(c=>c.k);}
+function suggestMain(meal){
+  const eatenP=eatenTodayProt();
+  const prot=availCat('prot'),hid=[...availCat('hidrato').filter(x=>x.k!=='avena'),...availCat('legumbre')],veg=availCat('verdura'),sal=availCat('salsa');
+  if(!prot.length||(!hid.length&&!veg.length))return [];
+  const rank=x=>priRank(x)+(eatenP.includes(x.k)?5:0)+(x.k==='pan'?3:0); // variedad: comidos hoy y pan bajan
+  const S=a=>[...a].sort((x,y)=>rank(x)-rank(y));
+  const P=S(prot),H=S(hid),V=S(veg),SA=[...sal].sort((x,y)=>priRank(x)-priRank(y));const out=[];
+  P.forEach((p,pi)=>{
+    const h=H.length?H[pi%H.length]:null;
+    const v1=V.length?V[pi%V.length]:null;const v2=V.length>1?V[(pi+1)%V.length]:null;
+    const s=pickSalsa(p.k,SA);
+    const parts=[p,h,v1,v2,s].filter(Boolean);
+    out.push(mkPlate(parts,meal,{proteina:true,hidrato:!!h,verdura:!!(v1||v2),grasa:true}));
+  });
+  return out;
+}
+function suggestBreakfast(){
+  const lac=availCat('lacteo'),fru=availCat('fruta');const out=[];
+  const yog=lac.find(x=>x.k!=='leche')||lac[0],leche=invByK('leche'),avena=invByK('avena'),pan=invByK('pan'),egg=invByK('huevos'),tom=invByK('tomate'),fs=invByK('frutossecos'),agu=invByK('aguacate'),jam=invByK('jamon');
+  if(yog&&fru.length){const parts=[yog];if(avena)parts.push(avena);parts.push(fru[0]);if(fs)parts.push(fs);out.push(mkPlate(parts,'desayuno',{proteina:true,fruta:true,cereal:!!avena}));}
+  if(egg&&pan){const parts=[egg,pan];if(tom)parts.push(tom);else if(agu)parts.push(agu);out.push(mkPlate(parts,'desayuno',{proteina:true,cereal:true,verdura:!!tom}));}
+  if(avena&&(leche||yog)&&fru.length){const parts=[avena,leche||yog,fru[fru.length>1?1:0]];if(fs)parts.push(fs);out.push(mkPlate(parts,'desayuno',{cereal:true,fruta:true,proteina:!!(leche||yog)}));}
+  if(pan&&jam){const parts=[pan,jam];if(tom)parts.push(tom);out.push(mkPlate(parts,'desayuno',{proteina:true,cereal:true}));}
+  return out;
+}
+function suggestSnack(){
+  const lac=availCat('lacteo'),fru=availCat('fruta');const out=[];
+  const yog=lac.find(x=>x.k!=='leche')||lac[0],avena=invByK('avena'),pan=invByK('pan'),qf=invByK('queso_fresco'),plat=invByK('platano'),fs=invByK('frutossecos'),jam=invByK('jamon');
+  if(yog&&fru.length)out.push(mkPlate([yog,fru[0]],'snack',{proteina:true,fruta:true}));
+  if(plat&&fs)out.push(mkPlate([plat,fs],'snack',{fruta:true,grasa:true}));
+  if(pan&&qf)out.push(mkPlate([pan,qf],'snack',{proteina:true,cereal:true}));
+  if(yog&&avena)out.push(mkPlate([yog,avena],'snack',{proteina:true,cereal:true}));
+  if(pan&&jam)out.push(mkPlate([pan,jam],'snack',{proteina:true,cereal:true}));
+  if(fru.length&&!out.length)out.push(mkPlate([fru[0]],'snack',{fruta:true}));
+  return out;
+}
+function suggestByMeal(m){return m==='desayuno'?suggestBreakfast():m==='snack'?suggestSnack():suggestMain(m);}
+function mealDefault(){const h=new Date().getHours();return h<11?'desayuno':h<13?'snack':h<16?'comida':h<19?'snack':'cena';}
+let hoySugs=[],hoyIdx=0,hoyMeal=null,hoyPlate=null;
+function curPlate(){return hoyPlate||hoySugs[hoyIdx];}
+function setHoyMeal(m){hoyMeal=m;hoyIdx=0;hoyPlate=null;renderFood();}
+function renderHoy(){
+  kitchenInit();const inv=DB.kitchen.inv;
+  if(!hoyMeal)hoyMeal=mealDefault();
+  const MEALS=[['desayuno','🌅'],['comida','☀️'],['cena','🌙'],['snack','🍎']];
+  let html=`<div class="note viol" style="margin-bottom:10px">👨‍👩‍👧‍👦 <b>Una sola cocina.</b> Mismo plato para todos: tú ajustas tu ración, los peques con porción más pequeña y verdura blandita.</div>`;
+  html+=`<div class="row" style="gap:5px;margin-bottom:10px">${MEALS.map(m=>`<button class="btn-sm ${hoyMeal===m[0]?'btn-acc2':'btn2'}" style="flex:1;flex-direction:column;padding:8px 2px" onclick="setHoyMeal('${m[0]}')">${m[1]}<span style="font-size:10px">${m[0]}</span></button>`).join('')}</div>`;
+  if(!inv.length){
+    return html+`<div class="empty" style="padding:24px 14px"><div style="font-size:44px">🧊</div><b>Aún no hay nada en tu cocina</b><p class="mini" style="margin-top:6px">Dime qué tienes o marca lo que has preparado, y FORJA te propone qué comer.</p></div><div class="row" style="gap:8px"><button class="btn btn-acc2" style="flex:1" onclick="setFoodPage('casa')">🧊 Añadir lo que tengo</button><button class="btn2" style="flex:1" onclick="setFoodPage('prep')">👨‍🍳 Preparar</button></div><button class="btn2" style="margin-top:8px;width:100%" onclick="setFoodPage('ideas')">💡 O ver ideas de platos</button>`;
+  }
+  hoySugs=suggestByMeal(hoyMeal);
+  if(hoyPlate&&(hoyPlate.meal!==hoyMeal||!hoyPlate.parts.every(p=>DB.kitchen.inv.find(x=>x.id===p.id))))hoyPlate=null;
+  if(!hoySugs.length&&!hoyPlate){
+    const falta=hoyMeal==='desayuno'?'un lácteo (yogur/leche) + fruta, o huevos + pan':hoyMeal==='snack'?'fruta, yogur, pan+queso o plátano+frutos secos':'1 proteína + 1 verdura o 1 hidrato';
+    return html+`<div class="note gold">Para un <b>${hoyMeal}</b> necesito ${falta}. Añádelo en tu cocina.</div><div class="row" style="gap:8px;margin-top:10px"><button class="btn btn-acc2" style="flex:1" onclick="setFoodPage('casa')">🧊 Mi casa</button><button class="btn2" style="flex:1" onclick="setFoodPage('ideas')">💡 Ideas</button></div>`;
+  }
+  if(hoyIdx>=hoySugs.length)hoyIdx=0;
+  const c=curPlate();const ch=c.checks;const fav=isFav(c);
+  html+=`<div style="font-family:Anton;letter-spacing:1px;margin-bottom:6px;font-size:13px">🍽️ ${hoySugs.length} IDEA${hoySugs.length>1?'S':''} DE ${hoyMeal.toUpperCase()} CON LO QUE TIENES</div>
+  <div class="card" style="border-color:var(--acc2)"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="font-size:44px">${c.parts.map(p=>p.e).join('')}</div><button class="btn-sm btn2" style="padding:4px 9px" onclick="toggleFav()">${fav?'❤️':'🤍'}</button></div>
+  <h3 style="margin:4px 0">${c.name}</h3>
+  <div class="mini" style="margin-bottom:8px">${ch.proteina?'🍗 Proteína ✓ ':''}${ch.verdura?'🥦 Verdura ✓ ':''}${ch.hidrato?'🍚 Hidrato ✓ ':''}${ch.cereal?'🌾 Cereal ✓ ':''}${ch.fruta?'🍎 Fruta ✓ ':''}${ch.grasa?'🫒 Grasa ✓':''}${c.usesBatch?' · 👨‍🍳 batch':''}</div>
+  <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">${c.parts.map((p,i)=>`<button class="btn-sm btn2" style="padding:4px 8px" onclick="openSwapPart(${i})">${p.e} ${p.name} ⇄</button>`).join('')}</div>
+  <div class="row" style="gap:8px"><button class="btn btn-acc2" style="flex:2" onclick="eatPlate()">✓ He comido esto</button><button class="btn2" style="flex:1" onclick="cyclePlate()">🔄 Cambiar</button></div>
+  <p class="mini" style="margin-top:6px;color:var(--dim)">Toca cualquier ingrediente para cambiarlo por otro que tengas.</p></div>`;
+  const others=hoySugs.filter(o=>o!==c).slice(0,4);
+  if(others.length)html+=`<div style="margin-top:12px"><div class="mini" style="margin-bottom:6px">Otras opciones:</div>${others.map(o=>{const i=hoySugs.indexOf(o);return `<div class="sub-opt" style="cursor:pointer" onclick="hoyPlate=null;hoyIdx=${i};renderFood()"><span>${o.parts.map(p=>p.e).join('')} ${o.name}</span><span style="color:var(--acc)">›</span></div>`;}).join('')}</div>`;
+  const favsAvail=(DB.kitchen.favs||[]).filter(f=>f.keys.every(k=>invByK(k)));
+  if(favsAvail.length)html+=`<div class="card" style="margin-top:12px;border-color:var(--acc)"><b style="font-family:Anton;font-size:13px">❤️ Tus favoritos disponibles</b>${favsAvail.slice(0,4).map(f=>`<div class="sub-opt"><span>${f.name}</span><button class="btn-sm btn-acc2" style="padding:3px 10px" onclick="eatFav('${f.id}')">✓</button></div>`).join('')}</div>`;
+  const eatenToday=DB.kitchen.eaten.filter(x=>x.date===today());
+  if(eatenToday.length)html+=`<div class="card" style="margin-top:12px"><b style="font-family:Anton;font-size:13px">✓ Hoy has comido</b>${eatenToday.map(x=>`<div class="mini" style="margin-top:4px">• ${x.name}</div>`).join('')}</div>`;
+  html+=`<div class="row" style="gap:8px;margin-top:12px"><button class="btn2" style="flex:1" onclick="openPlateGuide()">📖 El plato</button><button class="btn2" style="flex:1" onclick="openMealGuide()">📅 Por comida</button></div>`;
+  return html;
+}
+function cyclePlate(){if(!hoySugs.length)return;hoyPlate=null;hoyIdx=(hoyIdx+1)%hoySugs.length;renderFood();}
+function openSwapPart(i){
+  const c=curPlate();if(!c)return;const part=c.parts[i];if(!part)return;
+  const opts=availCat(part.cat).filter(x=>x.id!==part.id);
+  if(!opts.length){toast('No tienes otro/a '+(KCAT_LBL[part.cat]||'ingrediente')+' en casa');return;}
+  openModal(`<h3>⇄ Cambiar ${part.name}</h3><p class="mini" style="margin-bottom:10px">Otros ${KCAT_LBL[part.cat]||''} que tienes en casa:</p><div style="display:flex;flex-wrap:wrap;gap:6px">${opts.map(o=>`<button class="btn-sm btn2" onclick="doSwapPart(${i},'${o.id}')">${o.e} ${o.n||o.name}</button>`).join('')}</div>`);
+}
+function doSwapPart(i,id){let c=curPlate();const it=DB.kitchen.inv.find(x=>x.id===id);if(!c||!it)return;hoyPlate=JSON.parse(JSON.stringify(c));hoyPlate.parts[i]=it;hoyPlate.name=plateName(hoyPlate.parts);hoyPlate.usesBatch=hoyPlate.parts.some(x=>x.batch);closeModal();renderFood();}
+function eatPlate(){const c=curPlate();if(!c)return;DB.kitchen.eaten.unshift({date:today(),name:c.name,meal:hoyMeal});c.parts.forEach(p=>{if((p.cat!=='salsa'&&p.cat!=='verdura')||p.batch)decInv(p.id);});save();toast('✓ Registrado. Inventario actualizado.');hoyIdx=0;hoyPlate=null;renderFood();}
+/* Favoritos ❤️ */
+function comboSig(c){return c.parts.map(p=>p.k).sort().join('|');}
+function isFav(c){return (DB.kitchen.favs||[]).some(f=>f.sig===comboSig(c));}
+function toggleFav(){const c=curPlate();if(!c)return;kitchenInit();const sig=comboSig(c);const i=DB.kitchen.favs.findIndex(f=>f.sig===sig);if(i>=0){DB.kitchen.favs.splice(i,1);toast('Quitado de favoritos');}else{DB.kitchen.favs.push({id:'f'+Date.now().toString(36),sig,name:c.name,keys:c.parts.map(p=>p.k)});toast('❤️ Guardado en favoritos');}save();renderFood();}
+function eatFav(id){const f=(DB.kitchen.favs||[]).find(x=>x.id===id);if(!f)return;DB.kitchen.eaten.unshift({date:today(),name:f.name});f.keys.forEach(k=>{const it=invByK(k);if(it&&((it.cat!=='salsa'&&it.cat!=='verdura')||it.batch))decInv(it.id);});save();toast('✓ Registrado');renderFood();}
+/* ---- 🧊 Mi casa (inventario) ---- */
+function renderMiCasa(){
+  kitchenInit();const inv=DB.kitchen.inv;
+  let html=`<div class="note" style="margin-bottom:10px">Dime qué tienes en casa. Sin pesar: unidades, raciones, «½ bote»... Toca 🟢🟡🔵 para marcar qué consumir antes.</div>`;
+  html+=KCAT.map(([cat,lbl])=>{
+    const items=inv.filter(x=>x.cat===cat);
+    return `<div class="ex-block" style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;align-items:center"><b>${lbl}</b><button class="btn-sm btn-acc2" style="padding:4px 10px" onclick="openAddInv('${cat}')">＋</button></div>
+    ${items.length?items.map(x=>`<div class="sub-opt" style="align-items:center"><span style="cursor:pointer" onclick="cycleInvPri('${x.id}')">${PRI_DOT[x.pri]} ${x.e} ${x.name}${x.batch?' <span class="mini" style="color:var(--viol)">batch</span>':''} <span class="mini">${x.qty}</span></span><span style="display:flex;gap:3px"><button class="btn-sm btn2" style="padding:2px 8px" onclick="invQty('${x.id}',-1)">−</button><button class="btn-sm btn2" style="padding:2px 8px" onclick="invQty('${x.id}',1)">＋</button><button class="btn-sm btn2" style="padding:2px 8px" onclick="delInv('${x.id}')">✕</button></span></div>`).join(''):'<p class="mini" style="margin-top:4px;color:var(--dim)">Vacío</p>'}</div>`;
+  }).join('');
+  html+=`<div class="row" style="gap:8px;margin-top:6px"><button class="btn btn-viol" style="flex:1" onclick="setFoodPage('hoy')">🍽️ Qué puedo comer</button><button class="btn2" style="flex:1" onclick="setFoodPage('compra')">🛒 Qué me falta</button></div>`;
+  return html;
+}
+function openAddInv(cat){
+  const items=COMPONENTS.filter(c=>c.cat===cat);
+  openModal(`<h3>＋ Añadir ${KCAT_LBL[cat]||''}</h3><p class="mini" style="margin-bottom:10px">Toca para añadir a tu cocina (cantidad por defecto 1; ajústala luego con − y ＋):</p>
+  <div style="display:flex;flex-wrap:wrap;gap:6px">${items.map(c=>`<button class="btn-sm btn2" onclick="addInv('${c.k}','1',false,'now');closeModal();setFoodPage('casa')">${c.e} ${c.n}</button>`).join('')}</div>`);
+}
+/* ---- 👨‍🍳 Preparar semana (batch cooking) ---- */
+function renderPreparar(){
+  kitchenInit();const inv=DB.kitchen.inv;
+  let html=`<div class="note viol" style="margin-bottom:10px">👨‍🍳 <b>Batch cooking.</b> Marca lo que has preparado en tandas. Pasa a tu cocina como «consumir primero» 🟢 y FORJA lo usará en las propuestas.</div>`;
+  html+=`<div style="display:flex;flex-direction:column;gap:6px">${BATCH_ITEMS.map(k=>{const c=compByKey(k);const has=inv.find(x=>x.k===k&&x.batch);return `<div class="sub-opt" style="align-items:center;cursor:pointer" onclick="toggleBatch('${k}')"><span>${has?'☑️':'☐'} ${c.e} ${c.n}</span>${has?`<span class="mini" style="color:var(--viol)">${has.qty} · preparado</span>`:'<span class="mini" style="color:var(--dim)">marcar</span>'}</div>`;}).join('')}</div>
+  <p class="mini" style="margin-top:10px;color:var(--dim)">¿Cantidad? Toca el elemento ya marcado en 🧊 Mi casa y ajústala (bandeja, raciones...). No hace falta pesar.</p>
+  <button class="btn btn-acc2" style="margin-top:12px;width:100%" onclick="setFoodPage('hoy')">🍽️ Ver qué puedo comer con esto</button>`;
+  return html;
+}
+function toggleBatch(k){kitchenInit();const ex=DB.kitchen.inv.find(x=>x.k===k&&x.batch);if(ex){DB.kitchen.inv=DB.kitchen.inv.filter(x=>x.id!==ex.id);save();}else{addInv(k,'2 raciones',true,'now');}renderFood();}
+/* ---- 🛒 Compra ---- */
+function shopRecommend(){
+  kitchenInit();const inv=DB.kitchen.inv;const have=k=>inv.some(x=>x.k===k);const haveCat=c=>inv.some(x=>x.cat===c);const recs=[];
+  const pescados=['merluza','salmon','atun','gambas'];if(!pescados.some(have))recs.push({k:'merluza',why:'no tienes pescado; aporta variedad y omega-3'});
+  if(!haveCat('fruta'))recs.push({k:'platano',why:'sin fruta en casa'});
+  if(!have('huevos'))recs.push({k:'huevos',why:'proteína versátil y barata'});
+  if(inv.filter(x=>x.cat==='verdura').length<3)recs.push({k:'brocoli',why:'pocas verduras; llena medio plato'});
+  if(!haveCat('lacteo'))recs.push({k:'yogur_griego',why:'proteína para desayunos y snacks'});
+  const prots=inv.filter(x=>x.cat==='prot');if(prots.length&&!prots.some(p=>['merluza','salmon','atun','gambas','sepia','tofu','huevos'].includes(p.k)))recs.push({k:'garbanzos',why:'tienes mucha carne; alterna con legumbre/vegetal'});
+  return recs.filter((r,i,a)=>a.findIndex(x=>x.k===r.k)===i).slice(0,6);
+}
+function renderCompra(){
+  kitchenInit();const shop=DB.kitchen.shop;const recs=shopRecommend();
+  let html=`<div class="note gold" style="margin-bottom:10px">💡 <b>Ideas de compra</b> según lo que ya tienes. Compra poco y aprovéchalo mejor.</div>`;
+  if(recs.length)html+=`<div class="ex-block" style="border-color:var(--gold)"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-family:Anton;font-size:13px">FORJA te recomienda</b><button class="btn-sm btn-gold" style="padding:4px 10px" onclick="addAllShop()">＋ añadir todo</button></div>${recs.map(r=>{const c=compByKey(r.k);const inList=shop.some(s=>s.k===r.k);return `<div class="sub-opt"><span>${c.e} ${c.n} <span class="mini" style="color:var(--dim)">· ${r.why}</span></span>${inList?'<span class="mini" style="color:var(--ok)">en lista ✓</span>':`<button class="btn-sm btn2" style="padding:3px 10px" onclick="addShop('${r.k}')">＋ lista</button>`}</div>`;}).join('')}</div>`;
+  html+=`<div class="ex-block" style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-family:Anton;font-size:13px">🛒 Mi lista de compra</b><button class="btn-sm btn2" style="padding:4px 10px" onclick="openAddShop()">＋</button></div>
+  ${shop.length?shop.map(s=>`<div class="sub-opt"><span>☐ ${s.e} ${s.name}</span><span style="display:flex;gap:4px"><button class="btn-sm btn-acc2" style="padding:2px 8px" onclick="buyShop('${s.id}')">✓ comprado</button><button class="btn-sm btn2" style="padding:2px 8px" onclick="delShop('${s.id}')">✕</button></span></div>`).join(''):'<p class="mini" style="margin-top:4px;color:var(--dim)">Lista vacía. Añade lo que recomienda FORJA o pulsa ＋.</p>'}</div>
+  <p class="mini" style="margin-top:8px;color:var(--dim)">Al marcar ✓ comprado pasa directo a 🧊 Mi casa.</p>`;
+  return html;
+}
+function addShop(k){kitchenInit();const c=compByKey(k);if(!c)return;if(DB.kitchen.shop.some(s=>s.k===k))return;DB.kitchen.shop.push({id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,4),k,name:c.n,e:c.e,cat:c.cat});save();renderFood();}
+function addAllShop(){shopRecommend().forEach(r=>{const c=compByKey(r.k);if(c&&!DB.kitchen.shop.some(s=>s.k===r.k))DB.kitchen.shop.push({id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),k:r.k,name:c.n,e:c.e,cat:c.cat});});save();toast('🛒 Añadido a la lista');renderFood();}
+function openAddShop(){openModal(`<h3>＋ Añadir a la compra</h3>${KCAT.map(([cat,lbl])=>`<b style="font-family:Anton;font-size:12px;display:block;margin-top:8px">${lbl}</b><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${COMPONENTS.filter(c=>c.cat===cat).map(c=>`<button class="btn-sm btn2" onclick="addShop('${c.k}');closeModal();setFoodPage('compra')">${c.e} ${c.n}</button>`).join('')}</div>`).join('')}`);}
+function buyShop(id){const s=DB.kitchen.shop.find(x=>x.id===id);if(!s)return;addInv(s.k,'1',false,'week');DB.kitchen.shop=DB.kitchen.shop.filter(x=>x.id!==id);save();toast('✓ '+s.name+' → tu cocina');renderFood();}
+function delShop(id){DB.kitchen.shop=DB.kitchen.shop.filter(x=>x.id!==id);save();renderFood();}
+/* ---- 📅 Mi semana (flexible, sin rigidez) ---- */
+const WEEK_DAYS=['Lunes','Martes','Miércoles','Jueves','Viernes','Sábado','Domingo'];
+function renderSemana(){
+  kitchenInit();const wk=DB.kitchen.week;
+  let html=`<div class="note" style="margin-bottom:10px">📅 <b>Propuesta flexible, no obligación.</b> Marca lo que vas comiendo. Da igual el día: si te comes el jueves lo del martes, no pasa nada. Aquí solo llevas el control.</div>`;
+  const meals=[['desayuno','🌅'],['comida','☀️'],['cena','🌙']];
+  html+=WEEK_DAYS.map(d=>{const dd=wk[d]||{};return `<div class="ex-block" style="margin-bottom:6px"><b>${d}</b><div class="row" style="gap:6px;margin-top:6px">${meals.map(m=>`<button class="btn-sm ${dd[m[0]]?'btn-acc2':'btn2'}" style="flex:1;flex-direction:column;padding:8px 2px" onclick="toggleWeekMeal('${d}','${m[0]}')">${m[1]}<span style="font-size:10px">${m[0]}</span>${dd[m[0]]?'<br>✓':''}</button>`).join('')}</div></div>`;}).join('');
+  const done=WEEK_DAYS.reduce((a,d)=>a+meals.filter(m=>(wk[d]||{})[m[0]]).length,0);
+  html+=`<div class="mini" style="margin-top:6px">${done}/21 comidas registradas esta semana.</div><button class="btn2" style="margin-top:8px;width:100%" onclick="resetWeek()">↺ Empezar semana nueva</button>`;
+  return html;
+}
+function toggleWeekMeal(d,m){kitchenInit();DB.kitchen.week[d]=DB.kitchen.week[d]||{};DB.kitchen.week[d][m]=!DB.kitchen.week[d][m];save();renderFood();}
+function resetWeek(){DB.kitchen.week={};save();renderFood();}
+
 /* ===================== PÁGINA DE DIETA (hoja propia) ===================== */
-let foodPage='ideas';
+let foodPage='hoy';
 function renderFood(){
+  kitchenInit();
   const el=document.getElementById('foodBody');if(!el)return;
-  const tabs=[['ideas','🍽️ Ideas'],['construye','🎨 Construye'],['pesar','⚖️ Pesa tu plato'],['guia','📅 Cómo comer'],['fuentes','📚 Fuentes']];
-  document.getElementById('foodTabs').innerHTML=tabs.map(t=>`<button class="btn-sm ${foodPage===t[0]?'btn-acc2':'btn2'}" style="white-space:nowrap" onclick="setFoodPage('${t[0]}')">${t[1]}</button>`).join('');
-  if(foodPage==='ideas'){el.innerHTML=`<div id="foodExplorer"></div>`;renderFoodExplorer();}
+  const tabs=[['hoy','🍽️ Hoy'],['casa','🧊 Mi casa'],['prep','👨‍🍳 Preparar'],['semana','📅 Semana'],['compra','🛒 Compra'],['ideas','💡 Ideas'],['construye','🧩 Construye'],['pesar','⚖️ Pesar'],['fuentes','📚 Fuentes']];
+  const tb=document.getElementById('foodTabs');if(tb)tb.innerHTML=tabs.map(t=>`<button class="btn-sm ${foodPage===t[0]?'btn-acc2':'btn2'}" style="white-space:nowrap" onclick="setFoodPage('${t[0]}')">${t[1]}</button>`).join('');
+  if(foodPage==='hoy')el.innerHTML=renderHoy();
+  else if(foodPage==='casa')el.innerHTML=renderMiCasa();
+  else if(foodPage==='prep')el.innerHTML=renderPreparar();
+  else if(foodPage==='semana')el.innerHTML=renderSemana();
+  else if(foodPage==='compra')el.innerHTML=renderCompra();
+  else if(foodPage==='ideas'){el.innerHTML=`<div id="foodExplorer"></div>`;renderFoodExplorer();}
   else if(foodPage==='construye'){el.innerHTML=`<div id="comboBuilder"></div>`;renderCombo();}
   else if(foodPage==='pesar'){el.innerHTML=renderWeighShell();renderWeigh();}
-  else if(foodPage==='guia'){el.innerHTML=renderMealGuide();}
-  else if(foodPage==='fuentes'){el.innerHTML=renderFoodSources();}
+  else if(foodPage==='fuentes')el.innerHTML=renderFoodSources();
 }
 function setFoodPage(p){foodPage=p;renderFood();}
 function renderWeighShell(){
