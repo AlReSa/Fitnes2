@@ -2229,7 +2229,7 @@ function renderDietCard(){
     <div class="row" style="gap:6px">${MEALS.map(m=>`<button class="btn-sm ${log[m[0]]?'btn-acc2':'btn2'}" style="flex:1;flex-direction:column;padding:10px 4px" onclick="toggleMeal('${m[0]}')">${m[1]}<br><span style="font-size:10px">${m[0]}</span>${log[m[0]]?'<br>✓':''}</button>`).join('')}</div>
     <div class="bar" style="margin-top:10px"><i style="width:${done/4*100}%;background:var(--ok)"></i></div>
     <div class="mini" style="margin-top:4px">${done}/4 comidas con proteína${done===4?' · ¡día redondo! 💪':''}</div>
-    <button class="btn" style="margin-top:10px;width:100%" onclick="document.querySelector('nav button:nth-child(4)').click()">🍽️ Abrir mi Dieta (ideas, pesar, guía)</button>
+    <button class="btn" style="margin-top:10px;width:100%" onclick="document.querySelector('nav button:nth-child(4)').click()">🍽️ Abrir mi Comida (qué comer, pesar, guía)</button>
   </div>`;
 }
 function toggleMeal(m){const d=today();DB.diet=DB.diet||{log:{}};DB.diet.log[d]=DB.diet.log[d]||{};DB.diet.log[d][m]=!DB.diet.log[d][m];save();renderDietCard();}
@@ -2546,7 +2546,7 @@ function suggestMain(meal){
   const eatenP=eatenTodayProt();
   const prot=availCat('prot'),hid=[...availCat('hidrato').filter(x=>x.k!=='avena'),...availCat('legumbre')],veg=availCat('verdura'),sal=availCat('salsa');
   if(!prot.length||(!hid.length&&!veg.length))return [];
-  const rank=x=>priRank(x)+(eatenP.includes(x.k)?5:0)+(x.k==='pan'?3:0)+(x.oc?8:0); // variedad: comidos hoy, pan y ocasionales bajan
+  const rank=x=>priRank(x)+(eatenP.includes(x.k)?1:0)+(x.k==='pan'?3:0)+(x.oc?8:0); // repetir es normal: solo un pequeño desempate por variedad
   const S=a=>[...a].sort((x,y)=>rank(x)-rank(y));
   const P=S(prot),H=S(hid),V=S(veg),SA=[...sal].sort((x,y)=>priRank(x)-priRank(y));const out=[];
   P.forEach((p,pi)=>{
@@ -2558,30 +2558,70 @@ function suggestMain(meal){
   });
   return out;
 }
+function firstInv(keys){for(const k of keys){const it=invByK(k);if(it)return it;}return null;}
 function suggestBreakfast(){
-  const lac=availCat('lacteo'),fru=availCat('fruta');const out=[];
-  const yog=lac.find(x=>x.k!=='leche')||lac[0],leche=invByK('leche'),avena=invByK('avena'),pan=invByK('pan'),egg=invByK('huevos'),tom=invByK('tomate'),fs=invByK('frutossecos'),agu=invByK('aguacate'),jam=invByK('jamon');
-  if(yog&&fru.length){const parts=[yog];if(avena)parts.push(avena);parts.push(fru[0]);if(fs)parts.push(fs);out.push(mkPlate(parts,'desayuno',{proteina:true,fruta:true,cereal:!!avena}));}
-  if(egg&&pan){const parts=[egg,pan];if(tom)parts.push(tom);else if(agu)parts.push(agu);out.push(mkPlate(parts,'desayuno',{proteina:true,cereal:true,verdura:!!tom}));}
-  if(avena&&(leche||yog)&&fru.length){const parts=[avena,leche||yog,fru[fru.length>1?1:0]];if(fs)parts.push(fs);out.push(mkPlate(parts,'desayuno',{cereal:true,fruta:true,proteina:!!(leche||yog)}));}
-  if(pan&&jam){const parts=[pan,jam];if(tom)parts.push(tom);out.push(mkPlate(parts,'desayuno',{proteina:true,cereal:true}));}
+  const out=[];
+  const pan=firstInv(['pan','pan_masamadre','pan_centeno','pan_espelta','pita']);
+  const emb=firstInv(['jamon_serrano','jamon_iberico','pavo_cocido','jamon_cocido','jamon']);
+  const queso=firstInv(['queso_fresco','requeson','mozzarella','feta','queso_cabra']);
+  const yog=firstInv(['yogur_griego','yogur_proteico','yogur_nat','kefir']);
+  const leche=invByK('leche')||invByK('leche_entera');
+  const avena=invByK('avena'),tom=invByK('tomate'),aove=invByK('aove'),agu=invByK('aguacate'),egg=invByK('huevos'),fs=invByK('frutossecos');
+  const fru=availCat('fruta');
+  const mk=(parts,checks)=>out.push(mkPlate(parts.filter(Boolean),'desayuno',checks));
+  // 1. Pan con tomate, aceite y embutido (el clásico mediterráneo)
+  if(pan&&tom&&emb)mk([pan,tom,aove,emb],{cereal:true,verdura:true,proteina:true,grasa:true});
+  // 2. Tostada con queso fresco y pavo/jamón
+  if(pan&&queso&&emb)mk([pan,queso,emb],{cereal:true,proteina:true});
+  // 3. Tostada con aguacate y embutido/huevo
+  if(pan&&agu&&(emb||egg))mk([pan,agu,emb||egg],{cereal:true,grasa:true,proteina:true});
+  // 4. Huevos + pan + tomate
+  if(egg&&pan)mk([egg,pan,tom],{proteina:true,cereal:true,verdura:!!tom});
+  // 5. Pan con tomate y aceite (+ queso) — vegetariano
+  if(pan&&tom&&!emb)mk([pan,tom,aove,queso],{cereal:true,verdura:true,grasa:true,proteina:!!queso});
+  // 6. Yogur + fruta + avena/frutos secos
+  if(yog&&fru.length)mk([yog,avena,fru[0],fs],{proteina:true,fruta:true,cereal:!!avena});
+  // 7. Avena + leche/yogur + fruta
+  if(avena&&(leche||yog)&&fru.length)mk([avena,leche||yog,fru[fru.length>1?1:0],fs],{cereal:true,fruta:true,proteina:!!(leche||yog)});
+  // 8. Bocadillo pequeño de pavo/jamón
+  if(pan&&emb&&!tom&&!queso)mk([pan,emb],{cereal:true,proteina:true});
   return out;
 }
 function suggestSnack(){
-  const lac=availCat('lacteo'),fru=availCat('fruta');const out=[];
-  const yog=lac.find(x=>x.k!=='leche')||lac[0],avena=invByK('avena'),pan=invByK('pan'),qf=invByK('queso_fresco'),plat=invByK('platano'),fs=invByK('frutossecos'),jam=invByK('jamon');
-  if(yog&&fru.length)out.push(mkPlate([yog,fru[0]],'snack',{proteina:true,fruta:true}));
-  if(plat&&fs)out.push(mkPlate([plat,fs],'snack',{fruta:true,grasa:true}));
-  if(pan&&qf)out.push(mkPlate([pan,qf],'snack',{proteina:true,cereal:true}));
-  if(yog&&avena)out.push(mkPlate([yog,avena],'snack',{proteina:true,cereal:true}));
-  if(pan&&jam)out.push(mkPlate([pan,jam],'snack',{proteina:true,cereal:true}));
-  if(fru.length&&!out.length)out.push(mkPlate([fru[0]],'snack',{fruta:true}));
+  const out=[];
+  const fru=availCat('fruta');
+  const yog=firstInv(['yogur_griego','yogur_proteico','yogur_nat','kefir']);
+  const fs=invByK('frutossecos'),avena=invByK('avena');
+  const queso=firstInv(['queso_fresco','requeson']);
+  const pan=firstInv(['pan','pan_masamadre','pan_centeno']);
+  const emb=firstInv(['pavo_cocido','jamon_serrano','jamon_cocido','jamon']);
+  const agu=invByK('aguacate'),plat=invByK('platano');
+  const mk=(parts,checks,elab)=>out.push(Object.assign(mkPlate(parts.filter(Boolean),'snack',checks),{elab:!!elab}));
+  // SIMPLES (día a día): lo primero
+  if(fru.length&&fs)mk([fru[0],fs],{fruta:true,grasa:true});
+  if(fru.length)mk([fru[0]],{fruta:true});
+  if(yog&&fru.length)mk([yog,fru[0]],{proteina:true,fruta:true});
+  if(fs)mk([fs],{grasa:true});
+  if(yog)mk([yog],{proteina:true});
+  if(fru.length&&queso)mk([fru[0],queso],{fruta:true,proteina:true});
+  // ELABORADOS (opcional, fin de semana / si hay tiempo)
+  if(pan&&agu&&emb)mk([pan,agu,emb],{cereal:true,grasa:true,proteina:true},true);
+  if(queso&&fru.length&&fs)mk([queso,fru[0],fs],{proteina:true,fruta:true,grasa:true},true);
+  if(pan&&queso&&emb)mk([pan,queso,emb],{cereal:true,proteina:true},true);
+  if(yog&&avena)mk([yog,avena],{proteina:true,cereal:true},true);
   return out;
 }
 function suggestByMeal(m){return m==='desayuno'?suggestBreakfast():m==='snack'?suggestSnack():suggestMain(m);}
 function mealDefault(){const h=new Date().getHours();return h<11?'desayuno':h<13?'snack':h<16?'comida':h<19?'snack':'cena';}
 let hoySugs=[],hoyIdx=0,hoyMeal=null,hoyPlate=null;
 function curPlate(){return hoyPlate||hoySugs[hoyIdx];}
+function portionFor(meal){
+  const t=gentleTargets();
+  const frac={desayuno:0.22,comida:0.33,cena:0.30,snack:0.13}[meal]||0.3;
+  const g=Math.round((t.protLo+t.protHi)/2*frac/5)*5;
+  const palms=Math.max(0.5,Math.round(g/28*2)/2);
+  return {g,palms,t};
+}
 function setHoyMeal(m){hoyMeal=m;hoyIdx=0;hoyPlate=null;renderFood();}
 function renderHoy(){
   kitchenInit();const inv=DB.kitchen.inv;
@@ -2595,20 +2635,22 @@ function renderHoy(){
   hoySugs=suggestByMeal(hoyMeal);
   if(hoyPlate&&(hoyPlate.meal!==hoyMeal||!hoyPlate.parts.every(p=>DB.kitchen.inv.find(x=>x.id===p.id))))hoyPlate=null;
   if(!hoySugs.length&&!hoyPlate){
-    const falta=hoyMeal==='desayuno'?'un lácteo (yogur/leche) + fruta, o huevos + pan':hoyMeal==='snack'?'fruta, yogur, pan+queso o plátano+frutos secos':'1 proteína + 1 verdura o 1 hidrato';
+    const falta=hoyMeal==='desayuno'?'pan integral + tomate + aceite + jamón/pavo/queso, o yogur + fruta, o huevos + pan':hoyMeal==='snack'?'fruta, frutos secos o yogur (y algo de pan/queso si quieres)':'1 proteína + 1 verdura o 1 hidrato';
     return html+`<div class="note gold">Para un <b>${hoyMeal}</b> necesito ${falta}. Añádelo en tu cocina.</div><div class="row" style="gap:8px;margin-top:10px"><button class="btn btn-acc2" style="flex:1" onclick="setFoodPage('casa')">🧊 Mi casa</button><button class="btn2" style="flex:1" onclick="setFoodPage('ideas')">💡 Ideas</button></div>`;
   }
   if(hoyIdx>=hoySugs.length)hoyIdx=0;
-  const c=curPlate();const ch=c.checks;const fav=isFav(c);
+  const c=curPlate();const ch=c.checks;const fav=isFav(c);const po=portionFor(hoyMeal);
   html+=`<div style="font-family:Anton;letter-spacing:1px;margin-bottom:6px;font-size:13px">🍽️ ${hoySugs.length} IDEA${hoySugs.length>1?'S':''} DE ${hoyMeal.toUpperCase()} CON LO QUE TIENES</div>
   <div class="card" style="border-color:var(--acc2)"><div style="display:flex;justify-content:space-between;align-items:flex-start"><div style="font-size:44px">${c.parts.map(p=>p.e).join('')}</div><button class="btn-sm btn2" style="padding:4px 9px" onclick="toggleFav()">${fav?'❤️':'🤍'}</button></div>
-  <h3 style="margin:4px 0">${c.name}</h3>
+  <h3 style="margin:4px 0">${c.name}${c.elab?' <span class="mini" style="color:var(--gold)">🍳 elaborado</span>':''}</h3>
   <div class="mini" style="margin-bottom:8px">${ch.proteina?'🍗 Proteína ✓ ':''}${ch.verdura?'🥦 Verdura ✓ ':''}${ch.hidrato?'🍚 Hidrato ✓ ':''}${ch.cereal?'🌾 Cereal ✓ ':''}${ch.fruta?'🍎 Fruta ✓ ':''}${ch.grasa?'🫒 Grasa ✓':''}${c.usesBatch?' · 👨‍🍳 batch':''}</div>
+  <div class="note gold" style="margin-bottom:8px;padding:8px 10px">📏 <b>Tu ración (${po.t.w} kg → perder grasa)</b>: proteína ≈ <b>${po.g} g</b> (${po.palms} palma${po.palms!==1?'s':''} de la mano)${hoyMeal==='desayuno'||hoyMeal==='snack'?'':' · hidrato 1 puño · grasa 1 pulgar'} · verdura ½ plato a voluntad. <span class="mini">Se ajusta solo cuando actualizas tu peso en Cuerpo.</span></div>
   <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">${c.parts.map((p,i)=>`<button class="btn-sm btn2" style="padding:4px 8px" onclick="openSwapPart(${i})">${p.e} ${p.name} ⇄</button>`).join('')}</div>
   <div class="row" style="gap:8px"><button class="btn btn-acc2" style="flex:2" onclick="eatPlate()">✓ He comido esto</button><button class="btn2" style="flex:1" onclick="cyclePlate()">🔄 Cambiar</button></div>
-  <p class="mini" style="margin-top:6px;color:var(--dim)">Toca cualquier ingrediente para cambiarlo por otro que tengas.</p></div>`;
+  <p class="mini" style="margin-top:6px;color:var(--dim)">Toca cualquier ingrediente para cambiarlo por otro que tengas. Repetir un plato entre semana es perfectamente normal.</p></div>`;
+  if(hoyMeal==='snack')html+=`<div class="note" style="margin-top:8px">Entre semana, cuanto más simple mejor: fruta, frutos secos o yogur. Lo 🍳 elaborado, para el finde o si tienes tiempo.</div>`;
   const others=hoySugs.filter(o=>o!==c).slice(0,4);
-  if(others.length)html+=`<div style="margin-top:12px"><div class="mini" style="margin-bottom:6px">Otras opciones:</div>${others.map(o=>{const i=hoySugs.indexOf(o);return `<div class="sub-opt" style="cursor:pointer" onclick="hoyPlate=null;hoyIdx=${i};renderFood()"><span>${o.parts.map(p=>p.e).join('')} ${o.name}</span><span style="color:var(--acc)">›</span></div>`;}).join('')}</div>`;
+  if(others.length)html+=`<div style="margin-top:12px"><div class="mini" style="margin-bottom:6px">Otras opciones:</div>${others.map(o=>{const i=hoySugs.indexOf(o);return `<div class="sub-opt" style="cursor:pointer" onclick="hoyPlate=null;hoyIdx=${i};renderFood()"><span>${o.parts.map(p=>p.e).join('')} ${o.name}${o.elab?' <span class="mini" style="color:var(--gold)">🍳</span>':''}</span><span style="color:var(--acc)">›</span></div>`;}).join('')}</div>`;
   const favsAvail=(DB.kitchen.favs||[]).filter(f=>f.keys.every(k=>invByK(k)));
   if(favsAvail.length)html+=`<div class="card" style="margin-top:12px;border-color:var(--acc)"><b style="font-family:Anton;font-size:13px">❤️ Tus favoritos disponibles</b>${favsAvail.slice(0,4).map(f=>`<div class="sub-opt"><span>${f.name}</span><button class="btn-sm btn-acc2" style="padding:3px 10px" onclick="eatFav('${f.id}')">✓</button></div>`).join('')}</div>`;
   const eatenToday=DB.kitchen.eaten.filter(x=>x.date===today());
