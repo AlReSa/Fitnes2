@@ -73,14 +73,32 @@ function load(){
   seed();renderAll();
   if(!DB.tourDone)setTimeout(()=>showTour(0),400);
 }
+let SAVE_OK=true;
 function save(){
   try{
     const data=JSON.stringify(DB);
     if(typeof localStorage!=='undefined'){localStorage.setItem(KEY,data);}
     if(typeof window!=='undefined'&&window.storage&&window.storage.set){window.storage.set(KEY,data).catch(()=>{});}
+    SAVE_OK=true;
   }catch(e){
-    try{toast('⚠️ No se pudo guardar (¿memoria llena de fotos?)');}catch(_){}
+    SAVE_OK=false;
+    try{toast('⚠️ No se pudo guardar: memoria del navegador llena. Exporta una copia y borra fotos antiguas.');}catch(_){}
+    try{renderSaveBanner&&renderSaveBanner();}catch(_){}
   }
+}
+/* Tamaño de datos y aviso proactivo antes de que el navegador falle (~5 MB) */
+function storageInfo(){
+  let bytes=0;try{bytes=new Blob([JSON.stringify(DB)]).size;}catch(e){try{bytes=JSON.stringify(DB).length;}catch(_){bytes=0;}}
+  const kb=Math.round(bytes/1024);const mb=+(bytes/1048576).toFixed(2);const pct=Math.min(100,Math.round(bytes/5242880*100));
+  const photos=(DB.body||[]).filter(b=>b.photo).length;
+  return {kb,mb,pct,photos};
+}
+function renderSaveBanner(){
+  const el=document.getElementById('dataBanner');if(!el)return;
+  const s=storageInfo();
+  if(!SAVE_OK){el.innerHTML=`<div class="note" style="border-color:var(--bad);background:rgba(255,80,80,.1);margin-bottom:12px"><b style="color:var(--bad)">⚠️ El último guardado falló</b><div class="mini" style="margin-top:4px">La memoria del navegador está llena (${s.mb} MB). Tus cambios recientes NO se han guardado. Exporta una copia ya y borra fotos antiguas para liberar espacio.</div><button class="btn-sm btn-gold" style="margin-top:8px" onclick="exportData()">💾 Exportar copia ahora</button></div>`;return;}
+  if(s.pct>=80){el.innerHTML=`<div class="note gold" style="margin-bottom:12px">📦 Almacenamiento al <b>${s.pct}%</b> (${s.mb} MB${s.photos?`, ${s.photos} fotos`:''}). Cerca del límite del navegador. Exporta una copia y valora borrar fotos antiguas para no perder datos.</div>`;return;}
+  el.innerHTML='';
 }
 
 let DB={
@@ -304,7 +322,7 @@ function renderDashboard(){
   const fl=fatLossScore();const fn=document.getElementById('fatNum');const fr=document.getElementById('fatRing');
   if(fl!=null){fn.textContent=fl;const col=fl>=66?'var(--ok)':fl>=40?'var(--gold)':'var(--bad)';fr.style.background=`conic-gradient(${col} ${fl*3.6}deg, var(--bg3) 0)`;document.getElementById('fatMsg').textContent=fl>=66?'vas bien':fl>=40?'aceptable':'aprieta';}
   else{fn.textContent='—';fr.style.background='var(--bg3)';document.getElementById('fatMsg').textContent='mide y entrena';}
-  renderWeekChallenge();renderWeeklySummary();renderTodayHero();renderCoach();renderRecovery();renderInsights();renderDietCard();renderGoalProgress();renderBackupReminder();renderCalendar();renderExtraHistory();renderTodayDash();renderWeekView();applyCollapsed();
+  renderSaveBanner();renderWeekChallenge();renderWeeklySummary();renderTodayHero();renderCoach();renderRecovery();renderInsights();renderDietCard();renderGoalProgress();renderBackupReminder();renderCalendar();renderExtraHistory();renderTodayDash();renderWeekView();applyCollapsed();
 }
 function renderExtraHistory(){const el=document.getElementById('extraHistory');if(!el)return;let html='';for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10);const e=DB.extraLog[ds]||{};const sess=DB.sessions.some(s=>s.date===ds);let bg='var(--bg3)',bd='var(--line)';if(e.box){bg='rgba(255,193,50,.3)';bd='var(--gold)';}else if(sess){bg='rgba(255,64,21,.25)';bd='var(--acc)';}else if(e.run){bg='rgba(156,107,255,.25)';bd='var(--viol)';}html+=`<span class="streak-dot" style="background:${bg};border-color:${bd}" title="${ds}${e.box?' 🥊':''}${e.run?' 🏃':''}${sess?' 💪':''}"></span>`;}
   const wk=weekDates();const totBox=Object.keys(DB.extraLog).filter(d=>DB.extraLog[d].box).length;const totRun=Object.keys(DB.extraLog).filter(d=>DB.extraLog[d].run).length;
@@ -2871,6 +2889,28 @@ function renderHealthScore(){
 /* ===================== V26 · MEJORAS DE VALOR ===================== */
 
 /* --- 2. Pantalla HOY grande --- */
+/* Veredicto honesto: ¿progresas o estás aflojando? (constancia + tendencia de peso) */
+function progressVerdict(){
+  const now=new Date();
+  const sess=DB.sessions.map(s=>s.date).filter(Boolean);
+  const daysSince=d=>Math.floor((now-new Date(d))/864e5);
+  const last=sess.length?Math.min(...sess.map(daysSince)):999;
+  const last14=sess.filter(d=>daysSince(d)<=14).length;
+  const cardio14=Object.keys(DB.extraLog||{}).filter(d=>daysSince(d)<=14&&(DB.extraLog[d].run||DB.extraLog[d].box)).length;
+  // tendencia de peso: primera vs última de las últimas 3 mediciones
+  const b=(DB.body||[]).filter(x=>x.peso).slice(0,3);
+  let wTrend=null;if(b.length>=2)wTrend=+(b[0].peso-b[b.length-1].peso).toFixed(1); // <0 = bajando
+  // señales
+  if(!DB.sessions.length)return {ic:'🚀',tone:'gold',txt:'Aún sin entrenos registrados. Haz el primero y pésate para empezar a medir tu progreso.'};
+  if(last>=10)return {ic:'📉',tone:'bad',txt:`Llevas <b>${last} días</b> sin entrenar. Se está enfriando: hoy vuelve, aunque sea corto.`};
+  const trainOk=last14>=3||(DB.mode==='fullbody'&&last14>=3);
+  if(wTrend!=null&&wTrend<0&&(last14+cardio14)>=3)return {ic:'📈',tone:'ok',txt:`Vas bien: <b>${last14} entrenos</b> en 2 semanas y peso <b>bajando ${Math.abs(wTrend)} kg</b>. Sigue exactamente así.`};
+  if(wTrend!=null&&wTrend>0&&(last14+cardio14)<3)return {ic:'📉',tone:'bad',txt:`Peso <b>subiendo ${wTrend} kg</b> y poca actividad (${last14+cardio14} sesiones/2 sem). Aprieta esta semana: mueve el cuerpo y cuida la comida.`};
+  if((last14+cardio14)>=4)return {ic:'🔥',tone:'ok',txt:`Buena racha: <b>${last14+cardio14} sesiones</b> en 2 semanas. La constancia es lo que mueve la aguja.`};
+  if((last14+cardio14)<=1)return {ic:'⚠️',tone:'gold',txt:`Solo ${last14+cardio14} sesión en 2 semanas. Estás aflojando: mete 2-3 esta semana y no falles 2 días seguidos.`};
+  if(wTrend==null)return {ic:'⚖️',tone:'gold',txt:'Constancia decente. Te falta pesarte: sin báscula no sé si progresas. Mídete esta semana.'};
+  return {ic:'👍',tone:'acc2',txt:`Ritmo sostenible: ${last14+cardio14} sesiones/2 sem. Mantén y busca bajar algo de peso o cintura.`};
+}
 function renderTodayHero(){
   const el=document.getElementById('todayHero');if(!el)return;
   const td=DAYS[(new Date().getDay()+6)%7];
@@ -2885,11 +2925,13 @@ function renderTodayHero(){
   else if(runToday){ic='🏃';plan=`Hoy toca <b>${RUN_TYPES[runToday.type].lbl}</b>`;btn=`<button class="btn btn-acc2" style="margin-top:10px;width:100%" onclick="document.querySelector('nav button:nth-child(2)').click()">Ir a correr →</button>`;}
   else{ic='🌿';plan='Día de descanso. Recupera bien.';}
   const painZones=currentPain();
+  const v=progressVerdict();const vcol={ok:'var(--ok)',bad:'var(--bad)',gold:'var(--gold)',acc2:'var(--acc2)'}[v.tone]||'var(--acc2)';
   el.innerHTML=`<div class="card" style="border-color:var(--acc);background:linear-gradient(135deg,rgba(255,64,21,.08),transparent)">
     <div style="display:flex;justify-content:space-between;align-items:flex-start">
       <div><div class="mini" style="text-transform:capitalize">${new Date().toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long'})}</div><div style="font-family:Anton;font-size:22px;margin-top:2px">${ic} ${plan}</div></div>
       <div style="text-align:center"><div style="font-family:Anton;font-size:32px;color:${rcA.col}">${rc}</div><div class="mini">recovery</div></div>
     </div>
+    <div style="margin-top:10px;padding:9px 11px;border-radius:10px;background:rgba(255,255,255,.03);border-left:3px solid ${vcol}"><span style="font-size:14px;line-height:1.4">${v.ic} ${v.txt}</span></div>
     ${btn}
     <div class="row" style="margin-top:10px">
       <div class="stat" style="flex:1"><div class="v ${habPend?'gold':'acc2'}">${habPend}</div><div class="l">hábitos pendientes</div></div>
@@ -3191,7 +3233,7 @@ function openSettings(){
   const fs=DB.settings&&DB.settings.fontScale||1;
   openModal(`<h3>⚙️ Ajustes</h3>
   <div class="ex-block" style="border-color:var(--acc2)"><b style="font-family:Anton">📖 Manual de uso</b><p class="mini" style="margin:6px 0 10px">Cómo sacar el máximo partido a cada pantalla de FORJA.</p><button class="btn2" style="width:100%" onclick="openManual(0)">Abrir manual</button></div>
-  <div class="ex-block"><b style="font-family:Anton">💾 Respaldo de datos</b><p class="mini" style="margin:6px 0 10px">Guarda una copia de todo (entrenos, medidas, fotos, hábitos). Impórtala si cambias de móvil o limpias el navegador.</p><div class="row"><button class="btn-acc2" style="flex:1" onclick="exportData()">⬇ Exportar</button><button class="btn2" style="flex:1" onclick="document.getElementById('importFile').click()">⬆ Importar</button></div></div>
+  <div class="ex-block"><b style="font-family:Anton">💾 Respaldo de datos</b><p class="mini" style="margin:6px 0 10px">Guarda una copia de todo (entrenos, medidas, fotos, hábitos). Impórtala si cambias de móvil o limpias el navegador. <b>Hazlo cada 1-2 semanas</b>: es tu único seguro contra perderlo todo.</p><div class="row"><button class="btn-acc2" style="flex:1" onclick="exportData()">⬇ Exportar</button><button class="btn2" style="flex:1" onclick="document.getElementById('importFile').click()">⬆ Importar</button></div><div id="storageBar" style="margin-top:10px"></div></div>
   <div class="ex-block"><b style="font-family:Anton">🔤 Tamaño de letra</b><div class="row" style="margin-top:8px"><button class="btn2" onclick="setFont(0.9)">A−</button><button class="btn2" onclick="setFont(1)">A</button><button class="btn2" onclick="setFont(1.15)">A+</button><button class="btn2" onclick="setFont(1.3)">A++</button></div><p class="mini" style="margin-top:6px">Actual: ${Math.round(fs*100)}%</p></div>
   <div class="ex-block"><b style="font-family:Anton">🧮 Calculadora de discos</b><p class="mini" style="margin:6px 0 8px">Qué discos poner por lado para un peso objetivo.</p><button class="btn2" onclick="openPlates()">Abrir calculadora</button></div>
   <div class="ex-block"><b style="font-family:Anton">⏱️ Cronómetro de intervalos</b><p class="mini" style="margin:6px 0 8px">Para carrera y cardio: trabajo/descanso × rondas (HIIT, sprints).</p><button class="btn2" onclick="openIntervals()">Abrir cronómetro</button></div>
@@ -3199,7 +3241,10 @@ function openSettings(){
   <div class="ex-block"><b style="font-family:Anton">📱 Pantalla activa</b><p class="mini" style="margin:6px 0 8px">Evita que el móvil se apague durante la sesión.</p><label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px"><input type="checkbox" id="wlChk" ${DB.settings&&DB.settings.wakeLock?'checked':''} onchange="toggleWakeSetting(this.checked)" style="width:20px;height:20px"> Mantener pantalla encendida</label></div>
   <div class="ex-block"><b style="font-family:Anton">🗣️ Avisos de voz</b><p class="mini" style="margin:6px 0 8px">Voz en tabata, EMOM y protocolos ("trabajo", "descanso", "última ronda").</p><label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:14px"><input type="checkbox" id="vcChk" ${!DB.settings||DB.settings.voice!==false?'checked':''} onchange="toggleVoice(this.checked)" style="width:20px;height:20px"> Voz activada</label></div>
   <div class="ex-block"><b style="font-family:Anton">⚠️ Datos</b><p class="mini" style="margin:6px 0 8px">Tus datos viven solo en este teléfono. Exporta de vez en cuando como copia de seguridad.</p></div>`);
+  renderStorageBar();
 }
+function renderStorageBar(){const el=document.getElementById('storageBar');if(!el)return;const s=storageInfo();const col=s.pct>=80?'var(--bad)':s.pct>=60?'var(--gold)':'var(--acc2)';
+  el.innerHTML=`<div class="mini" style="margin-bottom:4px">Almacenamiento usado: <b>${s.mb} MB</b> (${s.pct}%)${s.photos?` · ${s.photos} foto${s.photos!==1?'s':''}`:''}</div><div class="bar"><i style="width:${Math.max(3,s.pct)}%;background:${col}"></i></div>${s.pct>=70?`<p class="mini" style="margin-top:6px;color:var(--gold)">Cerca del límite del navegador (~5 MB). Exporta una copia y valora borrar fotos antiguas.</p>`:''}`;}
 function exportData(){try{DB.lastBackup=today();const data=JSON.stringify(DB);const blob=new Blob([data],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='forja-backup-'+today()+'.json';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);save();toast('💾 Copia exportada');renderBackupReminder();}catch(e){toast('Error al exportar');}}
 function renderBackupReminder(){const el=document.getElementById('backupReminder');if(!el)return;const days=DB.lastBackup?daysBetween(DB.lastBackup,today()):999;if(!DB.lastBackup){el.innerHTML=`<div class="note gold">💾 Aún no has hecho copia de seguridad. Tus datos viven solo en este móvil. <button class="btn-sm btn-gold" style="margin-top:8px;display:block" onclick="exportData()">Exportar ahora</button></div>`;}else if(days>=10){el.innerHTML=`<div class="note gold">💾 Hace ${days} días de tu última copia. Conviene exportar de nuevo. <button class="btn-sm btn-gold" style="margin-top:8px;display:block" onclick="exportData()">Exportar ahora</button></div>`;}else{el.innerHTML=`<p class="mini">💾 Última copia: hace ${days} ${days===1?'día':'días'}. Bien protegido.</p>`;}}
 function importData(inp){const f=inp.files[0];if(!f)return;const rd=new FileReader();rd.onload=e=>{try{const obj=JSON.parse(e.target.result);if(!obj||typeof obj!=='object'||!('routines'in obj)){toast('Archivo no válido');return;}if(confirm('Esto reemplazará TODOS tus datos actuales por los del archivo. ¿Continuar?')){DB=Object.assign(DB,obj);save();closeModal();renderAll();toast('✅ Datos restaurados');}}catch(err){toast('No se pudo leer el archivo');}};rd.readAsText(f);inp.value='';}
