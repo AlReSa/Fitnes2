@@ -2304,18 +2304,63 @@ const DISHES=[
   // MÁS MERIENDAS / SNACKS
   {cat:'snack',emoji:'🥕',name:'Hummus con crudités',kcal:220,prot:10,min:5,tags:['rapido','familia'],ingr:[['Hummus','60 g','1 pulgar grande'],['Zanahoria, pepino, pimiento','libre','1 puño'],['Palitos integrales (opcional)','20 g','']],prep:'Bastones de verdura para mojar en hummus. Snack saciante y con fibra.',fam:'A los peques les divierte mojar los bastoncitos.'},
   {cat:'snack',emoji:'🧀',name:'Tostada de queso fresco y pavo',kcal:250,prot:22,min:4,tags:['rapido','altoproteina','pocosingr','familia'],ingr:[['Pan integral','1 rebanada','1 puño'],['Queso fresco batido','60 g','1 pulgar'],['Pavo','50 g','1 palma fina']],prep:'Pan con queso fresco y pavo. Merienda con proteína que no engorda.'},
-  {cat:'snack',emoji:'🍌',name:'Plátano con crema de cacahuete',kcal:260,prot:9,min:2,tags:['rapido','pocosingr','antesent'],ingr:[['Plátano','1','1'],['Crema de cacahuete 100%','1 cda','1 pulgar']],prep:'Plátano con una cucharada de crema de cacahuete. Energía antes de entrenar (ojo con la ración de crema).'}
+  {cat:'snack',emoji:'🍌',name:'Plátano con crema de cacahuete',kcal:260,prot:9,min:2,tags:['rapido','pocosingr','antesent'],ingr:[['Plátano','1','1'],['Crema de cacahuete 100%','1 cda','1 pulgar']],prep:'Plátano con una cucharada de crema de cacahuete. Energía antes de entrenar (ojo con la ración de crema).'},
+  // ===== POSTRES SALUDABLES (dulce sin azúcar añadido) =====
+  {cat:'postre',emoji:'🍯',name:'Yogur griego con fruta y miel',kcal:220,prot:18,min:3,tags:['dulce','rapido','pocosingr','altoproteina','familia'],ingr:[['Yogur griego natural','200 g','1 vaso'],['Fruta troceada','1 puño','1 puño'],['Miel','1 cdta',''],['Canela','al gusto','']],prep:'Yogur con fruta, un hilo de miel y canela. El postre sano por excelencia: cremoso, dulce y lleno de proteína.',fam:'A los peques les encanta; puedes cambiar la miel por más fruta madura.'},
+  {cat:'postre',emoji:'🫐',name:'Pudin de chía con frutos rojos',kcal:260,prot:12,min:5,tags:['dulce','vegetariano','mealprep'],ingr:[['Semillas de chía','3 cdas','1 pulgar'],['Leche o bebida vegetal','200 ml','1 vaso'],['Frutos rojos','1 puño','1 puño'],['Canela/vainilla','al gusto','']],prep:'Mezcla chía y leche, remueve y deja en la nevera 4 h (o toda la noche). Corona con frutos rojos. Se hace solo mientras duermes.'},
+  {cat:'postre',emoji:'🍦',name:'Helado de plátano (nice cream)',kcal:180,prot:4,min:5,tags:['dulce','vegetariano','pocosingr','familia'],ingr:[['Plátano maduro congelado','2','2'],['Cacao puro o mantequilla de cacahuete','1 cda','1 pulgar']],prep:'Congela plátano en rodajas. Tritúralo hasta que quede cremoso como un helado. Un solo ingrediente y cero azúcar añadido.',fam:'Helado sano para toda la familia; añade fresas para variar el sabor.'},
+  {cat:'postre',emoji:'🧊',name:'Yogur helado con arándanos',kcal:200,prot:14,min:10,tags:['dulce','mealprep'],ingr:[['Yogur griego','250 g','1 vaso grande'],['Arándanos','1 puño','1 puño'],['Semillas o frutos secos','1 cda','1 pulgar']],prep:'Extiende el yogur en una bandeja con papel, hunde los arándanos y las semillas, y al congelador 4 h. Rompe en trozos. Tipo helado crujiente.'},
+  {cat:'postre',emoji:'🥞',name:'Tortitas de plátano y huevo',kcal:280,prot:16,min:10,tags:['dulce','rapido','pocosingr','familia','despuesent'],ingr:[['Plátano','1','1'],['Huevos','2','2'],['Canela','al gusto','']],prep:'Machaca el plátano, mezcla con el huevo batido y haz tortitas pequeñas a fuego medio. Dos ingredientes, sin harina ni azúcar.',fam:'Un clásico que encanta a los niños; hazlas mini para ellos.'},
+  {cat:'postre',emoji:'🍓',name:'Mousse de fresas y queso fresco',kcal:190,prot:18,min:8,tags:['dulce','altoproteina','pocosingr'],ingr:[['Queso fresco batido','200 g','1 vaso'],['Fresas','1 puño','1 puño'],['Edulcorante o miel','al gusto','']],prep:'Tritura las fresas con el queso fresco hasta que quede espumoso. Enfría. Untuoso, con mucha proteína y vitamina C.'},
+  {cat:'postre',emoji:'🍎',name:'Manzana al horno con canela y nueces',kcal:210,prot:4,min:30,tags:['dulce','vegetariano','familia'],ingr:[['Manzana','2','2'],['Nueces picadas','1 cda','1 pulgar'],['Canela','al gusto',''],['Pasas (opcional)','1 cda','']],prep:'Descorazona las manzanas, rellena con nueces y canela y hornea 25-30 min a 180°C. La casa huele de maravilla.',fam:'Postre de toda la vida, cero azúcar añadido; ideal para los peques.'},
+  {cat:'postre',emoji:'🍮',name:'Flan proteico',kcal:160,prot:20,min:30,tags:['dulce','altoproteina'],ingr:[['Huevos','2','2'],['Leche','250 ml','1 vaso'],['Proteína en polvo (vainilla)','1 cazo',''],['Edulcorante','al gusto','']],prep:'Bate huevos, leche, proteína y edulcorante. Cuaja al baño maría al horno 25-30 min a 170°C. Enfría en la nevera; al día siguiente está mejor.'},
+  {cat:'postre',emoji:'🍫',name:'Bolitas energéticas de avena y dátil',kcal:150,prot:6,min:10,tags:['dulce','vegetariano','mealprep','antesent'],ingr:[['Dátiles sin hueso','4','1 puño'],['Avena','4 cdas','1 puño'],['Cacao puro','1 cda',''],['Crema de cacahuete','1 cda','1 pulgar']],prep:'Tritura todo, forma bolitas y enfría 30 min. Dulce natural del dátil, sin azúcar añadido. Perfectas antes de entrenar.'},
+  {cat:'postre',emoji:'🍰',name:'Brownie exprés de avena y cacao',kcal:240,prot:10,min:8,tags:['dulce','rapido','vegetariano'],ingr:[['Plátano maduro','1','1'],['Avena','3 cdas','1 puño'],['Cacao puro','1 cda',''],['Huevo','1','1']],prep:'Tritura todo, vierte en una taza y microondas 2-3 min. Brownie individual esponjoso, sin harina ni azúcar.'},
+  {cat:'postre',emoji:'🥛',name:'Requesón con miel y nueces',kcal:250,prot:20,min:3,tags:['dulce','altoproteina','rapido','pocosingr'],ingr:[['Requesón','200 g','1 vaso'],['Nueces','1 cda','1 pulgar'],['Miel','1 cdta','']],prep:'Requesón con nueces y un hilo de miel. Muchísima proteína y saciante; ideal de postre nocturno.'},
+  {cat:'postre',emoji:'🌰',name:'Dátiles rellenos de crema de cacahuete',kcal:180,prot:6,min:3,tags:['dulce','rapido','pocosingr','vegetariano'],ingr:[['Dátiles','3','3'],['Crema de cacahuete','1 cdta','1 pulgar'],['Cacao/coco (opcional)','al gusto','']],prep:'Abre el dátil, rellena con crema de cacahuete. El "bombón" natural en 2 minutos. Ojo con la ración: son energéticos.'},
+  {cat:'postre',emoji:'🍫',name:'Onza de chocolate negro y almendras',kcal:150,prot:4,min:1,tags:['dulce','rapido','pocosingr'],ingr:[['Chocolate negro 85%+','20 g','1 pulgar'],['Almendras','6','']],prep:'Un par de onzas de chocolate muy negro con unas almendras. El capricho controlado que corta el antojo de dulce.'},
+  {cat:'postre',emoji:'🎂',name:'Bizcocho de yogur y avena al horno',kcal:230,prot:12,min:40,tags:['dulce','vegetariano','familia','mealprep'],ingr:[['Yogur','125 g','1 vaso'],['Avena molida','120 g','2 puños'],['Huevos','3','3'],['Manzana o plátano','1','1'],['Levadura y canela','al gusto','']],prep:'Mezcla todo, hornea 30-35 min a 180°C. Bizcocho jugoso sin azúcar ni harina refinada. Aguanta toda la semana.',fam:'Merienda de finde para toda la familia; dura varios días.'},
+  {cat:'postre',emoji:'🥭',name:'Helado cremoso de yogur y mango',kcal:190,prot:12,min:5,tags:['dulce','rapido','pocosingr','familia'],ingr:[['Mango congelado','1 puño','1 puño'],['Yogur griego','150 g','1 vaso']],prep:'Tritura mango congelado con yogur hasta textura de helado. Dulzor solo de la fruta.'},
+  // ===== BOWLS Y CENAS/COMIDAS INNOVADORAS =====
+  {cat:'comida',emoji:'🥗',name:'Buddha bowl mediterráneo',kcal:520,prot:22,min:20,tags:['bowl','vegetariano','mealprep','familia'],ingr:[['Quinoa o cuscús','1 puño','1 puño'],['Garbanzos','1 puño','1 puño'],['Verduras asadas','2 puños','½ plato'],['Hummus','2 cdas','1 pulgar'],['Aguacate','½','1 pulgar']],prep:'Base de quinoa, encima garbanzos, verduras asadas, aguacate y una cucharada de hummus. Colorido, saciante y se lleva en táper.',fam:'Monta el bol y deja que los peques elijan sus ingredientes.'},
+  {cat:'comida',emoji:'🍚',name:'Poke bowl de salmón',kcal:560,prot:34,min:20,tags:['bowl','altoproteina','despuesent'],ingr:[['Salmón fresco','150 g','1 palma'],['Arroz','1 puño','1 puño'],['Edamame','1 puño','1 puño'],['Aguacate','½','1 pulgar'],['Salsa de soja y sésamo','al gusto','']],prep:'Arroz templado, salmón en dados, edamame, aguacate y un toque de soja y sésamo. Fresco, completo y espectacular.'},
+  {cat:'comida',emoji:'🍳',name:'Frittata de verduras y queso',kcal:380,prot:28,min:25,tags:['altoproteina','mealprep','familia','vegetariano'],ingr:[['Huevos','4','4'],['Queso fresco o cottage','60 g','1 pulgar'],['Verduras (pimiento, espinaca, tomate)','2 puños','½ plato'],['Aceite de oliva','1 chorrito','1 pulgar']],prep:'Bate huevos con el queso, añade verdura y cuaja al horno o sartén. Se corta en porciones para toda la semana.',fam:'Corta en cuadraditos: a los niños les entra genial.'},
+  {cat:'comida',emoji:'🍛',name:'Curry de garbanzos y verduras',kcal:480,prot:18,min:25,tags:['vegetariano','mealprep','familia'],ingr:[['Garbanzos cocidos','1 puño grande','1 puño'],['Leche de coco ligera','100 ml',''],['Verduras (calabacín, pimiento, espinaca)','2 puños','½ plato'],['Curry y tomate','al gusto','']],prep:'Sofríe verduras, añade tomate, curry y garbanzos con un poco de leche de coco. Guiso reconfortante que sabe mejor al día siguiente.',fam:'Baja el curry para los peques; el toque dulce del coco les gusta.'},
+  {cat:'comida',emoji:'🥘',name:'Salteado thai de pollo y verduras',kcal:490,prot:40,min:18,tags:['altoproteina','rapido','despuesent'],ingr:[['Pollo en tiras','170 g','1 palma grande'],['Verduras variadas','2 puños','½ plato'],['Fideos de arroz o arroz','1 puño','1 puño'],['Salsa de soja, jengibre, lima','al gusto','']],prep:'Wok fuerte: sella el pollo, añade verdura crujiente y la salsa. Rápido, aromático y muy proteico.'},
+  {cat:'comida',emoji:'🥩',name:'Wok de ternera y verduras',kcal:520,prot:42,min:18,tags:['altoproteina','rapido','despuesent'],ingr:[['Ternera en tiras','170 g','1 palma grande'],['Brócoli, pimiento, cebolla','2 puños','½ plato'],['Arroz','1 puño','1 puño'],['Salsa de soja','al gusto','']],prep:'Saltea la ternera a fuego vivo con la verdura y un toque de soja. Sirve sobre arroz.'},
+  {cat:'comida',emoji:'🐟',name:'Salmón teriyaki con arroz',kcal:560,prot:38,min:20,tags:['altoproteina','familia'],ingr:[['Salmón','170 g','1 palma'],['Arroz','1 puño','1 puño'],['Verduras al vapor','2 puños','½ plato'],['Salsa teriyaki ligera','1 cda','']],prep:'Marca el salmón, glaséalo con teriyaki y acompaña de arroz y verdura. Dulce-salado que gusta a todos.',fam:'El toque teriyaki hace que los peques coman pescado sin rechistar.'},
+  {cat:'cena',emoji:'🍅',name:'Shakshuka (huevos en tomate)',kcal:360,prot:24,min:20,tags:['vegetariano','familia','pocosingr'],ingr:[['Huevos','3','3'],['Tomate triturado','200 g','1 puño'],['Pimiento y cebolla','1 puño','1 puño'],['Pimentón y comino','al gusto','']],prep:'Sofríe verdura, añade tomate y especias, casca los huevos encima y tapa hasta que cuajen. Cena de sartén única, para mojar pan.',fam:'Sirve con pan; a los niños les divierte mojar.'},
+  {cat:'comida',emoji:'🍆',name:'Berenjenas rellenas de pavo',kcal:420,prot:34,min:35,tags:['altoproteina','familia','mealprep'],ingr:[['Berenjena','2','2'],['Carne picada de pavo','150 g','1 palma'],['Tomate y cebolla','1 puño','1 puño'],['Queso rallado (poco)','1 cda','']],prep:'Vacía la berenjena, rellena con el sofrito de pavo y tomate, gratina. Plato completo y vistoso.',fam:'Desmenuza bien el relleno para los peques.'},
+  {cat:'cena',emoji:'🥒',name:'Calabacín relleno de atún',kcal:340,prot:30,min:30,tags:['altoproteina','pocosingr'],ingr:[['Calabacín','2','2'],['Atún al natural','2 latas','1 palma'],['Tomate y cebolla','1 puño','1 puño'],['Queso fresco','1 cda','']],prep:'Vacía el calabacín, rellena con atún y tomate, hornea 20 min. Ligero y muy proteico para la cena.'},
+  {cat:'cena',emoji:'🎃',name:'Crema de calabaza con semillas',kcal:260,prot:10,min:25,tags:['vegetariano','familia','mealprep'],ingr:[['Calabaza','300 g','3 puños'],['Zanahoria y puerro','1 puño','1 puño'],['Semillas de calabaza','1 cda','1 pulgar'],['Aceite de oliva','1 chorrito','1 pulgar']],prep:'Hierve y tritura las verduras, corona con semillas y un hilo de aceite. Cena calentita; añade un huevo duro para más proteína.',fam:'Suave y dulce: entra genial a los niños.'},
+  {cat:'cena',emoji:'🌮',name:'Tacos de lechuga con pollo',kcal:360,prot:34,min:15,tags:['altoproteina','rapido','pocosingr'],ingr:[['Pollo desmenuzado','150 g','1 palma'],['Hojas de lechuga','4','½ plato'],['Tomate, cebolla, aguacate','1 puño','1 puño'],['Lima y cilantro','al gusto','']],prep:'Usa la lechuga como taco y rellena con pollo, verdura y aguacate. Fresco, crujiente y sin pan.'},
+  {cat:'comida',emoji:'🍔',name:'Hamburguesa de pavo con boniato',kcal:540,prot:38,min:25,tags:['altoproteina','familia','despuesent'],ingr:[['Carne picada de pavo','170 g','1 palma grande'],['Boniato','1','1 puño grande'],['Pan integral o sin pan','1','2 puños'],['Lechuga, tomate, cebolla','libre','½ plato']],prep:'Forma la hamburguesa de pavo, a la plancha, con boniato al horno en gajos. Casera, jugosa y sin ultraprocesados.',fam:'Hazles una mini-hamburguesa; el boniato en gajos les encanta.'},
+  {cat:'comida',emoji:'🥗',name:'Ensalada templada de lentejas',kcal:450,prot:22,min:15,tags:['vegetariano','mealprep','bowl'],ingr:[['Lentejas cocidas','1 puño grande','1 puño'],['Tomate, cebolla, pimiento','2 puños','½ plato'],['Huevo duro','1','1'],['Aceite de oliva y vinagre','al gusto','']],prep:'Lentejas templadas con verdura picada, huevo duro y una vinagreta. Fría o templada, se lleva en táper de lujo.'},
+  {cat:'cena',emoji:'🍤',name:'Revuelto de setas y gambas',kcal:320,prot:30,min:12,tags:['altoproteina','rapido','pocosingr'],ingr:[['Gambas','120 g','1 palma'],['Setas','2 puños','½ plato'],['Huevos','2','2'],['Ajo y perejil','al gusto','']],prep:'Saltea ajo, setas y gambas, liga con huevo. Cena exprés bajísima en calorías y llena de proteína.'},
+  {cat:'cena',emoji:'🌱',name:'Espárragos verdes con jamón y huevo',kcal:300,prot:24,min:12,tags:['rapido','pocosingr','altoproteina'],ingr:[['Espárragos verdes','1 manojo','½ plato'],['Jamón serrano','2 lonchas','1 palma fina'],['Huevo','2','2'],['Aceite de oliva','1 chorrito','1 pulgar']],prep:'Saltea los espárragos, añade jamón y corona con huevo a la plancha. Cena rápida, sabrosa y con clase.'},
+  // ===== DESAYUNOS EXTRA =====
+  {cat:'desayuno',emoji:'🥣',name:'Avena overnight (de un día para otro)',kcal:380,prot:22,min:5,tags:['mealprep','familia','vegetariano'],ingr:[['Avena','50 g','1 puño'],['Yogur o leche','150 ml','1 vaso'],['Fruta','1 puño','1 puño'],['Semillas o frutos secos','1 cda','1 pulgar']],prep:'Mezcla avena, yogur/leche y fruta en un bote y déjalo en la nevera toda la noche. Desayuno listo al despertar, sin cocinar.',fam:'Prepara varios botes para toda la familia el domingo.'},
+  {cat:'desayuno',emoji:'🥞',name:'Tortitas de avena y clara',kcal:400,prot:30,min:12,tags:['altoproteina','despuesent'],ingr:[['Avena','50 g','1 puño'],['Claras de huevo','3','3'],['Plátano','1','1'],['Canela','al gusto','']],prep:'Tritura todo y haz tortitas a fuego medio. Corona con fruta o yogur. Muchísima proteína para empezar el día.'},
+  {cat:'desayuno',emoji:'🍚',name:'Porridge de avena caliente',kcal:360,prot:16,min:10,tags:['familia','vegetariano'],ingr:[['Avena','50 g','1 puño'],['Leche','200 ml','1 vaso'],['Fruta','1 puño','1 puño'],['Canela','al gusto','']],prep:'Cuece la avena con la leche 5 min removiendo hasta cremoso. Corona con fruta. Reconfortante para el invierno.',fam:'Papilla de avena calentita que gusta a los peques.'},
+  {cat:'desayuno',emoji:'🥑',name:'Tostada de aguacate y huevo poché',kcal:380,prot:18,min:10,tags:['rapido','vegetariano'],ingr:[['Pan integral','2 rebanadas','2 puños'],['Aguacate','½','1 pulgar'],['Huevo','1-2','1-2'],['Limón y pimienta','al gusto','']],prep:'Aguacate machacado sobre tostada y un huevo poché encima. El desayuno de moda, y con razón: sacia y está buenísimo.'},
+  // ===== SNACKS EXTRA =====
+  {cat:'snack',emoji:'🥜',name:'Mix de frutos secos y fruta',kcal:220,prot:6,min:2,tags:['rapido','pocosingr','vegetariano','antesent'],ingr:[['Frutos secos variados','1 puñado','1 pulgar'],['Fruta o pasas','1 puño','1 puño']],prep:'Un puñado de frutos secos con fruta fresca o pasas. La merienda más práctica del mundo; llévala en el bolso.'},
+  {cat:'snack',emoji:'🍅',name:'Tostada de requesón, tomate y orégano',kcal:220,prot:16,min:5,tags:['rapido','altoproteina','vegetariano','familia'],ingr:[['Pan integral','1 rebanada','1 puño'],['Requesón','60 g','1 pulgar'],['Tomate','½','']],prep:'Requesón sobre pan, tomate en rodajas, orégano y un hilo de aceite. Merienda salada con proteína.'},
+  {cat:'snack',emoji:'🫛',name:'Edamame al vapor con sal',kcal:190,prot:17,min:8,tags:['vegetariano','altoproteina','pocosingr'],ingr:[['Edamame','1 puño grande','1 puño'],['Sal y sésamo','al gusto','']],prep:'Cuece el edamame 5 min y sazona. Adictivo, proteico y bajísimo en calorías; entretiene mucho.'},
+  {cat:'snack',emoji:'🥣',name:'Yogur con granola casera',kcal:300,prot:16,min:5,tags:['rapido','familia','vegetariano'],ingr:[['Yogur griego','200 g','1 vaso'],['Avena tostada y frutos secos','2 cdas','1 pulgar'],['Fruta','1 puño','1 puño']],prep:'Yogur con avena tostada, frutos secos y fruta. Como un desayuno de hotel, pero sano.',fam:'A los niños les encanta montarlo ellos por capas.'}
 ];
-const DIET_FILTERS=[['todos','Todos'],['desayuno','🍳 Desayuno'],['comida','☀️ Comida'],['cena','🌙 Cena'],['snack','🥛 Snack'],['altoproteina','💪 Alto proteína'],['rapido','⚡ Rápido'],['familia','👨‍👩‍👧‍👦 Familia'],['pocosingr','🥄 Pocos ingr.'],['mealprep','🍱 Meal prep'],['antesent','🔋 Antes entrenar'],['despuesent','🏋️ Después entrenar']];
+const DIET_FILTERS=[['todos','Todos'],['desayuno','🍳 Desayuno'],['comida','☀️ Comida'],['cena','🌙 Cena'],['snack','🥛 Snack'],['postre','🍮 Postre'],['dulce','🍫 Dulce sano'],['bowl','🥗 Bowl'],['vegetariano','🌱 Veggie'],['altoproteina','💪 Alto proteína'],['rapido','⚡ Rápido'],['familia','👨‍👩‍👧‍👦 Familia'],['pocosingr','🥄 Pocos ingr.'],['mealprep','🍱 Meal prep'],['antesent','🔋 Antes entrenar'],['despuesent','🏋️ Después entrenar']];
 let dietFilter='todos';
 function renderFoodExplorer(){
   const el=document.getElementById('foodExplorer');if(!el)return;
   const dishes=DISHES.filter(d=>dietFilter==='todos'||d.cat===dietFilter||(d.tags||[]).includes(dietFilter));
   el.innerHTML=`<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:10px">${DIET_FILTERS.map(f=>`<button class="btn-sm ${dietFilter===f[0]?'btn-acc2':'btn2'}" style="white-space:nowrap" onclick="setDietFilter('${f[0]}')">${f[1]}</button>`).join('')}</div>
+  <div class="row" style="gap:6px;margin-bottom:10px"><button class="btn2" style="flex:1" onclick="openRandomDish()">🎲 Sorpréndeme</button><span class="mini" style="align-self:center;color:var(--dim)">${dishes.length} recetas</span></div>
   <div style="display:flex;flex-direction:column;gap:8px">${dishes.map((d,i)=>`<div class="ex-block" style="cursor:pointer" onclick="openDish(${DISHES.indexOf(d)})"><div style="display:flex;align-items:center;gap:12px"><div style="font-size:38px">${d.emoji}</div><div style="flex:1"><b>${d.name}${(d.tags||[]).includes('familia')?' <span title="Adaptable a los peques">👨‍👩‍👧‍👦</span>':''}</b><div class="mini">${d.kcal} kcal · ${d.prot} g proteína${d.min?' · ⏱️ '+d.min+' min':''}</div><div class="mini" style="color:var(--acc2)">${(d.tags||[]).filter(t=>t!=='familia').slice(0,3).map(t=>({altoproteina:'alto proteína',rapido:'rápido',pocosingr:'pocos ingr.',mealprep:'meal prep',antesent:'pre-entreno',despuesent:'post-entreno'}[t]||t)).join(' · ')}</div></div><div style="color:var(--acc)">›</div></div></div>`).join('')}</div>
   ${dishes.length===0?'<p class="empty">No hay platos con ese filtro.</p>':''}`;
 }
 function setDietFilter(f){dietFilter=f;renderFoodExplorer();}
+function openRandomDish(){const pool=DISHES.filter(d=>dietFilter==='todos'||d.cat===dietFilter||(d.tags||[]).includes(dietFilter));if(!pool.length)return;openDish(DISHES.indexOf(pool[Math.floor(Math.random()*pool.length)]));}
 function openDish(idx){
   const d=DISHES[idx];const precise=DB.diet&&DB.diet.mode!=='rapido';
   const main=d.cat==='comida'||d.cat==='cena';
@@ -2640,6 +2685,50 @@ function portionFor(meal){
   const palms=Math.max(0.5,Math.round(g/28*2)/2);
   return {g,palms,t};
 }
+/* Ración práctica por ingrediente (de apoyo: rebanadas, puños, lonchas, cucharadas...) */
+function portionHint(p,po){
+  const k=p.k,cat=p.cat;
+  if(cat==='prot'){
+    if(k==='huevos')return '2-3 uds';
+    if(k==='clara_huevo')return '3-4 claras';
+    if(['jamon_serrano','jamon_iberico','jamon_cocido','pavo_cocido','jamon','fuet','salchichon','chorizo'].includes(k))return '2-3 lonchas';
+    if(['atun','atun_aceite','bonito','bonito_aceite','sardinas_lata','caballa_lata','mejillones_lata','berberechos_lata','anchoas_lata'].includes(k))return '1 lata';
+    return po?`${po.g} g · ${po.palms} palma${po.palms!==1?'s':''}`:'1 palma';
+  }
+  if(cat==='hidrato'){
+    if(['pan','pan_masamadre','pan_centeno','pan_espelta'].includes(k))return '2 rebanadas';
+    if(['pita','wrap','tortilla_trigo'].includes(k))return '1 unidad';
+    if(k==='avena')return '3-4 cdas (~40 g)';
+    if(['patata','boniato','yuca'].includes(k))return '1 puño (del tamaño de tu puño)';
+    return '1 puño (ya cocido)';
+  }
+  if(cat==='legumbre')return '1 puño (ya cocidas)';
+  if(cat==='verdura')return '½ plato · a voluntad';
+  if(cat==='fruta'){
+    if(['fresas','arandanos','frambuesas','moras','uvas'].includes(k))return '1 puñado';
+    if(['sandia','melon','pina'].includes(k))return '1 rodaja';
+    if(['datiles','pasas'].includes(k))return '3-4 uds';
+    return '1 pieza';
+  }
+  if(cat==='salsa'){
+    if(k==='aove')return '1 cda (1 pulgar)';
+    if(['frutossecos','almendras','nueces','avellanas','pistachos','anacardos','pinones'].includes(k))return '1 puñado (~25 g)';
+    if(['chia','lino','sesamo','sem_calabaza','sem_girasol'].includes(k))return '1 cda';
+    if(k==='aguacate')return '½ pieza';
+    if(['hummus','guacamole','tahini','baba_ganoush','crema_berenjena','pesto','romesco','tzatziki','yogurt_sauce','mostaza','mayonesa','alioli','bbq'].includes(k))return '1-2 cdas';
+    if(['aceitunas','aceitunas_negras'].includes(k))return 'un puñado pequeño';
+    if(['tomate_frito','tomate_triturado','passata','tomate_seco'].includes(k))return '2-3 cdas';
+    return '1 cda';
+  }
+  if(cat==='lacteo'){
+    if(k==='leche'||k==='leche_entera')return '1 vaso (200 ml)';
+    if(['yogur_griego','yogur_nat','yogur_proteico','kefir'].includes(k))return '1 unidad';
+    if(['queso_fresco','requeson','ricotta'].includes(k))return '1 porción (1 pulgar)';
+    if(['manchego','queso_curado','parmesano','feta','queso_cabra','mozzarella'].includes(k))return '1 loncha fina';
+    return '1 porción';
+  }
+  return '';
+}
 function setHoyMeal(m){hoyMeal=m;hoyIdx=0;hoyPlate=null;renderFood();}
 function renderHoy(){
   kitchenInit();const inv=DB.kitchen.inv;
@@ -2663,10 +2752,12 @@ function renderHoy(){
   <h3 style="margin:4px 0">${c.name}${c.elab?' <span class="mini" style="color:var(--gold)">🍳 elaborado</span>':''}</h3>
   <div class="mini" style="margin-bottom:8px">${ch.proteina?'🍗 Proteína ✓ ':''}${ch.verdura?'🥦 Verdura ✓ ':''}${ch.hidrato?'🍚 Hidrato ✓ ':''}${ch.cereal?'🌾 Cereal ✓ ':''}${ch.fruta?'🍎 Fruta ✓ ':''}${ch.grasa?'🫒 Grasa ✓':''}${c.usesBatch?' · 👨‍🍳 batch':''}</div>
   <div class="note gold" style="margin-bottom:8px;padding:8px 10px">📏 <b>Tu ración (${po.t.w} kg → perder grasa)</b>: proteína ≈ <b>${po.g} g</b> (${po.palms} palma${po.palms!==1?'s':''} de la mano)${hoyMeal==='desayuno'||hoyMeal==='snack'?'':' · hidrato 1 puño · grasa 1 pulgar'} · verdura ½ plato a voluntad. <span class="mini">Se ajusta solo cuando actualizas tu peso en Cuerpo.</span></div>
-  <div style="display:flex;flex-wrap:wrap;gap:5px;margin-bottom:10px">${c.parts.map((p,i)=>`<button class="btn-sm btn2" style="padding:4px 8px" onclick="openSwapPart(${i})">${p.e} ${p.name} ⇄</button>`).join('')}</div>
+  <div style="margin-bottom:10px"><div class="mini" style="margin-bottom:4px">📏 Raciones (orientativas · toca ⇄ para cambiar):</div>${c.parts.map((p,i)=>`<div class="sub-opt" style="padding:6px 8px;align-items:center"><span>${p.e} ${p.name} <span class="mini" style="color:var(--acc2)">· ${portionHint(p,po)}</span></span><button class="btn-sm btn2" style="padding:2px 9px" onclick="openSwapPart(${i})">⇄</button></div>`).join('')}</div>
   <div class="row" style="gap:8px"><button class="btn btn-acc2" style="flex:2" onclick="eatPlate()">✓ He comido esto</button><button class="btn2" style="flex:1" onclick="cyclePlate()">🔄 Cambiar</button></div>
   <p class="mini" style="margin-top:6px;color:var(--dim)">Toca cualquier ingrediente para cambiarlo por otro que tengas. Repetir un plato entre semana es perfectamente normal.</p></div>`;
   if(hoyMeal==='snack')html+=`<div class="note" style="margin-top:8px">Entre semana, cuanto más simple mejor: fruta, frutos secos o yogur. Lo 🍳 elaborado, para el finde o si tienes tiempo.</div>`;
+  html+=`<button class="btn2" style="margin-top:8px;width:100%" onclick="openMealBuilder(hoyMeal)">🧩 ¿No te convence? Móntalo tú mismo</button>`;
+  html+=renderCheatCard();
   const others=hoySugs.filter(o=>o!==c).slice(0,4);
   if(others.length)html+=`<div style="margin-top:12px"><div class="mini" style="margin-bottom:6px">Otras opciones:</div>${others.map(o=>{const i=hoySugs.indexOf(o);return `<div class="sub-opt" style="cursor:pointer" onclick="hoyPlate=null;hoyIdx=${i};renderFood()"><span>${o.parts.map(p=>p.e).join('')} ${o.name}${o.elab?' <span class="mini" style="color:var(--gold)">🍳</span>':''}</span><span style="color:var(--acc)">›</span></div>`;}).join('')}</div>`;
   const favsAvail=(DB.kitchen.favs||[]).filter(f=>f.keys.every(k=>invByK(k)));
@@ -2690,6 +2781,52 @@ function comboSig(c){return c.parts.map(p=>p.k).sort().join('|');}
 function isFav(c){return (DB.kitchen.favs||[]).some(f=>f.sig===comboSig(c));}
 function toggleFav(){const c=curPlate();if(!c)return;kitchenInit();const sig=comboSig(c);const i=DB.kitchen.favs.findIndex(f=>f.sig===sig);if(i>=0){DB.kitchen.favs.splice(i,1);toast('Quitado de favoritos');}else{DB.kitchen.favs.push({id:'f'+Date.now().toString(36),sig,name:c.name,keys:c.parts.map(p=>p.k)});toast('❤️ Guardado en favoritos');}save();renderFood();}
 function eatFav(id){const f=(DB.kitchen.favs||[]).find(x=>x.id===id);if(!f)return;DB.kitchen.eaten.unshift({date:today(),name:f.name});f.keys.forEach(k=>{const it=invByK(k);if(it&&((it.cat!=='salsa'&&it.cat!=='verdura')||it.batch))decInv(it.id);});save();toast('✓ Registrado');renderFood();}
+/* ===== CONSTRUCTOR MANUAL: monta tú el plato cuando la propuesta no convence ===== */
+const BUILDER_COMMON={
+  prot:['pollo','pavo_fil','pechuga_pavo','merluza','salmon','atun','huevos','ternera','lomo','tofu','gambas','jamon_serrano','pavo_cocido','lentejas','garbanzos'],
+  hidrato:['pan','arroz','pasta','patata','boniato','avena','quinoa','cuscus','wrap'],
+  verdura:['ensalada','tomate','brocoli','calabacin','pimientos','berenjena','espinacas','zanahoria','judias','champinones'],
+  fruta:['platano','manzana','naranja','fresas','kiwi','arandanos','pera'],
+  salsa:['aove','aguacate','frutossecos','hummus','guacamole','tomate_casero','pesto'],
+  lacteo:['yogur_griego','leche','queso_fresco','requeson']
+};
+const MB_CATS=[['prot','🍗 Proteína'],['hidrato','🍚 Hidrato'],['verdura','🥦 Verdura'],['fruta','🍎 Fruta'],['salsa','🥑 Grasa/salsa'],['lacteo','🥛 Lácteo']];
+let mbMeal='comida',mbSel=[]; // mbSel = array de keys
+function mbCandidates(cat){
+  const invKeys=(DB.kitchen.inv||[]).filter(x=>x.cat===cat||(cat==='hidrato'&&x.cat==='legumbre')).map(x=>x.k);
+  const common=(BUILDER_COMMON[cat]||[]);
+  const all=[...new Set([...invKeys,...common])];
+  return all.map(compByKey).filter(Boolean);
+}
+function openMealBuilder(meal){mbMeal=meal||'comida';mbSel=[];openModal(`<h3>🧩 Monta tu ${mbMeal}</h3><div id="mbBody"></div>`);renderMealBuilder();}
+function renderMealBuilder(){
+  const el=document.getElementById('mbBody');if(!el)return;const po=portionFor(mbMeal);
+  const sel=mbSel.map(compByKey).filter(Boolean);
+  let html=`<p class="mini" style="margin-bottom:8px">Toca lo que quieras meter (de lo que tienes y de lo común). Te muestro la ración de cada cosa, incluidas las rebanadas de pan.</p>`;
+  // plato en construcción
+  if(sel.length){html+=`<div class="card" style="border-color:var(--acc2);margin-bottom:10px"><b style="font-family:Anton;font-size:13px">Tu plato</b>${sel.map(p=>`<div class="sub-opt"><span>${p.e} ${p.n}</span><span class="mini" style="color:var(--acc2)">${portionHint({k:p.k,cat:p.cat},po)}</span></div>`).join('')}<div class="row" style="gap:8px;margin-top:10px"><button class="btn btn-acc2" style="flex:2" onclick="mbEat()">✓ He comido esto</button><button class="btn2" style="flex:1" onclick="mbFav()">❤️ Guardar</button></div></div>`;}
+  else html+=`<div class="empty" style="padding:14px;margin-bottom:10px">Elige al menos una proteína y algo más.</div>`;
+  // selectores por categoría
+  html+=MB_CATS.map(([cat,lbl])=>{const cand=mbCandidates(cat);if(!cand.length)return '';
+    return `<div style="margin-bottom:8px"><div class="mini" style="margin-bottom:3px">${lbl}</div><div style="display:flex;flex-wrap:wrap;gap:5px">${cand.map(c=>{const on=mbSel.includes(c.k);const has=(DB.kitchen.inv||[]).some(x=>x.k===c.k);return `<button class="btn-sm ${on?'btn-acc2':'btn2'}" onclick="mbToggle('${c.k}')">${c.e} ${c.n}${has?' ·🧊':''}</button>`;}).join('')}</div></div>`;
+  }).join('');
+  el.innerHTML=html;
+}
+function mbToggle(k){const i=mbSel.indexOf(k);if(i>=0)mbSel.splice(i,1);else mbSel.push(k);renderMealBuilder();}
+function mbEat(){if(!mbSel.length)return;const names=mbSel.map(k=>{const c=compByKey(k);return c?c.n:'';}).filter(Boolean);const name=names.join(' + ');DB.kitchen.eaten.unshift({date:today(),name,meal:mbMeal});mbSel.forEach(k=>{const it=invByK(k);if(it&&((it.cat!=='salsa'&&it.cat!=='verdura')||it.batch))decInv(it.id);});save();closeModal();toast('✓ Tu plato registrado');renderFood();}
+function mbFav(){if(!mbSel.length)return;kitchenInit();const c={parts:mbSel.map(k=>({k}))};const sig=mbSel.slice().sort().join('|');if(DB.kitchen.favs.some(f=>f.sig===sig)){toast('Ya está en favoritos');return;}const names=mbSel.map(k=>{const x=compByKey(k);return x?x.n:'';}).filter(Boolean).join(' + ');DB.kitchen.favs.push({id:'f'+Date.now().toString(36),sig,name:names,keys:mbSel.slice()});save();toast('❤️ Guardado en favoritos');}
+/* ===== COMIDA TRAMPA / COMIDA LIBRE (1 a la semana por defecto) ===== */
+function weekKey(d){const x=new Date(d);const day=(x.getDay()+6)%7;x.setDate(x.getDate()-day);return x.toISOString().slice(0,10);}
+function cheatCfg(){DB.diet=DB.diet||{};if(DB.diet.cheatPerWeek==null)DB.diet.cheatPerWeek=1;DB.diet.cheats=DB.diet.cheats||[];return DB.diet;}
+function cheatsThisWeek(){const wk=weekKey(today());return (cheatCfg().cheats||[]).filter(d=>weekKey(d)===wk).length;}
+function renderCheatCard(){const d=cheatCfg();const used=cheatsThisWeek();const left=Math.max(0,d.cheatPerWeek-used);
+  if(d.cheatPerWeek===0)return `<div class="note" style="margin-top:8px;display:flex;justify-content:space-between;align-items:center"><span class="mini">🍕 Comidas libres desactivadas</span><button class="btn-sm btn2" onclick="setCheatPerWeek(1)">Activar 1/sem</button></div>`;
+  if(left>0)return `<div class="note gold" style="margin-top:8px"><div style="display:flex;justify-content:space-between;align-items:center"><span>🍕 <b>Comida libre</b>: te queda${left>1?'n':''} <b>${left}</b> esta semana</span><button class="btn-sm btn-gold" onclick="useCheatMeal()">Usar hoy</button></div><div class="mini" style="margin-top:4px">Planear una comida libre a la semana ayuda a sostener el plan sin culpa. Disfrútala y mañana seguimos. <span onclick="cycleCheat()" style="cursor:pointer;text-decoration:underline">ajustar (${d.cheatPerWeek}/sem)</span></div></div>`;
+  return `<div class="note" style="margin-top:8px"><span class="mini">🍕 Ya has usado tu comida libre esta semana. Mañana seguimos con el plan, sin dramas.</span></div>`;
+}
+function useCheatMeal(){const d=cheatCfg();if(cheatsThisWeek()>=d.cheatPerWeek){toast('Ya la has usado esta semana');return;}d.cheats.unshift(today());DB.kitchen&&DB.kitchen.eaten&&DB.kitchen.eaten.unshift({date:today(),name:'🍕 Comida libre',meal:hoyMeal||'comida'});save();toast('🍕 ¡Disfrútala sin culpa!');renderFood();}
+function setCheatPerWeek(n){cheatCfg().cheatPerWeek=n;save();renderFood();}
+function cycleCheat(){const d=cheatCfg();d.cheatPerWeek=(d.cheatPerWeek+1)%3;save();renderFood();}
 /* ---- 🧊 Mi casa (inventario) ---- */
 function renderMiCasa(){
   kitchenInit();const inv=DB.kitchen.inv;
@@ -2753,10 +2890,25 @@ function renderCompra(){
   let html=`<div class="note gold" style="margin-bottom:10px">💡 <b>Ideas de compra</b> según lo que ya tienes. Compra poco y aprovéchalo mejor.</div>`;
   if(recs.length)html+=`<div class="ex-block" style="border-color:var(--gold)"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-family:Anton;font-size:13px">FORJA te recomienda</b><button class="btn-sm btn-gold" style="padding:4px 10px" onclick="addAllShop()">＋ añadir todo</button></div>${recs.map(r=>{const c=compByKey(r.k);const inList=shop.some(s=>s.k===r.k);return `<div class="sub-opt"><span>${c.e} ${c.n} <span class="mini" style="color:var(--dim)">· ${r.why}</span></span>${inList?'<span class="mini" style="color:var(--ok)">en lista ✓</span>':`<button class="btn-sm btn2" style="padding:3px 10px" onclick="addShop('${r.k}')">＋ lista</button>`}</div>`;}).join('')}</div>`;
   html+=`<div class="ex-block" style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-family:Anton;font-size:13px">🛒 Mi lista de compra</b><button class="btn-sm btn2" style="padding:4px 10px" onclick="openAddShop()">＋</button></div>
-  ${shop.length?shop.map(s=>`<div class="sub-opt"><span>☐ ${s.e} ${s.name}</span><span style="display:flex;gap:4px"><button class="btn-sm btn-acc2" style="padding:2px 8px" onclick="buyShop('${s.id}')">✓ comprado</button><button class="btn-sm btn2" style="padding:2px 8px" onclick="delShop('${s.id}')">✕</button></span></div>`).join(''):'<p class="mini" style="margin-top:4px;color:var(--dim)">Lista vacía. Añade lo que recomienda FORJA o pulsa ＋.</p>'}</div>
+  ${shop.length?shop.map(s=>`<div class="sub-opt"><span>☐ ${s.e} ${s.name}</span><span style="display:flex;gap:4px"><button class="btn-sm btn-acc2" style="padding:2px 8px" onclick="buyShop('${s.id}')">✓ comprado</button><button class="btn-sm btn2" style="padding:2px 8px" onclick="delShop('${s.id}')">✕</button></span></div>`).join(''):'<p class="mini" style="margin-top:4px;color:var(--dim)">Lista vacía. Añade lo que recomienda FORJA o pulsa ＋.</p>'}</div>`;
+  html+=`<div class="ex-block" style="margin-top:10px"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-family:Anton;font-size:13px">🧺 Cesta saludable sugerida</b><button class="btn-sm btn2" style="padding:4px 10px" onclick="setShopTab('${shopTab==='cesta'?'':'cesta'}')">${shopTab==='cesta'?'Ocultar':'Ver'}</button></div>${shopTab==='cesta'?renderBasketSuggest():'<div class="mini" style="margin-top:4px;color:var(--dim)">Ideas de la compra semanal ideal, por categorías. Toca para desplegar.</div>'}</div>
   <p class="mini" style="margin-top:8px;color:var(--dim)">Al marcar ✓ comprado pasa directo a 🧊 Mi casa.</p>`;
   return html;
 }
+const SHOP_BASKET=[
+  ['prot','🥩 Proteínas variadas',['pollo','pavo_fil','merluza','salmon','atun','huevos','ternera','gambas','lentejas','garbanzos','tofu']],
+  ['verdura','🥦 Verduras (½ plato siempre)',['brocoli','calabacin','pimientos','espinacas','tomate','ensalada','zanahoria','judias','berenjena','champinones']],
+  ['hidrato','🍚 Hidratos de calidad',['avena','arroz_integral','patata','boniato','pan','quinoa','pasta_integral']],
+  ['fruta','🍎 Fruta (varios colores)',['platano','manzana','naranja','arandanos','fresas','kiwi','pera']],
+  ['lacteo','🥛 Lácteos',['yogur_griego','queso_fresco','requeson','leche','kefir']],
+  ['salsa','🥑 Grasas buenas y extras',['aove','aguacate','frutossecos','hummus','aceitunas']]
+];
+let shopTab='';
+function setShopTab(t){shopTab=t;renderFood();}
+function renderBasketSuggest(){
+  return `<p class="mini" style="margin:6px 0">La compra semanal que cubre todo: varias proteínas, verdura para llenar medio plato, hidratos de calidad, fruta de colores, lácteos y grasas buenas. Toca para añadir lo que te falte.</p>${SHOP_BASKET.map(([cat,lbl,keys])=>`<div style="margin-bottom:8px"><div class="mini" style="margin-bottom:3px">${lbl}</div><div style="display:flex;flex-wrap:wrap;gap:5px">${keys.map(k=>{const c=compByKey(k);if(!c)return '';const has=(DB.kitchen.inv||[]).some(x=>x.k===k);const inList=DB.kitchen.shop.some(s=>s.k===k);return `<button class="btn-sm ${inList?'btn-acc2':'btn2'}" onclick="${has?'':`addShop('${k}')`}" ${has?'style="opacity:.5"':''}>${c.e} ${c.n}${has?' ·🧊':inList?' ✓':''}</button>`;}).join('')}</div></div>`).join('')}<button class="btn2" style="margin-top:6px;width:100%" onclick="addBasketMissing()">＋ Añadir a la lista todo lo que me falta</button>`;
+}
+function addBasketMissing(){let n=0;SHOP_BASKET.forEach(([cat,lbl,keys])=>keys.forEach(k=>{const has=(DB.kitchen.inv||[]).some(x=>x.k===k);const inList=DB.kitchen.shop.some(s=>s.k===k);if(!has&&!inList){const c=compByKey(k);if(c){DB.kitchen.shop.push({id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5)+n,k,name:c.n,e:c.e,cat:c.cat});n++;}}}));save();toast(n?`🛒 ${n} productos añadidos`:'Ya tienes todo lo básico');renderFood();}
 function addShop(k){kitchenInit();const c=compByKey(k);if(!c)return;if(DB.kitchen.shop.some(s=>s.k===k))return;DB.kitchen.shop.push({id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,4),k,name:c.n,e:c.e,cat:c.cat});save();renderFood();}
 function addAllShop(){shopRecommend().forEach(r=>{const c=compByKey(r.k);if(c&&!DB.kitchen.shop.some(s=>s.k===r.k))DB.kitchen.shop.push({id:'s'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),k:r.k,name:c.n,e:c.e,cat:c.cat});});save();toast('🛒 Añadido a la lista');renderFood();}
 function openAddShop(){openModal(`<h3>＋ Añadir a la compra</h3>${KCAT.map(([cat,lbl])=>`<b style="font-family:Anton;font-size:12px;display:block;margin-top:8px">${lbl}</b><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">${COMPONENTS.filter(c=>c.cat===cat).map(c=>`<button class="btn-sm btn2" onclick="addShop('${c.k}');closeModal();setFoodPage('compra')">${c.e} ${c.n}</button>`).join('')}</div>`).join('')}`);}
