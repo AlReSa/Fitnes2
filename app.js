@@ -418,12 +418,12 @@ function renderTodayReady(){const td=DAYS[(new Date().getDay()+6)%7];const r=DB.
   if(r){const hasLast=!!lastSessionFor(r.id);
     el.innerHTML=`<div class="mini" style="margin-bottom:8px;letter-spacing:1px">CICLO DE HOY · 🔥 calienta → 💪 entrena → 🧘 recupera</div>
     <div class="day-row"><div class="dd">🔥</div><div class="di"><b>1 · Preparación</b><div class="mini">Calienta 5-8 min antes de cargar</div></div><span style="display:flex;gap:4px"><button class="btn-sm btn2" onclick="startWarmup('${r.id}')">▶ Guiado</button><button class="btn-sm btn2" onclick="warmupVideo('${r.id}')">🎬</button></span></div>
-    <div class="day-row" style="margin-top:6px"><div class="dd">💪</div><div class="di"><b>2 · ${r.name}</b><div class="mini">4 bloques · Fuerza · Hipertrofia · Densidad · Finisher</div></div><button class="btn-sm btn-acc2" onclick="startFlow('${r.id}')">Empezar</button></div>
+    <div class="day-row" style="margin-top:6px"><div class="dd">💪</div><div class="di"><b>2 · ${r.name}</b><div class="mini">Fuerza pesada · Accesorios · Core (opcional)</div></div><button class="btn-sm btn-acc2" onclick="startFlow('${r.id}')">Empezar</button></div>
     ${hasLast?`<div class="row" style="margin-top:6px"><button class="btn2" style="flex:1" onclick="repeatLast('${r.id}')">↺ Repetir última</button><button class="btn2" style="flex:1" onclick="repeatProgress('${r.id}')">↺⬆ Repetir y subir</button></div>`:''}
     <div class="day-row" style="border-top:1px solid var(--line);margin-top:8px;padding-top:10px"><div class="dd">🧘</div><div class="di"><b>3 · Recuperación</b><div class="mini">Estirar + abdominales al terminar</div></div><button class="btn-sm btn2" onclick="openRecoveryMenu()">Abrir</button></div>`;}
   else el.innerHTML=`<p class="mini">Hoy (${td}) sin rutina fija. Descanso o empieza una manual:</p><div style="margin-top:8px">${DB.routines.map(x=>`<button class="btn-sm btn2" style="margin:2px" onclick="startFlow('${x.id}')">${x.name}</button>`).join('')}</div><div class="row" style="margin-top:8px"><button class="btn2" style="flex:1" onclick="openRecoveryMenu()">🧘 Estirar / abdominales</button></div>`;
 }
-function startFlow(rid){window._pendingRid=rid;openModal(`<h3>Modo Atleta</h3><p class="mini" style="margin-bottom:6px">¿Cómo llegas hoy? La sesión se ajusta a tu estado.</p><div class="athlete-opt"><button class="fresco" onclick="pickAthlete('fresco')"><span class="e">🔋</span>Fresco</button><button class="normal" onclick="pickAthlete('normal')"><span class="e">⚡</span>Normal</button><button class="fatigado" onclick="pickAthlete('fatigado')"><span class="e">🪫</span>Fatigado</button></div><p class="mini" style="margin-top:10px">Fresco: +volumen e intensidad · Normal: plan estándar · Fatigado: menos volumen, más descanso, finisher suave.</p>`);}
+function startFlow(rid){window._pendingRid=rid;openModal(`<h3>Modo Atleta</h3><p class="mini" style="margin-bottom:6px">¿Cómo llegas hoy? La sesión se ajusta a tu estado.</p><div class="athlete-opt"><button class="fresco" onclick="pickAthlete('fresco')"><span class="e">🔋</span>Fresco</button><button class="normal" onclick="pickAthlete('normal')"><span class="e">⚡</span>Normal</button><button class="fatigado" onclick="pickAthlete('fatigado')"><span class="e">🥊</span>De boxear</button></div><p class="mini" style="margin-top:10px"><b>Fresco</b> (fuerza ANTES de boxear): +intensidad, aprovecha para empujar los básicos. · <b>Normal</b>: plan estándar. · <b>De boxear / fatigado</b> (fuerza DESPUÉS del boxeo): menos volumen, más descanso, prioriza el 1er ejercicio y no fuerces. En día de peso muerto, cámbialo por rumano/hip thrust.</p>`);}
 function pickAthlete(state){DB.athlete=state;closeModal();startSession(window._pendingRid,state);}
 function repeatLast(rid){startSession(rid,'normal');toast('↺ Sesión cargada con tus marcas anteriores. A superarlas.');}
 function lastSessionFor(rid){return DB.sessions.find(s=>s.routineId===rid);}
@@ -432,6 +432,8 @@ function adjustForAthlete(blocks,state){
     nb.exercises=nb.exercises.map(e=>{let sets=e.sets;let rest=e.rest;
       if(state==='fresco'&&(b.type==='hipertrofia'))sets=sets+1;
       if(state==='fatigado'&&(b.type==='hipertrofia'))sets=Math.max(2,sets-1);
+      if(state==='fatigado'&&b.type==='fuerza')sets=Math.max(3,sets-1); // vienes de boxear: baja 1 serie del básico
+      if(state==='fatigado'&&b.type==='core')sets=Math.max(1,sets-1); // core opcional: recorta
       if(state==='fatigado'&&rest)rest=rest+20;
       return Object.assign({},e,{sets,rest});});
     return nb;});
@@ -466,7 +468,7 @@ function renderSessionHead(){const s=DB.session;const eIc={fresco:'🔋',normal:
   if(vol>0){const diff=lastVol>0?Math.round((vol/lastVol-1)*100):null;volTxt=`<div class="mini" style="margin-top:4px">📦 Volumen: <b style="color:var(--acc2)">${vol.toLocaleString('es-ES')} kg</b>${diff!=null?` · ${diff>=0?'+':''}${diff}% vs última (${lastVol.toLocaleString('es-ES')} kg)`:''}</div>`;}
   document.getElementById('sessionHead').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h3>💪 ${s.name} <span class="tag">${eIc} ${s.athlete||''}</span></h3><button class="btn-sm btn2" onclick="openPlates()" style="padding:6px 10px">🧮 discos</button></div>${volTxt}`;}
 function renderSessionBody(){const s=DB.session;if(!s)return;let html='';
-  const BLOCK_SUB={fuerza:'Ejercicios principales · sobrecarga progresiva',hipertrofia:'Accesorios y aislamiento',densidad:'Cardio-fuerza · un ejercicio a tope',finisher:'Cierre metabólico'};
+  const BLOCK_SUB={fuerza:'Ejercicios principales · sobrecarga progresiva',hipertrofia:'Accesorios y aislamiento',densidad:'Cardio-fuerza · un ejercicio a tope',finisher:'Cierre metabólico',core:'Core · opcional, sáltalo si vienes fundido del boxeo'};
   s.blocks.forEach((b,bi)=>{
     const sub=BLOCK_SUB[b.type]||'';
     html+=`<div class="block-head b-${b.type}">${b.label}${sub?`<span class="sub">${sub}${b.superset?' · superserie descanso 30s':''}</span>`:''}</div>`;
@@ -741,31 +743,31 @@ function delSession(id){DB.sessions=DB.sessions.filter(s=>s.id!==id);save();rend
    El peso importa menos que hacerlas bien y no fallar los 2 días. Tú eliges los días. */
 function fullBodyRoutines(){
   return [
-    {id:'fb1',name:'FULL BODY A',day:'',fullbody:true,blocks:[
-      {type:'fuerza',label:'💪 Bloque 1 · BÁSICOS',exercises:[
-        {name:'Sentadilla goblet',sets:3,reps:'10-12',rest:75,rpe:7,kg:24,note:'Dominante de rodilla. Baja controlado.'},
-        {name:'Press banca',sets:3,reps:'8-12',rest:75,rpe:7,kg:DB.profile.bench||60,note:'Empuje horizontal.'},
-        {name:'Remo con barra',sets:3,reps:'10-12',rest:75,rpe:7,kg:50,note:'Tirón horizontal. Aprieta escápulas.'}
+    {id:'fb1',name:'FULL BODY A',day:'',fullbody:true,note:'Empuje/tirón + pierna. Fuerza para PRESERVAR músculo en déficit, no para quemar (eso lo hace la dieta).',blocks:[
+      {type:'fuerza',label:'💪 Bloque 1 · FUERZA (pesado, deja 2 reps en recámara)',exercises:[
+        {name:'Sentadilla goblet o barra',sets:4,reps:'5-8',rest:150,rpe:8,kg:24,note:'Dominante de rodilla. Fuerza, NUNCA al fallo (deja 2-3 reps). Si vienes de boxear: prensa o goblet (menos fatiga y técnica que la barra).'},
+        {name:'Press banca',sets:4,reps:'5-8',rest:150,rpe:8,kg:DB.profile.bench||60,note:'Empuje horizontal. Alternativa de menos fatiga: press de pecho en máquina.'},
+        {name:'Remo con barra',sets:4,reps:'6-8',rest:120,rpe:8,kg:50,note:'Tirón horizontal, aprieta escápulas. Mejor tras boxeo: remo con apoyo de pecho (máquina) → quita fatiga lumbar.'}
       ]},
-      {type:'hipertrofia',label:'🎯 Bloque 2 · TONIFICAR',superset:true,rest:45,exercises:[
-        {name:'Peso muerto rumano',sets:3,reps:'12-15',kg:60,note:'Bisagra de cadera, femoral y glúteo.'},
+      {type:'hipertrofia',label:'🎯 Bloque 2 · ACCESORIOS (10-15, cerca del fallo, poca fatiga)',superset:true,rest:60,exercises:[
+        {name:'Peso muerto rumano',sets:3,reps:'10-12',kg:60,note:'Bisagra de cadera, femoral y glúteo. Si vas cargado de lumbar: curl femoral en máquina.'},
         {name:'Press militar mancuernas',sets:3,reps:'12-15',kg:14,note:'Empuje vertical.'},
-        {name:'Elevaciones laterales',sets:3,reps:'15-20',kg:8,note:'Hombro, estética.'}
+        {name:'Elevaciones laterales',sets:3,reps:'15-20',kg:8,note:'Hombro, estética. En máquina/polea si la tienes: más fácil apurar sin fatiga.'}
       ]},
-      {type:'finisher',label:'🔥 Bloque 3 · QUEMA',finisher:true,exercises:[{name:'Finisher metabólico',sets:1,reps:'6-8 min',kg:0}]}
+      {type:'core',label:'🧱 Bloque 3 · CORE (opcional)',rest:45,exercises:[{name:'Plancha',sets:3,reps:'30-45s',kg:0,note:'Anti-extensión. OPCIONAL: si llegas fundido del boxeo, sáltatelo sin remordimiento.'}]}
     ]},
-    {id:'fb2',name:'FULL BODY B',day:'',fullbody:true,blocks:[
-      {type:'fuerza',label:'💪 Bloque 1 · BÁSICOS',exercises:[
-        {name:'Peso muerto',sets:3,reps:'8-10',rest:90,rpe:7,kg:DB.profile.dead||90,note:'Bisagra pesada. Técnica primero.'},
-        {name:'Dominadas',sets:3,reps:'6-10',rest:75,rpe:7,kg:0,note:'Tirón vertical. Con goma si hace falta (apunta ayuda en negativo).'},
-        {name:'Zancada con mancuernas',sets:3,reps:'10-12/pierna',rest:75,rpe:7,kg:14,note:'Unilateral, glúteo y equilibrio.'}
+    {id:'fb2',name:'FULL BODY B',day:'',fullbody:true,note:'Bisagra + tirón vertical + unilateral. Mismo principio: mínimo volumen eficaz, máxima calidad.',blocks:[
+      {type:'fuerza',label:'💪 Bloque 1 · FUERZA (pesado, deja 2 reps en recámara)',exercises:[
+        {name:'Peso muerto',sets:4,reps:'5-6',rest:180,rpe:8,kg:DB.profile.dead||90,note:'Bisagra pesada, técnica primero, NUNCA al fallo. ⚠️ Si haces la fuerza DESPUÉS del boxeo, cámbialo por peso muerto rumano o hip thrust: mismo estímulo con mucha menos exigencia técnica y sistémica cuando llegas cansado.'},
+        {name:'Dominadas',sets:4,reps:'5-8',rest:120,rpe:8,kg:0,note:'Tirón vertical. Con goma si hace falta (apunta la ayuda). Alternativa de menos fatiga y carga controlable: jalón al pecho en máquina.'},
+        {name:'Zancada con mancuernas',sets:3,reps:'8-10/pierna',rest:90,rpe:8,kg:14,note:'Unilateral, glúteo y equilibrio. Alt. estable si vienes cansado: prensa a una pierna o sentadilla búlgara apoyado.'}
       ]},
-      {type:'hipertrofia',label:'🎯 Bloque 2 · TONIFICAR',superset:true,rest:45,exercises:[
+      {type:'hipertrofia',label:'🎯 Bloque 2 · ACCESORIOS (10-15, cerca del fallo, poca fatiga)',superset:true,rest:60,exercises:[
         {name:'Press inclinado mancuernas',sets:3,reps:'12-15',kg:18,note:'Pecho alto.'},
         {name:'Curl bíceps',sets:3,reps:'12-15',kg:12,note:'Brazo, estética.'},
-        {name:'Plancha',sets:3,reps:'30-45s',kg:0,note:'Core anti-extensión.'}
+        {name:'Face pull o pájaros',sets:3,reps:'15-20',kg:10,note:'Hombro posterior y postura: equilibra tanto empuje y compensa la posición del boxeo.'}
       ]},
-      {type:'finisher',label:'🔥 Bloque 3 · QUEMA',finisher:true,exercises:[{name:'Finisher metabólico',sets:1,reps:'6-8 min',kg:0}]}
+      {type:'core',label:'🧱 Bloque 3 · CORE (opcional)',rest:45,exercises:[{name:'Plancha o paseo del granjero',sets:3,reps:'30-45s',kg:0,note:'Core/agarre. OPCIONAL: prioriza recuperar si el boxeo te dejó sin nada.'}]}
     ]}
   ];
 }
