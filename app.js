@@ -108,7 +108,7 @@ let DB={
   cycle:{weeks:6,start:'2026-06-08',rotIndex:0},
   body:[],bodyCfg:{everyWeeks:2},
   scores:[], medals:{}, formatPR:{},
-  athlete:null, mode:'gym', settings:{fontScale:1,wakeLock:false}, exNotes:{},
+  athlete:'fatigado', mode:'fullbody', settings:{fontScale:1,wakeLock:false}, exNotes:{},
   goalWeight:105, lastBackup:null,
   goals:[], checkins:{},
   running:{setup:false,target:'10K',daysWeek:2,history:[],currentPlan:null,activeSession:null},
@@ -120,33 +120,33 @@ const MIND=[{t:'0-2',d:'Respira: 6 respiraciones, inhala 4s / exhala 6s. Suelta 
 
 /* ===== rutinas con 4 bloques ===== */
 function buildRoutines(rotIdx){
-  const pick=(arr)=>arr[rotIdx%arr.length];
+  const kg=(n,d)=>{const m=maxKg(n);return m>0?m:d;};
   return [
-    {id:'r1',name:'PULL',day:'Lunes',blocks:[
-      {type:'fuerza',label:'💪 Bloque 1 · FUERZA',exercises:[{name:pick(MAIN_ROT.Miércoles),sets:4,reps:'4-6',rest:150,rpe:8,kg:0}]},
-      {type:'hipertrofia',label:'🎯 Bloque 2 · ACCESORIOS',superset:true,rest:30,exercises:[{name:'Remo gorila KB',sets:3,reps:'10-12',kg:26},{name:'Curl bíceps barra',sets:3,reps:'12',kg:30},{name:'Face pull',sets:3,reps:'15-20',kg:25}]},
-      {type:'densidad',label:'⚡ Bloque 3 · DENSIDAD',density:true,exercises:[{name:'KB swings',sets:1,reps:'EMOM',kg:24}]},
-      {type:'finisher',label:'🔥 Bloque 4 · FINISHER',finisher:true,exercises:[{name:'Finisher dinámico',sets:1,reps:'5 min',kg:0}]}
+    {id:'r1',name:'PULL',day:'Lunes',note:'Tras boxeo. Tirón. 1 explosivo + dominadas en libre + accesorios en máquina.',blocks:[
+      {type:'potencia',label:'⚡ Bloque 1 · POTENCIA',rest:75,exercises:[{name:'KB swing',sets:4,reps:'10',rest:75,kg:kg('KB swing',24),note:'Bisagra explosiva: potencia de cadera. Transfiere a carrera y sprint.'}]},
+      {type:'fuerza',label:'💪 Bloque 2 · FUERZA (libre, RIR 2)',exercises:[{name:'Dominadas',sets:4,reps:'5-8',rest:120,rpe:8,kg:0,note:'Tirón vertical en libre. Con goma: apunta la ayuda en NEGATIVO (-15 = la goma te quita 15 kg). Progresar = menos goma o más reps.'}]},
+      {type:'hipertrofia',label:'🎯 Bloque 3 · ACCESORIOS (máquina, 10-15)',rest:75,exercises:[{name:'Remo en máquina (apoyo pecho)',sets:3,reps:'10-12',kg:kg('Remo en máquina (apoyo pecho)',40),note:'Espalda sin fatiga lumbar.'},{name:'Curl bíceps en polea',sets:3,reps:'12-15',kg:kg('Curl bíceps en polea',20)},{name:'Face pull en polea',sets:3,reps:'15-20',kg:kg('Face pull en polea',25),note:'Hombro posterior y postura.'}]},
+      {type:'core',label:'🧱 Bloque 4 · CORE (opcional)',rest:45,exercises:[{name:'Plancha',sets:3,reps:'30-45s',kg:0,note:'OPCIONAL si vienes fundido.'}]}
     ]},
-    {id:'r2',name:'PUSH',day:'Miércoles',blocks:[
-      {type:'fuerza',label:'💪 Bloque 1 · FUERZA',exercises:[{name:pick(MAIN_ROT.Lunes),sets:4,reps:'3-5',rest:150,rpe:8,kg:DB.profile.bench}]},
-      {type:'hipertrofia',label:'🎯 Bloque 2 · ACCESORIOS',superset:true,rest:30,exercises:[{name:'Press inclinado mancuernas',sets:3,reps:'10-12',kg:24},{name:'Aperturas / cruce poleas',sets:3,reps:'12-15',kg:12},{name:'Elevaciones laterales',sets:3,reps:'15',kg:10}]},
-      {type:'densidad',label:'⚡ Bloque 3 · DENSIDAD',density:true,exercises:[{name:'Push press KB',sets:1,reps:'AMRAP',kg:20}]},
-      {type:'finisher',label:'🔥 Bloque 4 · FINISHER',finisher:true,exercises:[{name:'Finisher dinámico',sets:1,reps:'5 min',kg:0}]}
+    {id:'r2',name:'PUSH',day:'Miércoles',note:'Tras boxeo. Empuje. 1 explosivo + press banca en libre + accesorios en máquina.',blocks:[
+      {type:'potencia',label:'⚡ Bloque 1 · POTENCIA',rest:75,exercises:[{name:'Push press con KB',sets:4,reps:'3-5',rest:75,kg:kg('Push press con KB',20),note:'Empuje explosivo con piernas: potencia de tren superior. Calidad, no cansancio.'}]},
+      {type:'fuerza',label:'💪 Bloque 2 · FUERZA (libre, RIR 2)',exercises:[{name:'Press banca',sets:4,reps:'5-8',rest:150,rpe:8,kg:kg('Press banca',DB.profile.bench||60),note:'Empuje horizontal pesado en libre. Deja 2 reps. Sin seguridad tras boxeo: press de pecho en máquina.'}]},
+      {type:'hipertrofia',label:'🎯 Bloque 3 · ACCESORIOS (máquina, 10-15)',rest:75,exercises:[{name:'Press hombro en máquina',sets:3,reps:'12-15',kg:kg('Press hombro en máquina',25),note:'Empuje vertical estable.'},{name:'Elevación lateral en polea',sets:3,reps:'15-20',kg:kg('Elevación lateral en polea',7)},{name:'Extensión de tríceps en polea',sets:3,reps:'12-15',kg:kg('Extensión de tríceps en polea',25)}]},
+      {type:'core',label:'🧱 Bloque 4 · CORE (opcional)',rest:45,exercises:[{name:'Plancha',sets:3,reps:'30-45s',kg:0,note:'OPCIONAL si vienes fundido.'}]}
     ]},
-    {id:'r3',name:'LEGS',day:'Sábado',blocks:[
-      {type:'fuerza',label:'💪 Bloque 1 · FUERZA',exercises:[{name:pick(MAIN_ROT.Sábado),sets:4,reps:'3-5',rest:180,rpe:8,kg:DB.profile.squat}]},
-      {type:'hipertrofia',label:'🎯 Bloque 2 · ACCESORIOS',superset:true,rest:30,exercises:[{name:'Peso muerto rumano',sets:3,reps:'8-10',kg:90},{name:'Zancada KB',sets:3,reps:'10/pierna',kg:20},{name:'Curl femoral',sets:3,reps:'12-15',kg:45}]},
-      {type:'densidad',label:'⚡ Bloque 3 · DENSIDAD',density:true,exercises:[{name:'Goblet squat KB',sets:1,reps:'Ladder',kg:24}]},
-      {type:'finisher',label:'🔥 Bloque 4 · FINISHER',finisher:true,exercises:[{name:'Finisher dinámico',sets:1,reps:'5 min',kg:0}]}
+    {id:'r3',name:'LEGS',day:'Sábado',note:'Pierna. 1 explosivo + sentadilla en libre + accesorios en máquina.',blocks:[
+      {type:'potencia',label:'⚡ Bloque 1 · POTENCIA',rest:75,exercises:[{name:'Salto al cajón',sets:4,reps:'3-4',rest:75,kg:0,note:'Explosivo. Aterriza suave. Transfiere a carrera.'}]},
+      {type:'fuerza',label:'💪 Bloque 2 · FUERZA (libre, RIR 2)',exercises:[{name:'Sentadilla (barra o goblet)',sets:4,reps:'5-8',rest:180,rpe:8,kg:kg('Sentadilla',DB.profile.squat||60),note:'Patrón rey de pierna en libre. Deja 2 reps.'}]},
+      {type:'hipertrofia',label:'🎯 Bloque 3 · ACCESORIOS (máquina, 10-15)',rest:75,exercises:[{name:'Prensa de pierna',sets:3,reps:'12-15',kg:kg('Prensa de pierna',120),note:'Volumen de cuádriceps sin carga axial.'},{name:'Curl femoral en máquina',sets:3,reps:'12-15',kg:kg('Curl femoral en máquina',45)},{name:'Gemelo en máquina',sets:3,reps:'15-20',kg:kg('Gemelo en máquina',60)}]},
+      {type:'core',label:'🧱 Bloque 4 · CORE (opcional)',rest:45,exercises:[{name:'Rueda abdominal o plancha',sets:3,reps:'8-12 / 30-45s',kg:0,note:'OPCIONAL.'}]}
     ]}
   ];
 }
 function migrateRoutineLabels(){
-  // renombrar etiquetas sin borrar rutinas ya guardadas del usuario
+  // solo rellena etiquetas vacías; NO machaca las etiquetas del plan nuevo
   if(!DB.routines)return;
-  const NEW={fuerza:'💪 Bloque 1 · FUERZA',hipertrofia:'🎯 Bloque 2 · ACCESORIOS',densidad:'⚡ Bloque 3 · DENSIDAD',finisher:'🔥 Bloque 4 · FINISHER'};
-  DB.routines.forEach(r=>(r.blocks||[]).forEach(b=>{if(NEW[b.type])b.label=NEW[b.type];}));
+  const FB={fuerza:'💪 Bloque · FUERZA',potencia:'⚡ Bloque · POTENCIA',hipertrofia:'🎯 Bloque · ACCESORIOS',densidad:'⚡ Bloque · DENSIDAD',finisher:'🔥 Bloque · FINISHER',core:'🧱 Bloque · CORE'};
+  DB.routines.forEach(r=>(r.blocks||[]).forEach(b=>{if(!b.label&&FB[b.type])b.label=FB[b.type];}));
 }
 function seed(){
   if(DB.habits.length===0)DB.habits=JSON.parse(JSON.stringify(DEF_HAB));
@@ -329,7 +329,7 @@ function renderExtraHistory(){const el=document.getElementById('extraHistory');i
   el.innerHTML=html+`<p class="mini" style="margin-top:8px">🥊 Boxeo (oro) · 💪 Entreno (naranja) · 🏃 Carrera (violeta). Total: ${totBox} boxeos, ${totRun} carreras registradas.</p>`;
 }
 function renderTodayDash(){const td=DAYS[(new Date().getDay()+6)%7];const r=DB.routines.find(x=>x.day===td);const el=document.getElementById('todayBox');document.getElementById('todayTitle').textContent='📅 '+td;
-  if(r)el.innerHTML=`<div class="day-row"><div class="dd">💪</div><div class="di"><b>${r.name}</b><div class="mini">4 bloques · ~50 min</div></div><button class="btn-sm btn-acc2" onclick="nav('train',navBtn(1));startFlow('${r.id}')">Entrenar</button></div>`;
+  if(r)el.innerHTML=`<div class="day-row"><div class="dd">💪</div><div class="di"><b>${r.name}</b><div class="mini">Explosivo · básico libre · accesorios máquina · ~75 min</div></div><button class="btn-sm btn-acc2" onclick="nav('train',navBtn(1));startFlow('${r.id}')">Entrenar</button></div>`;
   else el.innerHTML=`<p class="mini">Hoy (${td}) descanso o extra (boxeo/carrera). Recuperar también suma al Fat Loss Score.</p>`;}
 function renderWeekView(){const plan={'Lunes':'💪 PUSH','Martes':'🏃 Cardio/boxeo','Miércoles':'💪 PULL','Jueves':'🏃 Cardio suave','Viernes':'😴 Descanso','Sábado':'💪 LEGS','Domingo':'😴 Descanso'};document.getElementById('weekView').innerHTML=DAYS.map(d=>`<div class="day-row"><div class="dd">${d.slice(0,3)}</div><div class="di">${plan[d]}</div></div>`).join('');}
 
@@ -418,18 +418,18 @@ function renderTodayReady(){const td=DAYS[(new Date().getDay()+6)%7];const r=DB.
   if(r){const hasLast=!!lastSessionFor(r.id);
     el.innerHTML=`<div class="mini" style="margin-bottom:8px;letter-spacing:1px">CICLO DE HOY · 🔥 calienta → 💪 entrena → 🧘 recupera</div>
     <div class="day-row"><div class="dd">🔥</div><div class="di"><b>1 · Preparación</b><div class="mini">Calienta 5-8 min antes de cargar</div></div><span style="display:flex;gap:4px"><button class="btn-sm btn2" onclick="startWarmup('${r.id}')">▶ Guiado</button><button class="btn-sm btn2" onclick="warmupVideo('${r.id}')">🎬</button></span></div>
-    <div class="day-row" style="margin-top:6px"><div class="dd">💪</div><div class="di"><b>2 · ${r.name}</b><div class="mini">Fuerza pesada · Accesorios · Core (opcional)</div></div><button class="btn-sm btn-acc2" onclick="startFlow('${r.id}')">Empezar</button></div>
+    <div class="day-row" style="margin-top:6px"><div class="dd">💪</div><div class="di"><b>2 · ${r.name}</b><div class="mini">Explosivo · básico libre · accesorios máquina · core opcional</div></div><button class="btn-sm btn-acc2" onclick="startFlow('${r.id}')">Empezar</button></div>
     ${hasLast?`<div class="row" style="margin-top:6px"><button class="btn2" style="flex:1" onclick="repeatLast('${r.id}')">↺ Repetir última</button><button class="btn2" style="flex:1" onclick="repeatProgress('${r.id}')">↺⬆ Repetir y subir</button></div>`:''}
     <div class="day-row" style="border-top:1px solid var(--line);margin-top:8px;padding-top:10px"><div class="dd">🧘</div><div class="di"><b>3 · Recuperación</b><div class="mini">Estirar + abdominales al terminar</div></div><button class="btn-sm btn2" onclick="openRecoveryMenu()">Abrir</button></div>`;}
   else el.innerHTML=`<p class="mini">Hoy (${td}) sin rutina fija. Descanso o empieza una manual:</p><div style="margin-top:8px">${DB.routines.map(x=>`<button class="btn-sm btn2" style="margin:2px" onclick="startFlow('${x.id}')">${x.name}</button>`).join('')}</div><div class="row" style="margin-top:8px"><button class="btn2" style="flex:1" onclick="openRecoveryMenu()">🧘 Estirar / abdominales</button></div>`;
 }
-function startFlow(rid){window._pendingRid=rid;openModal(`<h3>Modo Atleta</h3><p class="mini" style="margin-bottom:6px">¿Cómo llegas hoy? La sesión se ajusta a tu estado.</p><div class="athlete-opt"><button class="fresco" onclick="pickAthlete('fresco')"><span class="e">🔋</span>Fresco</button><button class="normal" onclick="pickAthlete('normal')"><span class="e">⚡</span>Normal</button><button class="fatigado" onclick="pickAthlete('fatigado')"><span class="e">🥊</span>De boxear</button></div><p class="mini" style="margin-top:10px"><b>Fresco</b> (fuerza ANTES de boxear): +intensidad, aprovecha para empujar los básicos. · <b>Normal</b>: plan estándar. · <b>De boxear / fatigado</b> (fuerza DESPUÉS del boxeo): menos volumen, más descanso, prioriza el 1er ejercicio y no fuerces. En día de peso muerto, cámbialo por rumano/hip thrust.</p>`);}
+function startFlow(rid){window._pendingRid=rid;openModal(`<h3>Modo Atleta</h3><p class="mini" style="margin-bottom:8px">Tus sesiones son Lun/Mié <b>después del boxeo</b>, así que ese es el estado por defecto:</p><button class="btn btn-acc" style="width:100%;margin-bottom:10px" onclick="pickAthlete('fatigado')">🥊 Empezar · tras boxeo (habitual)</button><p class="mini" style="margin-bottom:6px;color:var(--dim)">¿Hoy es distinto?</p><div class="athlete-opt"><button class="fresco" onclick="pickAthlete('fresco')"><span class="e">🔋</span>Fresco</button><button class="normal" onclick="pickAthlete('normal')"><span class="e">⚡</span>Normal</button></div><p class="mini" style="margin-top:10px"><b>Tras boxeo</b> (lo normal): menos volumen, más descanso, prioriza el 1er básico y no fuerces. · <b>Fresco</b> (si entrenas fuerza ANTES de boxear): empuja los básicos. · <b>Normal</b>: plan estándar.</p>`);}
 function pickAthlete(state){DB.athlete=state;closeModal();startSession(window._pendingRid,state);}
 function repeatLast(rid){startSession(rid,'normal');toast('↺ Sesión cargada con tus marcas anteriores. A superarlas.');}
 function lastSessionFor(rid){return DB.sessions.find(s=>s.routineId===rid);}
 function adjustForAthlete(blocks,state){
   return blocks.map(b=>{const nb=JSON.parse(JSON.stringify(b));
-    nb.exercises=nb.exercises.map(e=>{let sets=e.sets;let rest=e.rest;
+    nb.exercises=nb.exercises.map(e=>{let sets=e.sets;let rest=e.rest||b.rest;
       if(state==='fresco'&&(b.type==='hipertrofia'))sets=sets+1;
       if(state==='fatigado'&&(b.type==='hipertrofia'))sets=Math.max(2,sets-1);
       if(state==='fatigado'&&b.type==='fuerza')sets=Math.max(3,sets-1); // vienes de boxear: baja 1 serie del básico
@@ -454,7 +454,7 @@ function startSession(rid,state){const r=DB.routines.find(x=>x.id===rid);if(!r)r
       const baseKg=prev&&prev[0]?prev[0].kg:(e.kg||'');
       return Object.assign({},e,{prev,sets:Array.from({length:e.sets},(_,i)=>{
         const p=prev&&prev[i];
-        return {kg:p?p.kg:baseKg,reps:p?p.reps||'':'',done:false,rpe:p?p.rpe||'':''};
+        return {kg:p?p.kg:baseKg,reps:p?p.reps||'':'',done:false,rpe:''};
       })});
     });
     return b;
@@ -468,7 +468,7 @@ function renderSessionHead(){const s=DB.session;const eIc={fresco:'🔋',normal:
   if(vol>0){const diff=lastVol>0?Math.round((vol/lastVol-1)*100):null;volTxt=`<div class="mini" style="margin-top:4px">📦 Volumen: <b style="color:var(--acc2)">${vol.toLocaleString('es-ES')} kg</b>${diff!=null?` · ${diff>=0?'+':''}${diff}% vs última (${lastVol.toLocaleString('es-ES')} kg)`:''}</div>`;}
   document.getElementById('sessionHead').innerHTML=`<div style="display:flex;justify-content:space-between;align-items:center"><h3>💪 ${s.name} <span class="tag">${eIc} ${s.athlete||''}</span></h3><button class="btn-sm btn2" onclick="openPlates()" style="padding:6px 10px">🧮 discos</button></div>${volTxt}`;}
 function renderSessionBody(){const s=DB.session;if(!s)return;let html='';
-  const BLOCK_SUB={fuerza:'Ejercicios principales · sobrecarga progresiva',hipertrofia:'Accesorios y aislamiento',densidad:'Cardio-fuerza · un ejercicio a tope',finisher:'Cierre metabólico',core:'Core · opcional, sáltalo si vienes fundido del boxeo'};
+  const BLOCK_SUB={fuerza:'Básico pesado en libre · RIR 2, nunca al fallo',potencia:'Explosivo · calidad no cansancio (carrera y pegada)',hipertrofia:'Accesorios en máquina · cerca del fallo, poca fatiga',densidad:'Cardio-fuerza · un ejercicio a tope',finisher:'Cierre metabólico',core:'Core · opcional, sáltalo si vienes fundido del boxeo'};
   s.blocks.forEach((b,bi)=>{
     const sub=BLOCK_SUB[b.type]||'';
     html+=`<div class="block-head b-${b.type}">${b.label}${sub?`<span class="sub">${sub}${b.superset?' · superserie descanso 30s':''}</span>`:''}</div>`;
@@ -497,12 +497,22 @@ function renderSessionBody(){const s=DB.session;if(!s)return;let html='';
         const pv=ex.prev&&ex.prev[j]?ex.prev[j]:null;
         const beat=pv&&(+st.reps||0)>0&&(((+st.kg||0)>0&&(+st.kg)*(+st.reps)>(+pv.kg||0)*(+pv.reps||0))||((+pv.kg||0)<0&&(+st.kg||0)>(+pv.kg)&&(+st.reps)>=(+pv.reps||0)));
         const goal=pv&&(+pv.kg||+pv.reps)?`<span class="mini" style="display:block;font-size:9px;color:${beat?'var(--ok)':'var(--dim)'}">${beat?'✔':'↑'}${pv.kg||0}×${pv.reps||0}</span>`:'';
-        return `<div class="set-row"><span class="n" style="${beat?'color:var(--ok)':''}">${j+1}${goal}</span><input type="number" inputmode="decimal" value="${st.kg}" placeholder="${pv&&pv.kg?pv.kg:'kg'}" oninput="setVal(${bi},${ei},${j},'kg',this.value)" ${beat?'style="border-color:var(--ok)"':''}><input type="number" inputmode="numeric" value="${st.reps}" placeholder="${pv&&pv.reps?pv.reps:'reps'}" oninput="setVal(${bi},${ei},${j},'reps',this.value)" ${beat?'style="border-color:var(--ok)"':''}><input type="number" inputmode="numeric" value="${st.rpe||''}" placeholder="${showRpe?'rpe':'-'}" ${showRpe?'':'disabled style=opacity:.3'} oninput="setVal(${bi},${ei},${j},'rpe',this.value)" style="grid-column:span 1"><button class="ok ${st.done?'on':''}" onclick="toggleSet(${bi},${ei},${j})">✓</button></div>`;}).join('')}${vidBtn}${noteTxt}<button class="btn-sm btn2" style="margin-top:6px" onclick="addSet(${bi},${ei})">+ serie</button></div>`;
+        const bc=beat?' style="border-color:var(--ok)"':'';
+        const kgCell=bw
+          ? `<div class="kgwrap"><button class="pm" onclick="flipKg(${bi},${ei},${j})" title="± banda">±</button><input type="number" inputmode="decimal" step="any" value="${st.kg}" placeholder="${pv&&pv.kg?pv.kg:'kg'}" oninput="setVal(${bi},${ei},${j},'kg',this.value)"${bc}></div>`
+          : `<input type="number" inputmode="decimal" step="any" value="${st.kg}" placeholder="${pv&&pv.kg?pv.kg:'kg'}" oninput="setVal(${bi},${ei},${j},'kg',this.value)"${bc}>`;
+        const rpeCell=showRpe
+          ? `<select class="rpesel${st.rpe?' set':''}" onchange="setVal(${bi},${ei},${j},'rpe',this.value)"><option value=""${!st.rpe?' selected':''}>–</option>${[6,7,8,9,10].map(r=>`<option value="${r}"${(+st.rpe===r)?' selected':''}>${r}</option>`).join('')}</select>`
+          : `<span class="n" style="opacity:.25">–</span>`;
+        return `<div class="set-row"><span class="n" style="${beat?'color:var(--ok)':''}">${j+1}${goal}</span>${kgCell}<input type="number" inputmode="numeric" value="${st.reps}" placeholder="${pv&&pv.reps?pv.reps:'reps'}" oninput="setVal(${bi},${ei},${j},'reps',this.value)"${bc}>${rpeCell}<button class="ok ${st.done?'on':''}" onclick="toggleSet(${bi},${ei},${j})">✓</button></div>`;}).join('')}${vidBtn}${noteTxt}<button class="btn-sm btn2" style="margin-top:6px" onclick="addSet(${bi},${ei})">+ serie</button></div>`;
     });
   });
   document.getElementById('sessionBody').innerHTML=html;
 }
 function setVal(bi,ei,j,f,v){DB.session.blocks[bi].exercises[ei].sets[j][f]=v;save();renderSessionHead();}
+function flipKg(bi,ei,j){const st=DB.session.blocks[bi].exercises[ei].sets[j];const v=parseFloat(st.kg);
+  if(isNaN(v)||v===0){toast('Escribe primero los kg de goma y pulsa ± para ponerlos en negativo');return;}
+  st.kg=(-v).toString();save();renderSessionBody();renderSessionHead();}
 function setExNote(name,v){DB.exNotes=DB.exNotes||{};if(v.trim())DB.exNotes[name]=v;else delete DB.exNotes[name];save();}
 function rpeSuggestion(name){
   // busca la última sesión con datos de fuerza (kg+rpe) de este ejercicio
@@ -576,6 +586,85 @@ function finishSession(){const s=DB.session;if(!s)return;
 }
 let _sessFeel='normal';
 function setSessFeel(btn,v){_sessFeel=v;btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.remove('btn-acc2'));btn.parentElement.querySelectorAll('button').forEach(b=>b.classList.add('btn2'));btn.classList.remove('btn2');btn.classList.add('btn-acc2');}
+/* ===== AUTOPROGRESIÓN: la app ajusta sola peso/reps/densidad con reglas deterministas (no IA) ===== */
+function repTop(reps){const m=(reps||'').match(/(\d+)\s*-\s*(\d+)/);if(m)return +m[2];const s=(reps||'').match(/(\d+)/);return s?+s[1]:0;}
+function persistRoutinesToSlot(){
+  if(DB.mode==='travel')DB.travelRoutinesSaved=DB.routines;
+  else if(DB.mode==='strong')DB.strongRoutinesSaved=DB.routines;
+  else if(DB.mode==='fullbody')DB.fbRoutinesSaved=DB.routines;
+  else DB.gymRoutinesSaved=DB.routines;
+}
+function autoProgressRoutine(rec){
+  const rt=DB.routines.find(r=>r.id===rec.routineId);
+  if(!rt)return null;
+  const before=JSON.parse(JSON.stringify(rt.blocks));
+  const round2=x=>Math.round(x/2.5)*2.5;
+  const lowerRe=/sentadilla|prensa|peso muerto|rumano|zancada|femoral|gemelo|hip thrust|b[uú]lgara/i;
+  const changes=[];
+  (rec.blocks||[]).forEach(lb=>{
+    if(!(lb.type==='fuerza'||lb.type==='hipertrofia'))return;
+    (lb.exercises||[]).forEach(le=>{
+      const sets=(le.sets||[]).filter(s=>(+s.reps||0)>0);
+      if(!sets.length)return;
+      const rb=rt.blocks.find(b=>b.type===lb.type&&(b.exercises||[]).some(e=>e.name===le.name));
+      const re=rb&&rb.exercises.find(e=>e.name===le.name);
+      if(!re)return;
+      const curKg=parseFloat(re.kg)||0;
+      const top=repTop(re.reps);
+      let topKg=-Infinity,minReps=Infinity,rpeTop=0;
+      sets.forEach(s=>{const k=(s.kg===''||s.kg==null)?0:parseFloat(s.kg)||0;const rp=+s.reps||0;if(k>=topKg){topKg=k;if(+s.rpe)rpeTop=+s.rpe;}if(rp>0)minReps=Math.min(minReps,rp);});
+      if(!isFinite(minReps))return;
+      const sent=noteSentiment(DB.exNotes&&DB.exNotes[le.name]);
+      const band=topKg<0||curKg<0||/dominada|fondo/i.test(le.name);
+      const hitTop=top>0&&minReps>=top;
+      let newKg=curKg,reason='';
+      if(sent==='pain'){
+        if(band){const b=topKg<0?topKg:curKg;newKg=round2(b-2.5);reason='molestia → más goma (más fácil)';}
+        else if(curKg>0){newKg=round2(curKg*0.9);reason='molestia anotada → baja ~10%';}
+      } else if(lb.type==='fuerza'){
+        if(hitTop&&(rpeTop===0||rpeTop<=8)&&sent!=='hard'){
+          if(band){
+            if(topKg<0){newKg=Math.min(0,round2(topKg+2.5));reason='cerraste reps con goma → menos ayuda';}
+            else if(topKg>0){newKg=round2(topKg+2.5);reason='dominadas lastradas cerradas → +2,5 kg';}
+            else reason='';
+          } else {
+            const inc=(rpeTop&&rpeTop<=6)?(lowerRe.test(le.name)?5:2.5):2.5;
+            newKg=round2(curKg+inc);reason=`cerraste ${top} reps (RPE ${rpeTop||'—'}) → +${inc} kg`;
+          }
+        }
+      } else { // accesorios en máquina
+        if(hitTop&&sent!=='hard'){
+          const inc=/prensa|gemelo/i.test(le.name)?5:2.5;
+          newKg=round2(curKg+inc);reason=`${top} reps en todas → +${inc} kg`;
+        }
+      }
+      if(reason){re.kg=newKg;changes.push({name:le.name,from:curKg,to:newKg,reason});}
+    });
+  });
+  // DENSIDAD de entrenamiento: ajusta descanso de accesorios según cómo fue la sesión
+  let density=null;
+  const anyPain=(rec.blocks||[]).some(b=>(b.exercises||[]).some(e=>noteSentiment(DB.exNotes&&DB.exNotes[e.name])==='pain'));
+  const accBlocks=rt.blocks.filter(b=>b.type==='hipertrofia');
+  const adjRestField=(b,fn)=>{let moved=false;if(b.rest){const nv=fn(b.rest);if(nv!==b.rest){b.rest=nv;moved=true;}}(b.exercises||[]).forEach(e=>{if(e.rest){const nv=fn(e.rest);if(nv!==e.rest){e.rest=nv;moved=true;}}});return moved;};
+  if(accBlocks.length){
+    if(rec.feel==='mala'||anyPain){
+      accBlocks.forEach(b=>adjRestField(b,r=>Math.min(120,r+10)));
+      if(rec.feel==='mala'&&!anyPain)density='sesión dura → +10s de descanso en accesorios';
+    } else if(rec.restFactor>1.03){
+      let moved=false;accBlocks.forEach(b=>{if(adjRestField(b,r=>Math.max(45,r-5)))moved=true;});
+      if(moved)density='vas sobrado de densidad → -5s de descanso en accesorios';
+    }
+  }
+  DB._lastAutoProg={routineId:rt.id,blocks:before,ts:Date.now()};
+  persistRoutinesToSlot();
+  return {changes,density};
+}
+function revertAutoProg(){
+  const a=DB._lastAutoProg;if(!a)return;
+  const rt=DB.routines.find(r=>r.id===a.routineId);
+  if(rt){rt.blocks=JSON.parse(JSON.stringify(a.blocks));persistRoutinesToSlot();}
+  DB._lastAutoProg=null;save();renderRoutines();closeModal();toast('↩️ Ajustes revertidos');
+}
 function doFinishSession(){const s=DB.session;if(!s)return;
   const note=document.getElementById('sessNote')?document.getElementById('sessNote').value:'';
   let any=false;const blocks=s.blocks.map(b=>({type:b.type,label:b.label,result:b.result||null,meta:b._meta?b._meta.label:null,exercises:b.exercises.map(e=>{const sets=(e.sets||[]).filter(x=>x.kg||x.reps);if(sets.length)any=true;return {name:e.name,reps:e.reps,sets};}).filter(e=>e.sets.length||e.name)}));
@@ -588,18 +677,29 @@ function doFinishSession(){const s=DB.session;if(!s)return;
   blocks.forEach(b=>{if(b.result&&b.meta){const key=b.meta;if(!DB.formatPR[key]||b.result>DB.formatPR[key])DB.formatPR[key]=b.result;}});
   ['Press banca','Sentadilla','Trap bar deadlift'].forEach(n=>{const m=Math.max(maxKg(n),(function(){let mm=0;blocks.forEach(b=>b.exercises.forEach(e=>{if(e.name===n)e.sets.forEach(st=>{if(+st.kg>mm)mm=+st.kg;});}));return mm;})());if(n==='Press banca'&&m>DB.profile.bench)DB.profile.bench=m;if(n==='Sentadilla'&&m>DB.profile.squat)DB.profile.squat=m;});
   const lastPrev=DB.sessions.find(x=>x.routineId===rec.routineId);
+  const prog=autoProgressRoutine(rec);
   DB.sessions.unshift(rec);DB.session=null;resetT();save();releaseWake();_sessFeel='normal';
-  closeModal();document.getElementById('sessionCard').style.display='none';renderTodayReady();renderCycle();renderDashboard();
+  closeModal();document.getElementById('sessionCard').style.display='none';renderTodayReady();renderCycle();renderDashboard();renderRoutines();
   const volNow=sessionVolume(rec);const volPrev=lastPrev?sessionVolume(lastPrev):0;
   const volMsg=volPrev>0&&volNow>0?` · Vol ${volNow>volPrev?'+':''}${Math.round((volNow/volPrev-1)*100)}%`:'';
   toast(np.length?`🏆 ¡RÉCORD en ${np[0]}!${volMsg}`:`💪 Guardado${volMsg}`);
-  offerRecovery(rec.name);
+  offerRecovery(rec.name,prog);
 }
-function offerRecovery(sessionName){
+function offerRecovery(sessionName,prog){
   const plan=recoveryPlanFor(sessionName);
   const stMin=Math.round(plan.stretches.reduce((a,p)=>a+p.sec,0)/60);
   const coreMin=Math.round(CORE_SEQ.reduce((a,p)=>a+p.sec,0)/60);
-  openModal(`<h3>✅ Sesión completada</h3><p class="mini" style="margin-bottom:12px">Buena sesión. Para recuperar bien, esto es lo que tu cuerpo necesita hoy según lo que has trabajado:</p>
+  let progHtml='';
+  if(prog&&(prog.changes.length||prog.density)){
+    const rows=prog.changes.map(c=>{
+      const fmt=v=>v<0?`${v}kg goma`:(v>0?`${v}kg`:'corporal');
+      const up=c.to>c.from||(c.from<0&&c.to>c.from);
+      return `<div class="mini" style="margin-top:4px">${up?'⬆️':(c.to<c.from?'⬇️':'➡️')} <b>${c.name}</b>: ${fmt(c.from)} → ${fmt(c.to)}<br><span style="color:var(--dim)">${c.reason}</span></div>`;
+    }).join('');
+    const dens=prog.density?`<div class="mini" style="margin-top:6px;color:var(--viol)">⏱️ ${prog.density}</div>`:'';
+    progHtml=`<div class="ex-block" style="border-color:var(--gold)"><b>⚙️ Ajustes automáticos para la próxima</b><div class="mini" style="margin-top:2px;color:var(--dim)">La app ajusta sola tus cargas según lo que registraste (reglas, no IA).</div>${rows||'<div class="mini" style="margin-top:4px">Sin cambios de carga: mantén y busca 1 rep más.</div>'}${dens}<button class="btn-sm btn2" style="margin-top:8px" onclick="revertAutoProg()">↩️ Revertir ajustes</button></div>`;
+  }
+  openModal(`<h3>✅ Sesión completada</h3>${progHtml}<p class="mini" style="margin-bottom:12px">Para recuperar bien, esto es lo que tu cuerpo necesita hoy según lo que has trabajado:</p>
   <div class="ex-block" style="border-color:var(--acc2)"><b>🧘 Estiramientos · ${stMin} min</b><div class="mini" style="margin-top:4px">${plan.lower?'Tren inferior: cuádriceps, isquios, glúteo, cadera, gemelo.':'Tren superior: pecho, dorsal, tríceps, hombro, cuello.'}</div><button class="btn-acc2" style="width:100%;margin-top:8px" onclick="startStretch(${plan.lower})">▶ Empezar estiramientos</button></div>
   ${plan.core?`<div class="ex-block" style="border-color:var(--viol)"><b>🔥 Core · ${coreMin} min</b><div class="mini" style="margin-top:4px">Hoy toca: no cargaste el core directamente y tienes margen esta semana.</div><button class="btn2" style="width:100%;margin-top:8px" onclick="startCore()">▶ Empezar core</button></div>`:`<div class="note" style="border-color:var(--dim)">🔥 Core no necesario hoy${plan.lower?': las piernas ya han cargado bastante el core.':'.'}</div>`}
   <button class="btn2" style="margin-top:10px;width:100%" onclick="closeModal()">Ahora no</button>`);
@@ -742,32 +842,37 @@ function delSession(id){DB.sessions=DB.sessions.filter(s=>s.id!==id);save();rend
 /* Enfoque: todo el cuerpo cada sesión, rangos 8-15 reps, descansos cortos, densidad.
    El peso importa menos que hacerlas bien y no fallar los 2 días. Tú eliges los días. */
 function fullBodyRoutines(){
+  const kg=(n,d)=>{const m=maxKg(n);return m>0?m:d;};
   return [
-    {id:'fb1',name:'FULL BODY A',day:'',fullbody:true,note:'Empuje/tirón + pierna. Fuerza para PRESERVAR músculo en déficit, no para quemar (eso lo hace la dieta).',blocks:[
-      {type:'fuerza',label:'💪 Bloque 1 · FUERZA (pesado, deja 2 reps en recámara)',exercises:[
-        {name:'Sentadilla goblet o barra',sets:4,reps:'5-8',rest:150,rpe:8,kg:24,note:'Dominante de rodilla. Fuerza, NUNCA al fallo (deja 2-3 reps). Si vienes de boxear: prensa o goblet (menos fatiga y técnica que la barra).'},
-        {name:'Press banca',sets:4,reps:'5-8',rest:150,rpe:8,kg:DB.profile.bench||60,note:'Empuje horizontal. Alternativa de menos fatiga: press de pecho en máquina.'},
-        {name:'Remo con barra',sets:4,reps:'6-8',rest:120,rpe:8,kg:50,note:'Tirón horizontal, aprieta escápulas. Mejor tras boxeo: remo con apoyo de pecho (máquina) → quita fatiga lumbar.'}
+    {id:'fb1',name:'FULL BODY A',day:'Lunes',fullbody:true,note:'Tras boxeo. Pierna + empuje. Atlético, no culturista: 1 explosivo + 1-2 básicos en libre + accesorios en máquina. La grasa la quita la dieta; aquí PRESERVAS músculo y fuerza con el mínimo volumen útil.',blocks:[
+      {type:'potencia',label:'⚡ Bloque 1 · POTENCIA (explosivo, corporal)',rest:75,exercises:[
+        {name:'Salto al cajón',sets:4,reps:'3-4',rest:75,kg:0,note:'Explosivo, CALIDAD no cansancio. Aterriza suave. Transfiere a carrera y pegada. Si no hay cajón: sentadilla con salto.'}
       ]},
-      {type:'hipertrofia',label:'🎯 Bloque 2 · ACCESORIOS (10-15, cerca del fallo, poca fatiga)',superset:true,rest:60,exercises:[
-        {name:'Peso muerto rumano',sets:3,reps:'10-12',kg:60,note:'Bisagra de cadera, femoral y glúteo. Si vas cargado de lumbar: curl femoral en máquina.'},
-        {name:'Press militar mancuernas',sets:3,reps:'12-15',kg:14,note:'Empuje vertical.'},
-        {name:'Elevaciones laterales',sets:3,reps:'15-20',kg:8,note:'Hombro, estética. En máquina/polea si la tienes: más fácil apurar sin fatiga.'}
+      {type:'fuerza',label:'💪 Bloque 2 · FUERZA (libre, RIR 2 · nunca al fallo)',exercises:[
+        {name:'Sentadilla (barra o goblet)',sets:4,reps:'5-8',rest:150,rpe:8,kg:kg('Sentadilla',DB.profile.squat||60),note:'Patrón rey de pierna, merece peso libre. Deja 2 reps en recámara. Si llegas muy fundido del boxeo: goblet o prensa.'},
+        {name:'Press banca',sets:4,reps:'5-8',rest:150,rpe:8,kg:kg('Press banca',DB.profile.bench||60),note:'Empuje horizontal pesado en libre. Si falta compañero/seguridad tras boxeo: press de pecho en máquina.'}
       ]},
-      {type:'core',label:'🧱 Bloque 3 · CORE (opcional)',rest:45,exercises:[{name:'Plancha',sets:3,reps:'30-45s',kg:0,note:'Anti-extensión. OPCIONAL: si llegas fundido del boxeo, sáltatelo sin remordimiento.'}]}
+      {type:'hipertrofia',label:'🎯 Bloque 3 · ACCESORIOS (máquina · 10-15, apura cerca del fallo)',rest:75,exercises:[
+        {name:'Remo en máquina (apoyo pecho)',sets:3,reps:'10-12',kg:kg('Remo en máquina (apoyo pecho)',40),note:'Tirón horizontal SIN fatiga lumbar: el apoyo de pecho te deja apretar la espalda llegando cansado.'},
+        {name:'Press hombro en máquina',sets:3,reps:'12-15',kg:kg('Press hombro en máquina',25),note:'Empuje vertical estable, fácil de progresar.'},
+        {name:'Elevación lateral en polea',sets:3,reps:'15-20',kg:kg('Elevación lateral en polea',7),note:'Hombro. En polea el estímulo es constante y apuras sin riesgo (tú mismo lo notaste mejor que con mancuerna).'}
+      ]},
+      {type:'core',label:'🧱 Bloque 4 · CORE (opcional)',rest:45,exercises:[{name:'Plancha',sets:3,reps:'30-45s',kg:0,note:'Anti-extensión. OPCIONAL: si vienes fundido del boxeo, sáltatelo sin remordimiento.'}]}
     ]},
-    {id:'fb2',name:'FULL BODY B',day:'',fullbody:true,note:'Bisagra + tirón vertical + unilateral. Mismo principio: mínimo volumen eficaz, máxima calidad.',blocks:[
-      {type:'fuerza',label:'💪 Bloque 1 · FUERZA (pesado, deja 2 reps en recámara)',exercises:[
-        {name:'Peso muerto',sets:4,reps:'5-6',rest:180,rpe:8,kg:DB.profile.dead||90,note:'Bisagra pesada, técnica primero, NUNCA al fallo. ⚠️ Si haces la fuerza DESPUÉS del boxeo, cámbialo por peso muerto rumano o hip thrust: mismo estímulo con mucha menos exigencia técnica y sistémica cuando llegas cansado.'},
-        {name:'Dominadas',sets:4,reps:'5-8',rest:120,rpe:8,kg:0,note:'Tirón vertical. Con goma si hace falta (apunta la ayuda). Alternativa de menos fatiga y carga controlable: jalón al pecho en máquina.'},
-        {name:'Zancada con mancuernas',sets:3,reps:'8-10/pierna',rest:90,rpe:8,kg:14,note:'Unilateral, glúteo y equilibrio. Alt. estable si vienes cansado: prensa a una pierna o sentadilla búlgara apoyado.'}
+    {id:'fb2',name:'FULL BODY B',day:'Miércoles',fullbody:true,note:'Tras boxeo. Bisagra + tirón vertical. Mismo principio: 1 explosivo + básicos en libre + accesorios en máquina. Mínimo volumen eficaz, máxima calidad.',blocks:[
+      {type:'potencia',label:'⚡ Bloque 1 · POTENCIA (bisagra explosiva)',rest:75,exercises:[
+        {name:'KB swing',sets:4,reps:'10',rest:75,kg:kg('KB swing',24),note:'Bisagra de cadera explosiva: potencia de glúteo + algo de cardio-potencia. Cadera, no espalda. Transfiere a sprint y carrera.'}
       ]},
-      {type:'hipertrofia',label:'🎯 Bloque 2 · ACCESORIOS (10-15, cerca del fallo, poca fatiga)',superset:true,rest:60,exercises:[
-        {name:'Press inclinado mancuernas',sets:3,reps:'12-15',kg:18,note:'Pecho alto.'},
-        {name:'Curl bíceps',sets:3,reps:'12-15',kg:12,note:'Brazo, estética.'},
-        {name:'Face pull o pájaros',sets:3,reps:'15-20',kg:10,note:'Hombro posterior y postura: equilibra tanto empuje y compensa la posición del boxeo.'}
+      {type:'fuerza',label:'💪 Bloque 2 · FUERZA (libre, RIR 2 · nunca al fallo)',exercises:[
+        {name:'Peso muerto rumano',sets:4,reps:'6-8',rest:150,rpe:8,kg:kg('Peso muerto rumano',Math.round((DB.profile.dead||90)*0.65)),note:'Bisagra pesada en libre, pero rumano (no convencional) tras el boxeo: mismo estímulo de femoral/glúteo con mucha menos exigencia técnica y lumbar cuando llegas cansado.'},
+        {name:'Dominadas',sets:4,reps:'5-8',rest:120,rpe:8,kg:0,note:'Tirón vertical, merece peso libre. Con goma: apunta la ayuda en NEGATIVO (-15 = la goma te quita 15 kg). Progresar = menos goma o más reps. Si no salen limpias tras boxeo: jalón al pecho en máquina.'}
       ]},
-      {type:'core',label:'🧱 Bloque 3 · CORE (opcional)',rest:45,exercises:[{name:'Plancha o paseo del granjero',sets:3,reps:'30-45s',kg:0,note:'Core/agarre. OPCIONAL: prioriza recuperar si el boxeo te dejó sin nada.'}]}
+      {type:'hipertrofia',label:'🎯 Bloque 3 · ACCESORIOS (máquina · 10-15, apura cerca del fallo)',rest:75,exercises:[
+        {name:'Prensa de pierna',sets:3,reps:'12-15',kg:kg('Prensa de pierna',120),note:'Volumen de cuádriceps SIN carga axial ni técnica: ideal para apurar con la pierna cansada del boxeo.'},
+        {name:'Curl femoral en máquina',sets:3,reps:'12-15',kg:kg('Curl femoral en máquina',45),note:'Aísla el femoral, protege la zona lumbar.'},
+        {name:'Face pull en polea',sets:3,reps:'15-20',kg:kg('Face pull en polea',25),note:'Hombro posterior y postura: equilibra el empuje y compensa la posición cerrada del boxeo.'}
+      ]},
+      {type:'core',label:'🧱 Bloque 4 · CORE (opcional)',rest:45,exercises:[{name:'Rueda abdominal o plancha',sets:3,reps:'8-12 / 30-45s',kg:0,note:'Core anti-extensión. OPCIONAL: prioriza recuperar si el boxeo te dejó sin nada.'}]}
     ]}
   ];
 }
@@ -799,10 +904,22 @@ function strongRoutines(){
 }
 
 /* ===================== RUTINAS (visual, con sustituciones) ===================== */
+function confirmUpdatePlan(){openModal(`<h3>♻️ Actualizar al plan nuevo</h3><p class="mini" style="margin-bottom:10px">Regenera las rutinas de <b>${DB.mode==='fullbody'?'Full Body':DB.mode==='gym'?'PPL':DB.mode==='strong'?'Strongman':'Viaje'}</b> con el diseño nuevo (1 explosivo + básico en peso libre + accesorios en máquina + core opcional). <b>Conserva los kg</b> que ya tengas en cada ejercicio con el mismo nombre.</p><p class="mini" style="margin-bottom:12px;color:var(--gold)">⚠️ Reemplaza la estructura actual de este modo. Tu historial y tus backups NO se tocan.</p><button class="btn btn-acc2" style="width:100%" onclick="updateToNewPlan()">Sí, actualizar</button><button class="btn2" style="width:100%;margin-top:8px" onclick="closeModal()">Cancelar</button>`);}
+function updateToNewPlan(){
+  const old=DB.routines||[];
+  const oldKg={};old.forEach(r=>(r.blocks||[]).forEach(b=>(b.exercises||[]).forEach(e=>{if(e&&e.name&&e.kg!==undefined&&e.kg!==''&&!(e.name in oldKg))oldKg[e.name]=e.kg;})));
+  let fresh;
+  if(DB.mode==='travel')fresh=travelRoutines();
+  else if(DB.mode==='strong')fresh=strongRoutines();
+  else if(DB.mode==='fullbody')fresh=fullBodyRoutines();
+  else fresh=buildRoutines(DB.cycle.rotIndex||0);
+  fresh.forEach(r=>(r.blocks||[]).forEach(b=>(b.exercises||[]).forEach(e=>{if(e.name in oldKg){const v=parseFloat(oldKg[e.name]);if(!isNaN(v))e.kg=oldKg[e.name];}})));
+  DB.routines=fresh;persistRoutinesToSlot();save();closeModal();renderRoutines();renderTodayReady();renderDashboard();toast('♻️ Rutinas actualizadas al plan nuevo · kg conservados');
+}
 function renderRoutines(){const el=document.getElementById('routineList');if(!el)return;
   const isT=DB.mode==='travel',isS=DB.mode==='strong';
   const isFB=DB.mode==='fullbody';
-  let head=`<div class="row" style="margin-bottom:8px"><button class="btn-sm ${isFB?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('fullbody')">🎯 Full Body</button><button class="btn-sm ${DB.mode==='gym'?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('gym')">🏋️ PPL</button><button class="btn-sm ${isS?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('strong')">🪨 Strong</button><button class="btn-sm ${isT?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('travel')">✈️ Viaje</button></div>`;
+  let head=`<div class="row" style="margin-bottom:8px"><button class="btn-sm ${isFB?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('fullbody')">🎯 Full Body</button><button class="btn-sm ${DB.mode==='gym'?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('gym')">🏋️ PPL</button><button class="btn-sm ${isS?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('strong')">🪨 Strong</button><button class="btn-sm ${isT?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('travel')">✈️ Viaje</button></div><button class="btn-sm btn-gold" style="width:100%;margin-bottom:10px" onclick="confirmUpdatePlan()">♻️ Actualizar al plan nuevo (conserva tus kg)</button>`;
   if(isFB)head+=`<div class="note" style="margin-bottom:10px;border-color:var(--acc2)">🎯 <b>Full Body — 2 días/semana.</b> Todo el cuerpo en cada sesión, rangos de 8-15 reps y descansos cortos para perder grasa manteniendo músculo. <b>Tú eliges los días</b> según tu semana. El peso no es lo importante: hazlas bien y no falles los 2 días. Alterna A y B.</div>`;
   if(isT)head+=`<div class="note" style="margin-bottom:10px">Modo viaje: rutinas sin gimnasio con peso corporal, comba, bandas + barra y carrera. Ideal para vacaciones.</div>`;
   if(isS)head+=`<div class="note" style="margin-bottom:10px">Modo strongman adaptado a tu nivel: compuestos pesados primero, hipertrofia con tiempo bajo tensión (baja lento) y acarreos (farmer walk, zercher). Full-body, gran gasto y músculo funcional.</div>`;
@@ -3198,7 +3315,7 @@ function renderPredictions(){
 const MANUAL=[
   ['👋 Bienvenida','FORJA es tu entrenador personal en el móvil. Funciona sin conexión y guarda todo en tu teléfono. Tiene 4 pestañas abajo: Panel (resumen), Entreno (fuerza y carrera), Cuerpo (medidas) y Mente (hábitos y bienestar). La filosofía: constancia sobre perfección. No busques el 100% cada día; busca no fallar dos días seguidos.'],
   ['📊 Panel','Tu centro de mando. Arriba, la pantalla HOY te dice qué toca. El Coach Semanal analiza tu semana y te da acciones concretas. El Recovery Score (0-100) combina tu carga reciente y tu descanso: si está bajo, entrena más suave. También ves tu camino a la meta de peso, calendario y constancia.'],
-  ['💪 Entreno · sistema','Cada sesión tiene 4 bloques: FUERZA (principal pesado), ACCESORIOS (complementos), DENSIDAD (cardio-fuerza) y FINISHER (cierre). Antes de empezar eliges cómo estás (fresco/normal/fatigado) y la app ajusta el volumen. Tienes 3 modos: Gym, Strongman y Viaje (sin gimnasio).'],
+  ['💪 Entreno · sistema','Plan atlético (no culturista) pensado para hacer DESPUÉS del boxeo (Lun/Mié). Cada sesión: POTENCIA (1 explosivo, corporal) → FUERZA (1-2 básicos en peso libre, RIR 2, nunca al fallo) → ACCESORIOS en máquina (más rápido, menos fatiga, apuras seguro) → CORE opcional. ~75 min. El estado por defecto es "tras boxeo" (menos volumen, más descanso). La app AJUSTA SOLA el peso, las reps y la densidad según lo que registras (reglas, no IA): cada vez que guardas verás los cambios para la próxima y puedes revertirlos. En dominadas con goma apunta la ayuda en NEGATIVO (-15 = la goma te quita 15 kg). Modos: Full Body (recomendado 2 días), PPL, Strongman y Viaje. Si tus rutinas son del plan antiguo, pulsa "♻️ Actualizar al plan nuevo" (conserva tus kg).'],
   ['📝 Registrar series','Teclea kg y reps, marca ✓ al terminar cada serie. Si repites lo mismo que la última vez, marca ✓ sin teclear: se autocompleta. Cuando superas tu marca anterior, la serie se pone verde. Toca el nombre del ejercicio para ver su progresión o cambiarlo si la máquina está ocupada. Con gomas (dominadas/fondos): apunta la ayuda en negativo (-15).'],
   ['⏱️ Formatos','EMOM: cada minuto haces las reps y descansas lo que sobre. AMRAP: máximas rondas en X minutos. Tabata: 20s fuerte / 10s suave × 8. La app te guía con cuenta atrás, sonido, vibración y voz. En Ajustes puedes activar o silenciar la voz.'],
   ['🏃 Carrera','Configura tu objetivo (5K o 10K) y días por semana. La app planifica sesiones variadas (rodaje, series, tempo, fartlek, cuestas, técnica, tirada larga) evitando tus días de gym. Si tu Recovery está bajo, cambia sola la sesión por una más suave. Al terminar, apunta km y calcula tu ritmo.'],
