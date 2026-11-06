@@ -107,7 +107,7 @@ let DB={
   habits:[],habitLog:{},mindLog:{},extraLog:{},
   cycle:{weeks:6,start:'2026-06-08',rotIndex:0},
   body:[],bodyCfg:{everyWeeks:2},
-  scores:[], medals:{}, formatPR:{},
+  scores:[], medals:{}, formatPR:{}, kbPR:{}, kbFormatsSeen:[],
   athlete:'fatigado', mode:'fullbody', settings:{fontScale:1,wakeLock:false}, exNotes:{},
   goalWeight:105, lastBackup:null,
   goals:[], checkins:{},
@@ -152,6 +152,7 @@ function seed(){
   if(DB.habits.length===0)DB.habits=JSON.parse(JSON.stringify(DEF_HAB));
   if(DB.routines.length===0)DB.routines=DB.mode==='kb'?kbRoutines():DB.mode==='fullbody'?fullBodyRoutines():DB.mode==='travel'?travelRoutines():DB.mode==='strong'?strongRoutines():buildRoutines(DB.cycle.rotIndex||0);
   migrateRoutineLabels();
+  kbEnsureAll();
 }
 
 /* ===== RUTINAS DE VIAJE (sin gimnasio) ===== */
@@ -358,13 +359,16 @@ function fatLossScore(){
 
 /* ===================== RETO SEMANAL / GAMIFICACIÓN ===================== */
 const CHALLENGES=[
-  '100 KB swings por tiempo: supera tu marca anterior.',
-  'Sube el Density Score de cada sesión respecto a la semana pasada.',
-  'Completa los 4 bloques sin saltarte el finisher 3 días.',
-  'Añade 2,5 kg al ejercicio principal de fuerza.',
-  'Cierra la semana con 3 entrenos + 2 boxeos.',
+  '🎲 Casa KB: prueba un formato que no hayas hecho aún esta semana (Tabata, EMOM, AMRAP, Escalera…).',
+  '💯 100 KB swings al despertar: crono libre, bate tu marca anterior.',
+  '🔥 AMRAP 12 de kettlebell: anota tus rondas y supéralas la próxima.',
+  '🪜 Escalera de goblet squat 10→1 sin soltar la pesa.',
+  '🥊 Pleno de la semana: 3 circuitos KB + 2 boxeos.',
+  '🌅 Entrena 3 mañanas (aunque sean 20 min): la constancia es el juego.',
   'Mantén la cadena de hábitos los 7 días.',
-  'Aguanta los descansos cortos del Bloque 2 (sin pasarte de 30s).'
+  '🎯 Bate tu récord de rondas en una de tus 3 sesiones KB.',
+  'Sube el Density Score de cada sesión respecto a la semana pasada.',
+  'Añade 2,5 kg al ejercicio principal de fuerza (si tocas barra).'
 ];
 function weekNumber(){const d=new Date();const o=new Date(d.getFullYear(),0,1);return Math.ceil(((d-o)/864e5+o.getDay()+1)/7);}
 function renderWeekChallenge(){document.getElementById('weekChallenge').innerHTML=`<div class="challenge"><h4>🎯 Esta semana</h4><p style="font-size:14px;margin-top:4px">${CHALLENGES[weekNumber()%CHALLENGES.length]}</p></div>`;}
@@ -377,7 +381,10 @@ const MEDALS=[
   {id:'m6',n:'Density 300',ic:'⚡',test:()=>DB.sessions.some(s=>s.density>=300)},
   {id:'m7',n:'Racha 7 días',ic:'🔥',test:()=>habitChainBest()>=7},
   {id:'m8',n:'Primera medición',ic:'📏',test:()=>DB.body.length>=1},
-  {id:'m9',n:'Fat Loss 70',ic:'🎯',test:()=>(fatLossScore()||0)>=70}
+  {id:'m9',n:'Fat Loss 70',ic:'🎯',test:()=>(fatLossScore()||0)>=70},
+  {id:'kbhome',n:'10 circuitos en casa',ic:'🏠',test:()=>DB.sessions.filter(s=>s.athlete==='casa').length>=10},
+  {id:'kbfmt',n:'5 formatos KB',ic:'🎛️',test:()=>(DB.kbFormatsSeen||[]).length>=5},
+  {id:'kbvar',n:'Todos los formatos KB',ic:'🎲',test:()=>(DB.kbFormatsSeen||[]).length>=7}
 ];
 function maxKg(name){let m=0;DB.sessions.forEach(s=>(s.blocks||[]).forEach(b=>b.exercises.forEach(e=>{if(e.name===name)(e.sets||[]).forEach(st=>{if(+st.kg>m)m=+st.kg;});})));return m;}
 function habitChainBest(){let best=0,cur=0;for(let i=29;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10);const l=DB.habitLog[ds]||{};const r=DB.habits.length?DB.habits.filter(h=>l[h.id]).length/DB.habits.length:0;if(r>=0.6){cur++;best=Math.max(best,cur);}else cur=0;}return best;}
@@ -949,27 +956,56 @@ const KB_MOVES={
   'Sprint en el sitio':{pat:'cardio',cue:'Carrera en el sitio a tope, brazos activos.'}
 };
 const KB_BYPAT={};Object.keys(KB_MOVES).forEach(n=>{const p=KB_MOVES[n].pat;(KB_BYPAT[p]=KB_BYPAT[p]||[]).push(n);});
-function kbRoutines(){
-  return [
-    {id:'kb1',name:'KB A · Balanceo total',day:'Lunes',kb:true,core:true,note:'Mañana en casa · 20 kg. Full-body con balanceos: cadera, pierna y empuje. Calienta antes y estira después.',
-      circuits:[{label:'Circuito · cuerpo completo',work:40,rest:20,rounds:4,moves:['KB swing (2 manos)','Goblet squat','Press de hombro (alterna)','Remo inclinado (alterna)']}]},
-    {id:'kb2',name:'KB B · Potencia pierna',day:'Miércoles',kb:true,core:true,note:'Mañana en casa · 20 kg. Potencia de cadera y pierna, algo de técnica (clean). Transfiere a correr y boxear.',
-      circuits:[{label:'Circuito · potencia',work:45,rest:15,rounds:4,moves:['Clean & press (alterna)','Zancada frontal (front rack)','Peso muerto a 1 pierna','Halo']}]},
-    {id:'kb3',name:'KB C · Metcon',day:'Viernes',kb:true,core:false,note:'Mañana en casa · 20 kg. Acondicionamiento, sudada corta e intensa. Buen día si no sales a correr.',
-      circuits:[{label:'Circuito · metcon',work:40,rest:20,rounds:5,moves:['Snatch (alterna)','Thruster','Swing explosivo','Mountain climbers']}]}
-  ];
+/* Formatos rotativos: cada sesión usa uno distinto para que NUNCA sea igual. Todos guiados por voz + campana. */
+const KB_FORMATS=[
+  {id:'clasico', emoji:'⏱️', name:'Clásico',  work:40,rest:20,rounds:4, res:'rondas', desc:'40s fuerte / 20s descanso · 4 vueltas'},
+  {id:'potencia',emoji:'⚡', name:'Potencia', work:45,rest:15,rounds:4, res:'rondas', desc:'45s / 15s · explosivo, 4 vueltas'},
+  {id:'fluido',  emoji:'🌊', name:'Fluido',   work:30,rest:30,rounds:5, res:'rondas', desc:'30s / 30s · ritmo sostenible, 5 vueltas'},
+  {id:'tabata',  emoji:'🔥', name:'Tabata',   work:20,rest:10,rounds:8, res:'rondas', desc:'20s / 10s · 8 vueltas, a tope'},
+  {id:'emom',    emoji:'⏰', name:'EMOM',      rounds:3, rep:10, res:'vueltas', desc:'Cada minuto un movimiento. Haz las reps y descansa lo que sobre. 3 vueltas.'},
+  {id:'amrap',   emoji:'💥', name:'AMRAP',     mins:12, res:'rondas', desc:'12 min seguidos: máximas vueltas al circuito. Anota cuántas.'},
+  {id:'escalera',emoji:'🪜', name:'Escalera',  work:45,rest:20,rounds:6, ladder:[4,6,8,10,12,15], res:'nivel', desc:'Sube reps cada vuelta: 4·6·8·10·12·15. Pesa de 20 kg.'}
+];
+function kbHash(s){let h=5381;for(let i=0;i<s.length;i++)h=((h<<5)+h+s.charCodeAt(i))>>>0;return h;}
+function kbPickMoves(r,seed){return (r.patterns||[]).map((p,i)=>{const arr=KB_BYPAT[p]||[];if(!arr.length)return 'KB swing (2 manos)';return arr[(seed+i*3+kbHash((r.id||'')+p))%arr.length];});}
+function kbMakeCircuit(fmtId,moves){
+  const f=KB_FORMATS.find(x=>x.id===fmtId)||KB_FORMATS[0];let mins;
+  if(f.id==='amrap')mins=f.mins;else if(f.id==='emom')mins=f.rounds*moves.length;else mins=Math.round(f.rounds*moves.length*((f.work||0)+(f.rest||0))/60);
+  return {label:f.emoji+' '+f.name,fmt:f.id,moves:moves.slice(),work:f.work||0,rest:f.rest||0,rounds:f.rounds||1,mins,res:f.res,desc:f.desc};
 }
-function kbMins(c){return Math.round(c.rounds*c.moves.length*(c.work+c.rest)/60);}
-function startKB(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;if(!DB._kb||DB._kb.rid!==rid)DB._kb={rid,done:[],ts:Date.now()};renderKBPlan(rid);}
+function kbMaterialize(r,seed){const f=KB_FORMATS[((seed%KB_FORMATS.length)+KB_FORMATS.length)%KB_FORMATS.length];r.rot=seed;r.format=f.id;r.circuits=[kbMakeCircuit(f.id,kbPickMoves(r,seed))];}
+function kbEnsure(r){if(!r)return;if(!r.patterns||!r.patterns.length){r.patterns=((r.circuits&&r.circuits[0]&&r.circuits[0].moves)||[]).map(n=>(KB_MOVES[n]||{}).pat).filter(Boolean);if(!r.patterns.length)r.patterns=['hinge','squat','press','pull'];}if(r.rot==null)r.rot=0;if(!r.format||!r.circuits||!r.circuits[0]||!r.circuits[0].fmt)kbMaterialize(r,r.rot);}
+function kbEnsureAll(){(DB.routines||[]).forEach(r=>{if(r.kb)kbEnsure(r);});}
+function kbTag(c){const f=KB_FORMATS.find(x=>x.id===c.fmt)||{};return `${f.emoji||''} ${f.name||''} · ~${c.mins||'?'}min`;}
+function kbRoutines(){
+  const defs=[
+    {id:'kb1',name:'KB A · Balanceo total',day:'Lunes',core:true,patterns:['hinge','squat','press','pull'],note:'Mañana en casa · 20 kg. Full-body: cadera, pierna, empuje y tirón. Calienta antes y estira después.'},
+    {id:'kb2',name:'KB B · Potencia pierna',day:'Miércoles',core:true,patterns:['power','squat','hinge','core'],note:'Mañana en casa · 20 kg. Potencia de cadera y pierna + algo de técnica. Transfiere a correr y boxear.'},
+    {id:'kb3',name:'KB C · Metcon',day:'Viernes',core:false,patterns:['power','press','hinge','cardio'],note:'Mañana en casa · 20 kg. Acondicionamiento, sudada corta e intensa. Buen día si no sales a correr.'}
+  ];
+  return defs.map(d=>{const r=Object.assign({kb:true,rot:0},d);kbMaterialize(r,0);return r;});
+}
+function kbMins(c){return c.mins||Math.round((c.rounds||4)*(c.moves||[]).length*((c.work||0)+(c.rest||0))/60);}
+function kbBuildPhases(c){
+  const f=KB_FORMATS.find(x=>x.id===c.fmt)||KB_FORMATS[0];const moves=c.moves||[];const ph=[];const cue=n=>(KB_MOVES[n]||{}).cue||'';
+  if(f.id==='amrap'){const total=(f.mins||12)*60,slot=40,passes=Math.max(1,Math.ceil(total/(moves.length*slot)));for(let pz=0;pz<passes;pz++)moves.forEach(n=>ph.push({lbl:`AMRAP · ${n}`,sec:slot,tip:cue(n)+' · cuenta tus vueltas, no pares',kind:'activation',ex:n}));return ph;}
+  if(f.id==='emom'){for(let rd=1;rd<=(f.rounds||3);rd++)moves.forEach(n=>ph.push({lbl:`EMOM · ${n}`,sec:60,tip:`${f.rep||10} reps y descansa lo que sobre · vuelta ${rd}`,kind:'activation',ex:n}));return ph;}
+  const rounds=f.rounds||4,work=f.work||40,rest=f.rest||20;
+  for(let rd=1;rd<=rounds;rd++){const repTxt=f.ladder?` · ${f.ladder[Math.min(rd-1,f.ladder.length-1)]} reps`:'';moves.forEach((n,mi)=>{ph.push({lbl:`R${rd} · ${n}`,sec:work,tip:cue(n)+repTxt,kind:'activation',ex:n});const isLast=(rd===rounds)&&(mi===moves.length-1);if(!isLast&&rest>0)ph.push({lbl:'Descanso',sec:rest,kind:'rest'});});}
+  return ph;
+}
+function startKB(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;kbEnsure(r);if(!DB._kb||DB._kb.rid!==rid)DB._kb={rid,done:[],ts:Date.now()};renderKBPlan(rid);}
 function renderKBPlan(rid){
-  const r=DB.routines.find(x=>x.id===rid);if(!r)return;
+  const r=DB.routines.find(x=>x.id===rid);if(!r)return;kbEnsure(r);
   const done=(DB._kb&&DB._kb.rid===rid)?DB._kb.done:[];
+  const pr=(DB.kbPR&&DB.kbPR[r.name])?`<span class="split-tag" style="color:var(--gold)">🏆 ${DB.kbPR[r.name].rounds} ${r.circuits[0].res}</span>`:'';
   const cir=(r.circuits||[]).map((c,ci)=>{
     const moves=c.moves.map((n,mi)=>`<div class="mini" style="margin-top:5px">• <b>${n}</b> <span style="color:var(--acc2);cursor:pointer" onclick="kbAlt('${rid}',${ci},${mi})">⇄</span><br><span style="color:var(--dim)">${(KB_MOVES[n]||{}).cue||''}</span></div>`).join('');
     const col=done.includes(ci)?'var(--ok)':'var(--acc)';
-    return `<div class="ex-block" style="border-color:${col}"><div class="ex-head"><span class="nm">${done.includes(ci)?'✅ ':''}${c.label}</span><span class="split-tag">${c.work}/${c.rest} ×${c.rounds} · ~${kbMins(c)}min</span></div>${moves}<div class="row" style="margin-top:8px;gap:6px"><button class="btn-sm btn-acc" style="flex:1" onclick="runKBCircuit('${rid}',${ci})">▶ ${done.includes(ci)?'Repetir':'Empezar'} circuito</button><button class="btn-sm btn2" onclick="varyKB('${rid}',${ci})">🎲 Variar</button></div></div>`;
+    return `<div class="ex-block" style="border-color:${col}"><div class="ex-head"><span class="nm">${done.includes(ci)?'✅ ':''}${c.label}</span><span class="split-tag">${kbTag(c)}</span></div>${moves}<button class="btn-sm btn-acc" style="margin-top:8px;width:100%" onclick="runKBCircuit('${rid}',${ci})">▶ ${done.includes(ci)?'Repetir':'Empezar'} circuito</button></div>`;
   }).join('');
-  openModal(`<h3>🏠 ${r.name}</h3><p class="mini" style="margin-bottom:8px">${r.note||''}</p>
+  openModal(`<h3>🏠 ${r.name} ${pr}</h3><p class="mini" style="margin-bottom:8px">${r.note||''}</p>
+  <div class="note" style="border-color:var(--gold);margin-bottom:10px">🎲 <b>Variante de hoy:</b> ${r.circuits[0].desc}<br><span class="mini" style="color:var(--dim)">Formato y ejercicios cambian solos cada vez que terminas. ¿Quieres otra ahora?</span><div class="row" style="margin-top:8px;gap:6px"><button class="btn-sm btn-gold" style="flex:1" onclick="kbSurprise('${rid}')">🎲 Sorpréndeme</button><button class="btn-sm btn2" style="flex:1" onclick="kbCycleFormat('${rid}')">🔁 Otro formato</button></div></div>
   <div class="ex-block" style="border-color:var(--gold)"><div class="ex-head"><span class="nm">🔥 1 · Calentamiento</span><span class="split-tag" style="color:var(--gold)">primera hora</span></div><div class="mini" style="margin-top:4px">Cuerpo frío de mañana: muévete 6 min de arriba abajo antes de coger la pesa.</div><button class="btn-sm btn-gold" style="margin-top:8px;width:100%" onclick="morningWarmupMenu(function(){renderKBPlan('${rid}')})">▶ Calentar</button></div>
   <div class="mini" style="margin:12px 0 2px;letter-spacing:1px">2 · CIRCUITO GUIADO (voz + campana en cada cambio)</div>${cir}
   ${r.core?`<div class="ex-block" style="border-color:var(--viol)"><div class="ex-head"><span class="nm">🧱 Core (opcional)</span></div><div class="mini" style="margin-top:4px">3 min si te quedan ganas.</div><button class="btn-sm btn-viol" style="margin-top:8px;width:100%" onclick="startCore()">▶ Core guiado</button></div>`:''}
@@ -977,17 +1013,10 @@ function renderKBPlan(rid){
   <button class="btn btn-acc2" style="width:100%;margin-top:10px" onclick="finishKB('${rid}')">✓ Terminar y guardar</button>`);
 }
 function runKBCircuit(rid,ci){
-  const r=DB.routines.find(x=>x.id===rid);if(!r)return;const c=(r.circuits||[])[ci];if(!c)return;
+  const r=DB.routines.find(x=>x.id===rid);if(!r)return;kbEnsure(r);const c=(r.circuits||[])[ci];if(!c)return;
   closeModal();
-  const phases=[];
-  for(let rd=1;rd<=c.rounds;rd++){
-    c.moves.forEach((n,mi)=>{
-      phases.push({lbl:`R${rd} · ${n}`,sec:c.work,tip:(KB_MOVES[n]||{}).cue||'',kind:'activation',ex:n});
-      const isLast=(rd===c.rounds)&&(mi===c.moves.length-1);
-      if(!isLast)phases.push({lbl:'Descanso',sec:c.rest,kind:'rest'});
-    });
-  }
-  runSequence('🏠 '+r.name,phases,function(){
+  DB.kbFormatsSeen=DB.kbFormatsSeen||[];if(!DB.kbFormatsSeen.includes(c.fmt)){DB.kbFormatsSeen.push(c.fmt);save();}
+  runSequence('🏠 '+r.name,kbBuildPhases(c),function(){
     if(!DB._kb||DB._kb.rid!==rid)DB._kb={rid,done:[],ts:Date.now()};
     if(!DB._kb.done.includes(ci))DB._kb.done.push(ci);
     renderKBPlan(rid);
@@ -999,30 +1028,33 @@ function kbAlt(rid,ci,mi){
   openModal(`<h3>⇄ Cambiar movimiento</h3><p class="mini" style="margin-bottom:8px">Mismo patrón. Elige otra opción (20 kg):</p>${opts.map(n=>`<button class="btn2" style="width:100%;margin-bottom:6px${n===cur?';border-color:var(--acc2)':''}" onclick="setKBMove('${rid}',${ci},${mi},'${n.replace(/'/g,"")}')">${n===cur?'✓ ':''}${n}</button>`).join('')}<button class="btn2" style="width:100%;margin-top:4px" onclick="renderKBPlan('${rid}')">← Volver</button>`);
 }
 function setKBMove(rid,ci,mi,name){const r=DB.routines.find(x=>x.id===rid);if(r&&(r.circuits||[])[ci]){r.circuits[ci].moves[mi]=name;persistRoutinesToSlot();save();}renderKBPlan(rid);}
-function varyKB(rid,ci){
-  const r=DB.routines.find(x=>x.id===rid);const c=r&&(r.circuits||[])[ci];if(!c)return;
-  c.moves=c.moves.map(n=>{const pat=(KB_MOVES[n]||{}).pat;const opts=(KB_BYPAT[pat]||[n]).filter(x=>x!==n);return opts.length?opts[Math.floor(Math.random()*opts.length)]:n;});
-  persistRoutinesToSlot();save();renderKBPlan(rid);toast('🎲 Circuito variado');
-}
+function kbSurprise(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;kbEnsure(r);kbMaterialize(r,Math.floor(Math.random()*997)+1);persistRoutinesToSlot();save();renderKBPlan(rid);toast('🎲 ¡Nueva variante!');}
+function kbCycleFormat(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;kbEnsure(r);const i=KB_FORMATS.findIndex(f=>f.id===r.format);const nf=KB_FORMATS[(i+1)%KB_FORMATS.length];const moves=r.circuits[0].moves;r.format=nf.id;r.circuits=[kbMakeCircuit(nf.id,moves)];persistRoutinesToSlot();save();renderKBPlan(rid);toast(nf.emoji+' Formato: '+nf.name);}
 function finishKB(rid){
-  const r=DB.routines.find(x=>x.id===rid);if(!r)return;window._kbRid=rid;_sessFeel='normal';
+  const r=DB.routines.find(x=>x.id===rid);if(!r)return;kbEnsure(r);window._kbRid=rid;_sessFeel='normal';
+  const res=r.circuits[0].res||'rondas';const prv=(DB.kbPR&&DB.kbPR[r.name])?` · tu récord: ${DB.kbPR[r.name].rounds}`:'';
   openModal(`<h3>✓ Guardar sesión</h3><p class="mini" style="margin-bottom:10px">¿Cómo ha ido el circuito?</p>
-  <label>Rondas / vueltas completadas</label><input id="kbRounds" inputmode="numeric" type="number" placeholder="ej. 4">
+  <label>${res.charAt(0).toUpperCase()+res.slice(1)} completadas${prv}</label><input id="kbRounds" inputmode="numeric" type="number" placeholder="ej. 4">
   <label style="margin-top:10px">Sensación</label><div class="row" style="margin-bottom:8px"><button class="btn-sm btn2" onclick="setSessFeel(this,'mala')">😣 Dura</button><button class="btn-sm btn2" onclick="setSessFeel(this,'normal')">😐 Normal</button><button class="btn-sm btn2" onclick="setSessFeel(this,'buena')">💪 Genial</button></div>
   <label>Nota (opcional)</label><input id="kbNote" placeholder="ej. swing fluido, hombro ok...">
   <button class="btn btn-acc2" style="margin-top:12px;width:100%" onclick="doFinishKB()">Guardar sesión</button>`);
 }
 function doFinishKB(){
-  const rid=window._kbRid;const r=DB.routines.find(x=>x.id===rid);if(!r)return;
-  const rounds=(document.getElementById('kbRounds')||{}).value||'';
+  const rid=window._kbRid;const r=DB.routines.find(x=>x.id===rid);if(!r)return;kbEnsure(r);
+  const roundsStr=(document.getElementById('kbRounds')||{}).value||'';
   const note=(document.getElementById('kbNote')||{}).value||'';
+  const res=r.circuits[0].res||'rondas';const fmtName=(KB_FORMATS.find(f=>f.id===r.format)||{}).name||'';
   const started=(DB._kb&&DB._kb.ts)||Date.now();
   const dur=Math.max(1,Math.round((Date.now()-started)/60000));
-  const rec={id:'s'+Date.now(),routineId:rid,name:r.name,date:today(),athlete:'casa',duration:dur,restFactor:1,feel:_sessFeel,note:note||'',blocks:[{type:'densidad',label:'Circuito KB 20 kg',result:rounds?rounds+' rondas':null,exercises:[]}]};
+  const n=parseInt(roundsStr,10);let pr=false;
+  if(!isNaN(n)){DB.kbPR=DB.kbPR||{};if(!DB.kbPR[r.name]||n>DB.kbPR[r.name].rounds){DB.kbPR[r.name]={rounds:n,fmt:r.format,date:today()};pr=true;}DB.formatPR=DB.formatPR||{};const fk='🏠 '+r.name;const prev=parseInt(DB.formatPR[fk],10);if(isNaN(prev)||n>prev)DB.formatPR[fk]=n+' '+res;}
+  const rec={id:'s'+Date.now(),routineId:rid,name:r.name,date:today(),athlete:'casa',duration:dur,restFactor:1,feel:_sessFeel,note:note||'',blocks:[{type:'densidad',label:'Circuito KB 20 kg · '+fmtName,result:roundsStr?n+' '+res:null,exercises:[]}]};
   try{rec.density=computeDensity(rec);}catch(e){rec.density=0;}
-  DB.sessions.unshift(rec);DB._kb=null;_sessFeel='normal';save();releaseWake&&releaseWake();
+  DB.sessions.unshift(rec);
+  r.rot=(r.rot||0)+1;kbMaterialize(r,r.rot);persistRoutinesToSlot(); // la próxima vez será distinta sola
+  DB._kb=null;_sessFeel='normal';save();releaseWake&&releaseWake();
   closeModal();try{renderTodayReady();renderCycle();renderDashboard();}catch(e){}
-  toast('💪 Sesión KB guardada');
+  toast(pr?('🏆 ¡RÉCORD en '+r.name.split('·')[0].trim()+'! '+n+' '+res):'💪 Sesión KB guardada · la próxima rota sola');
   offerRecovery(r.name);
 }
 
@@ -1051,8 +1083,9 @@ function renderRoutines(){const el=document.getElementById('routineList');if(!el
   if(isS)head+=`<div class="note" style="margin-bottom:10px">Modo strongman adaptado a tu nivel: compuestos pesados primero, hipertrofia con tiempo bajo tensión (baja lento) y acarreos (farmer walk, zercher). Full-body, gran gasto y músculo funcional.</div>`;
   const list=DB.routines.map(r=>{
     if(r.kb){
-      const cc=(r.circuits||[]).map(c=>`<div class="mini" style="margin-top:4px"><b style="color:var(--acc)">${c.work}/${c.rest} ×${c.rounds}</b> · ${c.moves.join(' · ')}</div>`).join('');
-      return `<div class="ex-block"><div class="ex-head"><span class="nm">${r.name} <span class="split-tag">${r.day||'📅 tú eliges'}</span></span><span><button class="btn-sm btn2" onclick="changeDay('${r.id}')">📅</button> <button class="btn-sm btn-acc2" onclick="startKB('${r.id}')">▶</button></span></div>${cc}</div>`;
+      kbEnsure(r);
+      const cc=(r.circuits||[]).map(c=>`<div class="mini" style="margin-top:4px"><b style="color:var(--acc)">${kbTag(c)}</b> · ${(c.moves||[]).join(' · ')}</div>`).join('');
+      return `<div class="ex-block"><div class="ex-head"><span class="nm">${r.name} <span class="split-tag">${r.day||'📅 tú eliges'}</span></span><span><button class="btn-sm btn2" onclick="changeDay('${r.id}')">📅</button> <button class="btn-sm btn-acc2" onclick="startKB('${r.id}')">▶</button></span></div>${cc}<div class="mini" style="margin-top:4px;color:var(--dim)">🎲 Rota sola cada vez. Entra para ver la variante de hoy.</div></div>`;
     }
     return `<div class="ex-block"><div class="ex-head"><span class="nm">${r.name} <span class="split-tag">${r.day||'📅 tú eliges'}</span></span><span><button class="btn-sm btn2" onclick="editRoutine('${r.id}')">✎</button> <button class="btn-sm btn2" onclick="changeDay('${r.id}')">📅</button> <button class="btn-sm btn2" onclick="startFlow('${r.id}')">▶</button></span></div>${(r.blocks||[]).map(b=>`<div class="mini" style="margin-top:4px"><b style="color:var(--acc)">${b.label.replace('Bloque','B').replace(' · ',': ')}</b> ${b.exercises.map(e=>e.name+(SUBS[e.name]?` <span style="color:var(--acc2);cursor:pointer" onclick="showSubs('${e.name.replace(/'/g,"")}')">⇄</span>`:'')).join(' · ')}</div>`).join('')}</div>`;
   }).join('');
