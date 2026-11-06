@@ -150,7 +150,7 @@ function migrateRoutineLabels(){
 }
 function seed(){
   if(DB.habits.length===0)DB.habits=JSON.parse(JSON.stringify(DEF_HAB));
-  if(DB.routines.length===0)DB.routines=buildRoutines(DB.cycle.rotIndex||0);
+  if(DB.routines.length===0)DB.routines=DB.mode==='kb'?kbRoutines():DB.mode==='fullbody'?fullBodyRoutines():DB.mode==='travel'?travelRoutines():DB.mode==='strong'?strongRoutines():buildRoutines(DB.cycle.rotIndex||0);
   migrateRoutineLabels();
 }
 
@@ -415,6 +415,12 @@ function renderRotation(){const idx=(DB.cycle.rotIndex||0);document.getElementBy
 /* ===================== MODO ATLETA + FLUJO SESIÓN ===================== */
 function renderTodayReady(){const td=DAYS[(new Date().getDay()+6)%7];const r=DB.routines.find(x=>x.day===td);const el=document.getElementById('todayReady');document.getElementById('readyTitle').textContent='📅 '+td;
   if(DB.session){el.innerHTML='<p class="mini">Sesión en curso abajo 👇</p>';return;}
+  if(r&&r.kb){
+    el.innerHTML=`<div class="mini" style="margin-bottom:8px;letter-spacing:1px">HOY EN CASA · 🔥 calienta → 🏠 circuito → 🧘 estira</div>
+    <div class="day-row"><div class="dd">🏠</div><div class="di"><b>${r.name}</b><div class="mini">Kettlebell 20 kg · circuito guiado · ~25-30 min</div></div><button class="btn-sm btn-acc2" onclick="startKB('${r.id}')">Empezar</button></div>
+    <div class="day-row" style="margin-top:6px"><div class="dd">🥊</div><div class="di"><b>Boxeo</b><div class="mini">Tu fijo de la semana</div></div><button class="btn-sm btn-gold" onclick="startBoxSession()">▶</button></div>`;
+    return;
+  }
   if(r){const hasLast=!!lastSessionFor(r.id);
     el.innerHTML=`<div class="mini" style="margin-bottom:8px;letter-spacing:1px">CICLO DE HOY · 🔥 calienta → 💪 entrena → 🧘 recupera</div>
     <div class="day-row"><div class="dd">🔥</div><div class="di"><b>1 · Preparación</b><div class="mini">Calienta 5-8 min antes de cargar</div></div><span style="display:flex;gap:4px"><button class="btn-sm btn2" onclick="startWarmup('${r.id}')">▶ Guiado</button><button class="btn-sm btn2" onclick="warmupVideo('${r.id}')">🎬</button></span></div>
@@ -423,7 +429,7 @@ function renderTodayReady(){const td=DAYS[(new Date().getDay()+6)%7];const r=DB.
     <div class="day-row" style="border-top:1px solid var(--line);margin-top:8px;padding-top:10px"><div class="dd">🧘</div><div class="di"><b>3 · Recuperación</b><div class="mini">Estirar + abdominales al terminar</div></div><button class="btn-sm btn2" onclick="openRecoveryMenu()">Abrir</button></div>`;}
   else el.innerHTML=`<p class="mini">Hoy (${td}) sin rutina fija. Descanso o empieza una manual:</p><div style="margin-top:8px">${DB.routines.map(x=>`<button class="btn-sm btn2" style="margin:2px" onclick="startFlow('${x.id}')">${x.name}</button>`).join('')}</div><div class="row" style="margin-top:8px"><button class="btn2" style="flex:1" onclick="openRecoveryMenu()">🧘 Estirar / abdominales</button></div>`;
 }
-function startFlow(rid){window._pendingRid=rid;openModal(`<h3>Modo Atleta</h3><p class="mini" style="margin-bottom:8px">Tus sesiones son Lun/Mié <b>después del boxeo</b>, así que ese es el estado por defecto:</p><button class="btn btn-acc" style="width:100%;margin-bottom:10px" onclick="pickAthlete('fatigado')">🥊 Empezar · tras boxeo (habitual)</button><p class="mini" style="margin-bottom:6px;color:var(--dim)">¿Hoy es distinto?</p><div class="athlete-opt"><button class="fresco" onclick="pickAthlete('fresco')"><span class="e">🔋</span>Fresco</button><button class="normal" onclick="pickAthlete('normal')"><span class="e">⚡</span>Normal</button></div><p class="mini" style="margin-top:10px"><b>Tras boxeo</b> (lo normal): menos volumen, más descanso, prioriza el 1er básico y no fuerces. · <b>Fresco</b> (si entrenas fuerza ANTES de boxear): empuja los básicos. · <b>Normal</b>: plan estándar.</p>`);}
+function startFlow(rid){const _r=DB.routines.find(x=>x.id===rid);if(_r&&_r.kb){return startKB(rid);}window._pendingRid=rid;openModal(`<h3>Modo Atleta</h3><p class="mini" style="margin-bottom:8px">Tus sesiones son Lun/Mié <b>después del boxeo</b>, así que ese es el estado por defecto:</p><button class="btn btn-acc" style="width:100%;margin-bottom:10px" onclick="pickAthlete('fatigado')">🥊 Empezar · tras boxeo (habitual)</button><p class="mini" style="margin-bottom:6px;color:var(--dim)">¿Hoy es distinto?</p><div class="athlete-opt"><button class="fresco" onclick="pickAthlete('fresco')"><span class="e">🔋</span>Fresco</button><button class="normal" onclick="pickAthlete('normal')"><span class="e">⚡</span>Normal</button></div><p class="mini" style="margin-top:10px"><b>Tras boxeo</b> (lo normal): menos volumen, más descanso, prioriza el 1er básico y no fuerces. · <b>Fresco</b> (si entrenas fuerza ANTES de boxear): empuja los básicos. · <b>Normal</b>: plan estándar.</p>`);}
 function pickAthlete(state){DB.athlete=state;closeModal();startSession(window._pendingRid,state);}
 function repeatLast(rid){startSession(rid,'normal');toast('↺ Sesión cargada con tus marcas anteriores. A superarlas.');}
 function lastSessionFor(rid){return DB.sessions.find(s=>s.routineId===rid);}
@@ -592,6 +598,7 @@ function persistRoutinesToSlot(){
   if(DB.mode==='travel')DB.travelRoutinesSaved=DB.routines;
   else if(DB.mode==='strong')DB.strongRoutinesSaved=DB.routines;
   else if(DB.mode==='fullbody')DB.fbRoutinesSaved=DB.routines;
+  else if(DB.mode==='kb')DB.kbRoutinesSaved=DB.routines;
   else DB.gymRoutinesSaved=DB.routines;
 }
 function autoProgressRoutine(rec){
@@ -903,8 +910,124 @@ function strongRoutines(){
   ];
 }
 
+/* ===================== MODO CASA · KETTLEBELL (circuitos guiados) ===================== */
+/* Para Alexander 2026: entrenos de mañana en casa con KB de 20 kg, 25-30 min, 3 días.
+   Circuitos muy guiados (voz + campana en cada cambio) con muchas opciones intercambiables. */
+const KB_MOVES={
+  'KB swing (2 manos)':{pat:'hinge',cue:'Cadera explosiva, brazos relajados. La pesa flota hasta el pecho.'},
+  'Swing a 1 mano':{pat:'hinge',cue:'Mismo gesto, una mano. Aprieta el hombro abajo. Cambia por ronda.'},
+  'Swing dead-stop':{pat:'hinge',cue:'Cada rep arranca parada en el suelo. Pura potencia de cadera.'},
+  'Swing explosivo':{pat:'hinge',cue:'Rápido y potente, cadera agresiva. Respira en cada rep.'},
+  'Peso muerto KB':{pat:'hinge',cue:'Bisagra de cadera, espalda recta, pesa entre los pies.'},
+  'Peso muerto a 1 pierna':{pat:'hinge',cue:'Una pierna, cadera atrás, equilibrio. Alterna por ronda.'},
+  'Good morning con KB':{pat:'hinge',cue:'KB en el pecho, bisagra hasta notar isquios. Rodillas blandas.'},
+  'Goblet squat':{pat:'squat',cue:'Pesa al pecho, baja entre las caderas, pecho alto.'},
+  'Goblet squat con pausa':{pat:'squat',cue:'2 segundos abajo antes de subir. Control total.'},
+  'Sentadilla + curl':{pat:'squat',cue:'Sentadilla y al subir un curl de bíceps. Fluido.'},
+  'Zancada atrás con KB':{pat:'squat',cue:'Paso atrás, rodilla al suelo suave. Alterna pierna.'},
+  'Zancada frontal (front rack)':{pat:'squat',cue:'Pesa en rack sobre el hombro. Paso adelante firme. Alterna.'},
+  'Búlgara con KB':{pat:'squat',cue:'Pie atrás en apoyo, baja vertical. Alterna pierna por ronda.'},
+  'Press de hombro (alterna)':{pat:'press',cue:'Desde el hombro al techo. Core firme, no arquees. Alterna.'},
+  'Push press':{pat:'press',cue:'Pequeño impulso de piernas para ayudar al empuje. Alterna.'},
+  'Thruster':{pat:'press',cue:'Sentadilla + press en un solo gesto. Potencia de abajo arriba.'},
+  'Press Arnold con KB':{pat:'press',cue:'Gira la muñeca al subir. Hombro completo.'},
+  'Halo + press':{pat:'press',cue:'Rodea la cabeza y termina en press. Hombro y core.'},
+  'Remo inclinado (alterna)':{pat:'pull',cue:'Bisagra sostenida, lleva la pesa a la cadera. Aprieta escápula.'},
+  'Gorilla row':{pat:'pull',cue:'Bisagra con la pesa en el suelo, rema alterno rápido.'},
+  'Remo alto (high pull)':{pat:'pull',cue:'Desde la cadera, codo alto hasta el pecho. Explosivo.'},
+  'Remo renegado':{pat:'pull',cue:'En plancha sobre la pesa (sin móvil debajo), rema un lado. Alterna.'},
+  'Clean (alterna)':{pat:'power',cue:'De suelo a rack pegado al cuerpo, sin golpe en el antebrazo. Alterna.'},
+  'Clean & press (alterna)':{pat:'power',cue:'Clean al hombro y press arriba. Un solo flujo. Alterna.'},
+  'Snatch (alterna)':{pat:'power',cue:'De suelo a arriba en un movimiento. Técnica antes que prisa. Alterna.'},
+  'Halo':{pat:'core',cue:'Rodea la cabeza despacio, codos pegados. Un sentido y otro.'},
+  'Windmill':{pat:'core',cue:'KB arriba, baja la mano contraria al suelo. Mirada a la pesa. Suave.'},
+  'Russian twist con KB':{pat:'core',cue:'Sentado, gira el tronco tocando el suelo a cada lado.'},
+  'Plancha':{pat:'core',cue:'Cuerpo en línea, glúteo y abdomen firmes.'},
+  'Mountain climbers':{pat:'cardio',cue:'En plancha, rodillas al pecho rápido. Cadera baja.'},
+  'Burpee':{pat:'cardio',cue:'Al suelo y salto. Regula el ritmo, no te fundas.'},
+  'Skipping':{pat:'cardio',cue:'Rodillas arriba en el sitio, rápido y ligero.'},
+  'Sprint en el sitio':{pat:'cardio',cue:'Carrera en el sitio a tope, brazos activos.'}
+};
+const KB_BYPAT={};Object.keys(KB_MOVES).forEach(n=>{const p=KB_MOVES[n].pat;(KB_BYPAT[p]=KB_BYPAT[p]||[]).push(n);});
+function kbRoutines(){
+  return [
+    {id:'kb1',name:'KB A · Balanceo total',day:'Lunes',kb:true,core:true,note:'Mañana en casa · 20 kg. Full-body con balanceos: cadera, pierna y empuje. Calienta antes y estira después.',
+      circuits:[{label:'Circuito · cuerpo completo',work:40,rest:20,rounds:4,moves:['KB swing (2 manos)','Goblet squat','Press de hombro (alterna)','Remo inclinado (alterna)']}]},
+    {id:'kb2',name:'KB B · Potencia pierna',day:'Miércoles',kb:true,core:true,note:'Mañana en casa · 20 kg. Potencia de cadera y pierna, algo de técnica (clean). Transfiere a correr y boxear.',
+      circuits:[{label:'Circuito · potencia',work:45,rest:15,rounds:4,moves:['Clean & press (alterna)','Zancada frontal (front rack)','Peso muerto a 1 pierna','Halo']}]},
+    {id:'kb3',name:'KB C · Metcon',day:'Viernes',kb:true,core:false,note:'Mañana en casa · 20 kg. Acondicionamiento, sudada corta e intensa. Buen día si no sales a correr.',
+      circuits:[{label:'Circuito · metcon',work:40,rest:20,rounds:5,moves:['Snatch (alterna)','Thruster','Swing explosivo','Mountain climbers']}]}
+  ];
+}
+function kbMins(c){return Math.round(c.rounds*c.moves.length*(c.work+c.rest)/60);}
+function startKB(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;if(!DB._kb||DB._kb.rid!==rid)DB._kb={rid,done:[],ts:Date.now()};renderKBPlan(rid);}
+function renderKBPlan(rid){
+  const r=DB.routines.find(x=>x.id===rid);if(!r)return;
+  const done=(DB._kb&&DB._kb.rid===rid)?DB._kb.done:[];
+  const cir=(r.circuits||[]).map((c,ci)=>{
+    const moves=c.moves.map((n,mi)=>`<div class="mini" style="margin-top:5px">• <b>${n}</b> <span style="color:var(--acc2);cursor:pointer" onclick="kbAlt('${rid}',${ci},${mi})">⇄</span><br><span style="color:var(--dim)">${(KB_MOVES[n]||{}).cue||''}</span></div>`).join('');
+    const col=done.includes(ci)?'var(--ok)':'var(--acc)';
+    return `<div class="ex-block" style="border-color:${col}"><div class="ex-head"><span class="nm">${done.includes(ci)?'✅ ':''}${c.label}</span><span class="split-tag">${c.work}/${c.rest} ×${c.rounds} · ~${kbMins(c)}min</span></div>${moves}<div class="row" style="margin-top:8px;gap:6px"><button class="btn-sm btn-acc" style="flex:1" onclick="runKBCircuit('${rid}',${ci})">▶ ${done.includes(ci)?'Repetir':'Empezar'} circuito</button><button class="btn-sm btn2" onclick="varyKB('${rid}',${ci})">🎲 Variar</button></div></div>`;
+  }).join('');
+  openModal(`<h3>🏠 ${r.name}</h3><p class="mini" style="margin-bottom:8px">${r.note||''}</p>
+  <div class="ex-block" style="border-color:var(--gold)"><div class="ex-head"><span class="nm">🔥 1 · Calentamiento</span><span class="split-tag" style="color:var(--gold)">primera hora</span></div><div class="mini" style="margin-top:4px">Cuerpo frío de mañana: muévete 6 min de arriba abajo antes de coger la pesa.</div><button class="btn-sm btn-gold" style="margin-top:8px;width:100%" onclick="morningWarmupMenu(function(){renderKBPlan('${rid}')})">▶ Calentar</button></div>
+  <div class="mini" style="margin:12px 0 2px;letter-spacing:1px">2 · CIRCUITO GUIADO (voz + campana en cada cambio)</div>${cir}
+  ${r.core?`<div class="ex-block" style="border-color:var(--viol)"><div class="ex-head"><span class="nm">🧱 Core (opcional)</span></div><div class="mini" style="margin-top:4px">3 min si te quedan ganas.</div><button class="btn-sm btn-viol" style="margin-top:8px;width:100%" onclick="startCore()">▶ Core guiado</button></div>`:''}
+  <div class="ex-block" style="border-color:var(--acc2)"><div class="ex-head"><span class="nm">🧘 3 · Estirar</span></div><div class="mini" style="margin-top:4px">Estira bien al terminar: guiado por voz o un vídeo.</div><button class="btn-sm btn-acc2" style="margin-top:8px;width:100%" onclick="openRecoveryMenu()">Abrir estiramientos</button></div>
+  <button class="btn btn-acc2" style="width:100%;margin-top:10px" onclick="finishKB('${rid}')">✓ Terminar y guardar</button>`);
+}
+function runKBCircuit(rid,ci){
+  const r=DB.routines.find(x=>x.id===rid);if(!r)return;const c=(r.circuits||[])[ci];if(!c)return;
+  closeModal();
+  const phases=[];
+  for(let rd=1;rd<=c.rounds;rd++){
+    c.moves.forEach((n,mi)=>{
+      phases.push({lbl:`R${rd} · ${n}`,sec:c.work,tip:(KB_MOVES[n]||{}).cue||'',kind:'activation',ex:n});
+      const isLast=(rd===c.rounds)&&(mi===c.moves.length-1);
+      if(!isLast)phases.push({lbl:'Descanso',sec:c.rest,kind:'rest'});
+    });
+  }
+  runSequence('🏠 '+r.name,phases,function(){
+    if(!DB._kb||DB._kb.rid!==rid)DB._kb={rid,done:[],ts:Date.now()};
+    if(!DB._kb.done.includes(ci))DB._kb.done.push(ci);
+    renderKBPlan(rid);
+  });
+}
+function kbAlt(rid,ci,mi){
+  const r=DB.routines.find(x=>x.id===rid);const c=r&&(r.circuits||[])[ci];if(!c)return;
+  const cur=c.moves[mi];const pat=(KB_MOVES[cur]||{}).pat;const opts=KB_BYPAT[pat]||[cur];
+  openModal(`<h3>⇄ Cambiar movimiento</h3><p class="mini" style="margin-bottom:8px">Mismo patrón. Elige otra opción (20 kg):</p>${opts.map(n=>`<button class="btn2" style="width:100%;margin-bottom:6px${n===cur?';border-color:var(--acc2)':''}" onclick="setKBMove('${rid}',${ci},${mi},'${n.replace(/'/g,"")}')">${n===cur?'✓ ':''}${n}</button>`).join('')}<button class="btn2" style="width:100%;margin-top:4px" onclick="renderKBPlan('${rid}')">← Volver</button>`);
+}
+function setKBMove(rid,ci,mi,name){const r=DB.routines.find(x=>x.id===rid);if(r&&(r.circuits||[])[ci]){r.circuits[ci].moves[mi]=name;persistRoutinesToSlot();save();}renderKBPlan(rid);}
+function varyKB(rid,ci){
+  const r=DB.routines.find(x=>x.id===rid);const c=r&&(r.circuits||[])[ci];if(!c)return;
+  c.moves=c.moves.map(n=>{const pat=(KB_MOVES[n]||{}).pat;const opts=(KB_BYPAT[pat]||[n]).filter(x=>x!==n);return opts.length?opts[Math.floor(Math.random()*opts.length)]:n;});
+  persistRoutinesToSlot();save();renderKBPlan(rid);toast('🎲 Circuito variado');
+}
+function finishKB(rid){
+  const r=DB.routines.find(x=>x.id===rid);if(!r)return;window._kbRid=rid;_sessFeel='normal';
+  openModal(`<h3>✓ Guardar sesión</h3><p class="mini" style="margin-bottom:10px">¿Cómo ha ido el circuito?</p>
+  <label>Rondas / vueltas completadas</label><input id="kbRounds" inputmode="numeric" type="number" placeholder="ej. 4">
+  <label style="margin-top:10px">Sensación</label><div class="row" style="margin-bottom:8px"><button class="btn-sm btn2" onclick="setSessFeel(this,'mala')">😣 Dura</button><button class="btn-sm btn2" onclick="setSessFeel(this,'normal')">😐 Normal</button><button class="btn-sm btn2" onclick="setSessFeel(this,'buena')">💪 Genial</button></div>
+  <label>Nota (opcional)</label><input id="kbNote" placeholder="ej. swing fluido, hombro ok...">
+  <button class="btn btn-acc2" style="margin-top:12px;width:100%" onclick="doFinishKB()">Guardar sesión</button>`);
+}
+function doFinishKB(){
+  const rid=window._kbRid;const r=DB.routines.find(x=>x.id===rid);if(!r)return;
+  const rounds=(document.getElementById('kbRounds')||{}).value||'';
+  const note=(document.getElementById('kbNote')||{}).value||'';
+  const started=(DB._kb&&DB._kb.ts)||Date.now();
+  const dur=Math.max(1,Math.round((Date.now()-started)/60000));
+  const rec={id:'s'+Date.now(),routineId:rid,name:r.name,date:today(),athlete:'casa',duration:dur,restFactor:1,feel:_sessFeel,note:note||'',blocks:[{type:'densidad',label:'Circuito KB 20 kg',result:rounds?rounds+' rondas':null,exercises:[]}]};
+  try{rec.density=computeDensity(rec);}catch(e){rec.density=0;}
+  DB.sessions.unshift(rec);DB._kb=null;_sessFeel='normal';save();releaseWake&&releaseWake();
+  closeModal();try{renderTodayReady();renderCycle();renderDashboard();}catch(e){}
+  toast('💪 Sesión KB guardada');
+  offerRecovery(r.name);
+}
+
 /* ===================== RUTINAS (visual, con sustituciones) ===================== */
-function confirmUpdatePlan(){openModal(`<h3>♻️ Actualizar al plan nuevo</h3><p class="mini" style="margin-bottom:10px">Regenera las rutinas de <b>${DB.mode==='fullbody'?'Full Body':DB.mode==='gym'?'PPL':DB.mode==='strong'?'Strongman':'Viaje'}</b> con el diseño nuevo (1 explosivo + básico en peso libre + accesorios en máquina + core opcional). <b>Conserva los kg</b> que ya tengas en cada ejercicio con el mismo nombre.</p><p class="mini" style="margin-bottom:12px;color:var(--gold)">⚠️ Reemplaza la estructura actual de este modo. Tu historial y tus backups NO se tocan.</p><button class="btn btn-acc2" style="width:100%" onclick="updateToNewPlan()">Sí, actualizar</button><button class="btn2" style="width:100%;margin-top:8px" onclick="closeModal()">Cancelar</button>`);}
+function confirmUpdatePlan(){const nom=DB.mode==='fullbody'?'Full Body':DB.mode==='gym'?'PPL':DB.mode==='strong'?'Strongman':DB.mode==='kb'?'Casa KB':'Viaje';const desc=DB.mode==='kb'?'con los circuitos nuevos de kettlebell':'con el diseño nuevo (1 explosivo + básico en peso libre + accesorios en máquina + core opcional)';openModal(`<h3>♻️ Actualizar al plan nuevo</h3><p class="mini" style="margin-bottom:10px">Regenera las rutinas de <b>${nom}</b> ${desc}. <b>Conserva los kg</b> que ya tengas en cada ejercicio con el mismo nombre.</p><p class="mini" style="margin-bottom:12px;color:var(--gold)">⚠️ Reemplaza la estructura actual de este modo. Tu historial y tus backups NO se tocan.</p><button class="btn btn-acc2" style="width:100%" onclick="updateToNewPlan()">Sí, actualizar</button><button class="btn2" style="width:100%;margin-top:8px" onclick="closeModal()">Cancelar</button>`);}
 function updateToNewPlan(){
   const old=DB.routines||[];
   const oldKg={};old.forEach(r=>(r.blocks||[]).forEach(b=>(b.exercises||[]).forEach(e=>{if(e&&e.name&&e.kg!==undefined&&e.kg!==''&&!(e.name in oldKg))oldKg[e.name]=e.kg;})));
@@ -912,6 +1035,7 @@ function updateToNewPlan(){
   if(DB.mode==='travel')fresh=travelRoutines();
   else if(DB.mode==='strong')fresh=strongRoutines();
   else if(DB.mode==='fullbody')fresh=fullBodyRoutines();
+  else if(DB.mode==='kb')fresh=kbRoutines();
   else fresh=buildRoutines(DB.cycle.rotIndex||0);
   fresh.forEach(r=>(r.blocks||[]).forEach(b=>(b.exercises||[]).forEach(e=>{if(e.name in oldKg){const v=parseFloat(oldKg[e.name]);if(!isNaN(v))e.kg=oldKg[e.name];}})));
   DB.routines=fresh;persistRoutinesToSlot();save();closeModal();renderRoutines();renderTodayReady();renderDashboard();toast('♻️ Rutinas actualizadas al plan nuevo · kg conservados');
@@ -919,11 +1043,19 @@ function updateToNewPlan(){
 function renderRoutines(){const el=document.getElementById('routineList');if(!el)return;
   const isT=DB.mode==='travel',isS=DB.mode==='strong';
   const isFB=DB.mode==='fullbody';
-  let head=`<div class="row" style="margin-bottom:8px"><button class="btn-sm ${isFB?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('fullbody')">🎯 Full Body</button><button class="btn-sm ${DB.mode==='gym'?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('gym')">🏋️ PPL</button><button class="btn-sm ${isS?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('strong')">🪨 Strong</button><button class="btn-sm ${isT?'btn-acc2':'btn2'}" style="flex:1" onclick="setMode('travel')">✈️ Viaje</button></div><button class="btn-sm btn-gold" style="width:100%;margin-bottom:10px" onclick="confirmUpdatePlan()">♻️ Actualizar al plan nuevo (conserva tus kg)</button>`;
+  const isKB=DB.mode==='kb';
+  let head=`<div class="row" style="margin-bottom:8px;flex-wrap:wrap"><button class="btn-sm ${isKB?'btn-acc2':'btn2'}" style="flex:1 1 30%" onclick="setMode('kb')">🏠 Casa KB</button><button class="btn-sm ${isFB?'btn-acc2':'btn2'}" style="flex:1 1 30%" onclick="setMode('fullbody')">🎯 Full Body</button><button class="btn-sm ${DB.mode==='gym'?'btn-acc2':'btn2'}" style="flex:1 1 30%" onclick="setMode('gym')">🏋️ PPL</button><button class="btn-sm ${isS?'btn-acc2':'btn2'}" style="flex:1 1 30%" onclick="setMode('strong')">🪨 Strong</button><button class="btn-sm ${isT?'btn-acc2':'btn2'}" style="flex:1 1 30%" onclick="setMode('travel')">✈️ Viaje</button></div><button class="btn-sm btn-gold" style="width:100%;margin-bottom:10px" onclick="confirmUpdatePlan()">♻️ Actualizar al plan nuevo (conserva tus kg)</button>`;
+  if(isKB)head+=`<div class="note" style="margin-bottom:10px;border-color:var(--acc)">🏠 <b>Casa KB — 3 días/semana + boxeo.</b> Circuitos de kettlebell (20 kg) de 25-30 min para hacer <b>por la mañana</b>: calientas, circuito guiado por voz con campana en cada cambio, y estiras. Cada movimiento tiene alternativas (⇄) y puedes <b>🎲 Variar</b> para no repetir. Súmale correr algún día suelto.</div>`;
   if(isFB)head+=`<div class="note" style="margin-bottom:10px;border-color:var(--acc2)">🎯 <b>Full Body — 2 días/semana.</b> Todo el cuerpo en cada sesión, rangos de 8-15 reps y descansos cortos para perder grasa manteniendo músculo. <b>Tú eliges los días</b> según tu semana. El peso no es lo importante: hazlas bien y no falles los 2 días. Alterna A y B.</div>`;
   if(isT)head+=`<div class="note" style="margin-bottom:10px">Modo viaje: rutinas sin gimnasio con peso corporal, comba, bandas + barra y carrera. Ideal para vacaciones.</div>`;
   if(isS)head+=`<div class="note" style="margin-bottom:10px">Modo strongman adaptado a tu nivel: compuestos pesados primero, hipertrofia con tiempo bajo tensión (baja lento) y acarreos (farmer walk, zercher). Full-body, gran gasto y músculo funcional.</div>`;
-  const list=DB.routines.map(r=>`<div class="ex-block"><div class="ex-head"><span class="nm">${r.name} <span class="split-tag">${r.day||'📅 tú eliges'}</span></span><span><button class="btn-sm btn2" onclick="editRoutine('${r.id}')">✎</button> <button class="btn-sm btn2" onclick="changeDay('${r.id}')">📅</button> <button class="btn-sm btn2" onclick="startFlow('${r.id}')">▶</button></span></div>${r.blocks.map(b=>`<div class="mini" style="margin-top:4px"><b style="color:var(--acc)">${b.label.replace('Bloque','B').replace(' · ',': ')}</b> ${b.exercises.map(e=>e.name+(SUBS[e.name]?` <span style="color:var(--acc2);cursor:pointer" onclick="showSubs('${e.name.replace(/'/g,"")}')">⇄</span>`:'')).join(' · ')}</div>`).join('')}</div>`).join('');
+  const list=DB.routines.map(r=>{
+    if(r.kb){
+      const cc=(r.circuits||[]).map(c=>`<div class="mini" style="margin-top:4px"><b style="color:var(--acc)">${c.work}/${c.rest} ×${c.rounds}</b> · ${c.moves.join(' · ')}</div>`).join('');
+      return `<div class="ex-block"><div class="ex-head"><span class="nm">${r.name} <span class="split-tag">${r.day||'📅 tú eliges'}</span></span><span><button class="btn-sm btn2" onclick="changeDay('${r.id}')">📅</button> <button class="btn-sm btn-acc2" onclick="startKB('${r.id}')">▶</button></span></div>${cc}</div>`;
+    }
+    return `<div class="ex-block"><div class="ex-head"><span class="nm">${r.name} <span class="split-tag">${r.day||'📅 tú eliges'}</span></span><span><button class="btn-sm btn2" onclick="editRoutine('${r.id}')">✎</button> <button class="btn-sm btn2" onclick="changeDay('${r.id}')">📅</button> <button class="btn-sm btn2" onclick="startFlow('${r.id}')">▶</button></span></div>${(r.blocks||[]).map(b=>`<div class="mini" style="margin-top:4px"><b style="color:var(--acc)">${b.label.replace('Bloque','B').replace(' · ',': ')}</b> ${b.exercises.map(e=>e.name+(SUBS[e.name]?` <span style="color:var(--acc2);cursor:pointer" onclick="showSubs('${e.name.replace(/'/g,"")}')">⇄</span>`:'')).join(' · ')}</div>`).join('')}</div>`;
+  }).join('');
   const box=`<div class="ex-block" style="border-color:var(--gold);margin-top:6px"><div class="ex-head"><span class="nm">🥊 BOXEO TÉCNICA <span class="split-tag" style="color:var(--gold)">guiado</span></span><button class="btn-sm btn-gold" onclick="startBoxSession()">▶ Empezar</button></div><div class="mini" style="margin-top:4px">5 rounds de 3 min con descanso de 1 min. Sombra, drills 1-2, combate imaginario y ráfagas, con vídeo y campana en cada round. Como tener un entrenador.</div></div>`;
   const reset=`<button class="btn2" style="margin-top:10px;width:100%;font-size:12px" onclick="resetRoutines()">🔄 Restaurar rutinas base de este modo</button><p class="mini" style="margin-top:4px;text-align:center">No borra tu historial de sesiones, solo repone las rutinas por defecto (útil si el orden se descuadró).</p>`;
   el.innerHTML=head+list+box+reset;
@@ -932,19 +1064,21 @@ function resetRoutines(){
   if(!confirm('¿Reponer las rutinas base de este modo? Tu historial de entrenos NO se toca, solo se regeneran las plantillas de rutina.'))return;
   if(DB.mode==='travel')DB.routines=travelRoutines();
   else if(DB.mode==='fullbody')DB.routines=fullBodyRoutines();
+  else if(DB.mode==='kb'){DB.routines=kbRoutines();DB.kbRoutinesSaved=DB.routines;}
   else if(DB.mode==='strong'){DB.routines=strongRoutines();DB.strongRoutinesSaved=DB.routines;}
   else{DB.routines=buildRoutines(DB.cycle.rotIndex||0);DB.gymRoutinesSaved=DB.routines;}
   save();renderRoutines();renderTodayReady();toast('🔄 Rutinas base restauradas');
 }
 function setMode(m){if(DB.mode==='strong')DB.strongRoutinesSaved=DB.routines;if(DB.mode===m){renderRoutines();return;}
   // guardar las rutinas actuales en su cajón antes de cambiar
-  if(DB.mode==='travel')DB.travelRoutinesSaved=DB.routines;else if(DB.mode==='strong')DB.strongRoutinesSaved=DB.routines;else if(DB.mode==='fullbody')DB.fbRoutinesSaved=DB.routines;else DB.gymRoutinesSaved=DB.routines;
+  persistRoutinesToSlot();
   DB.mode=m;
   if(m==='travel')DB.routines=DB.travelRoutinesSaved&&DB.travelRoutinesSaved.length?DB.travelRoutinesSaved:travelRoutines();
   else if(m==='strong')DB.routines=DB.strongRoutinesSaved&&DB.strongRoutinesSaved.length?DB.strongRoutinesSaved:strongRoutines();
   else if(m==='fullbody')DB.routines=DB.fbRoutinesSaved&&DB.fbRoutinesSaved.length?DB.fbRoutinesSaved:fullBodyRoutines();
+  else if(m==='kb')DB.routines=DB.kbRoutinesSaved&&DB.kbRoutinesSaved.length?DB.kbRoutinesSaved:kbRoutines();
   else DB.routines=DB.gymRoutinesSaved&&DB.gymRoutinesSaved.length?DB.gymRoutinesSaved:buildRoutines(DB.cycle.rotIndex||0);
-  save();renderRoutines();renderTodayReady();renderDashboard();toast(m==='travel'?'✈️ Modo viaje':m==='strong'?'🪨 Modo strongman':m==='fullbody'?'🎯 Full Body activado':'🏋️ Modo gym clásico');}
+  save();renderRoutines();renderTodayReady();renderDashboard();toast(m==='travel'?'✈️ Modo viaje':m==='strong'?'🪨 Modo strongman':m==='fullbody'?'🎯 Full Body activado':m==='kb'?'🏠 Casa KB activado':'🏋️ Modo gym clásico');}
 function changeDay(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;openModal(`<h3>Cambiar día de ${r.name}</h3><p class="mini" style="margin-bottom:10px">Elige el día que mejor te encaje. Si coincide con otra rutina, podrás tenerlas el mismo día sin problema.</p><label>Día</label><select id="cdDay">${DAYS.map(d=>`<option ${d===r.day?'selected':''}>${d}</option>`).join('')}</select><button class="btn" style="margin-top:14px" onclick="saveDay('${rid}')">Guardar</button>`);}
 function saveDay(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;r.day=document.getElementById('cdDay').value;save();closeModal();renderRoutines();renderTodayReady();renderDashboard();toast('📅 Día actualizado');}
 function editRoutine(rid){const r=DB.routines.find(x=>x.id===rid);if(!r)return;window._editRid=rid;renderRoutineEditor();}
@@ -2214,7 +2348,7 @@ function runSequence(title,phases,onDone){
   if(!phases||!phases.length){if(onDone)onDone();return;}
   initAudio();
   // enriquecer cada fase con animación si no la trae
-  phases=phases.map(p=>{if(p.anim)return p;if(p.kind==='rest'||p.kind==='cool'&&/calma/.test(p.lbl||''))return{...p,anim:'respira',ex:''};const a=autoAnim(p.lbl);return{...p,anim:a.anim,ex:a.ex};});
+  phases=phases.map(p=>{if(p.anim)return p;if(p.kind==='rest'||p.kind==='cool'&&/calma/.test(p.lbl||''))return{...p,anim:'respira',ex:''};const a=autoAnim(p.lbl);return{...p,anim:a.anim,ex:p.ex||a.ex};});
   SEQ={active:true,id:null,phases,idx:0,left:phases[0].sec,title,onDone};
   if(DB.settings&&DB.settings.wakeLock)requestWake();
   let ov=document.getElementById('seqOverlay');
@@ -2247,8 +2381,7 @@ function renderSeq(){
   ov.innerHTML=`<div style="width:100%;max-width:440px;text-align:center">
     <div class="mini" style="letter-spacing:2px;text-transform:uppercase">${SEQ.title}</div>
     <div style="font-family:Anton;font-size:26px;color:${col};letter-spacing:1px;margin-top:4px">${ph.lbl}</div>
-    <div style="display:flex;justify-content:center;margin:6px 0">${exSVG(ph.anim||'generic')}</div>
-    ${ph.ex?`<a class="exvid-link" href="https://www.youtube.com/results?search_query=${encodeURIComponent(ph.ex+' ejercicio técnica')}" target="_blank">🎬 Ver en vídeo</a>`:''}
+    ${ph.kind==='rest'?`<div style="font-size:40px;margin:10px 0">😮‍💨</div>`:`<div style="margin:10px 0 6px"><a href="${ytSearch((ph.ex||ph.lbl)+' técnica cómo se hace')}" target="_blank" style="text-decoration:none;display:block"><button class="btn btn-acc2" style="width:100%">🎬 Ver ${ph.lbl} en vídeo</button></a></div>`}
     <div style="font-family:Anton;font-size:64px;line-height:1;margin:4px 0">${m}:${String(s).padStart(2,'0')}</div>
     ${ph.tip?`<div style="font-size:14px;color:var(--dim);margin-bottom:8px">${ph.tip}</div>`:''}
     <div style="height:10px;background:var(--bg3);border-radius:5px;margin:0 20px"><div style="height:100%;background:${col};border-radius:5px;width:${pct}%;transition:width .3s"></div></div>
@@ -2291,6 +2424,29 @@ const WU_METCON=[
   {lbl:'Patrón del ejercicio',sec:45,tip:'Ensaya el gesto que harás, sin carga',kind:'activation'},
   {lbl:'Progresión de intensidad',sec:45,tip:'Sube el ritmo poco a poco',kind:'warm'}
 ];
+/* Calentamiento de MAÑANA (cuerpo frío, primera hora): articular suave → dinámico.
+   Clave para Alexander: entrena a primera hora, así que calienta de arriba abajo antes de cargar. */
+const WU_MORNING=[
+  {lbl:'Respira y despierta',sec:30,tip:'De pie, 5 respiraciones profundas. Rueda hombros hacia atrás.',kind:'warm',ex:'respiración activación mañana'},
+  {lbl:'Cuello suave',sec:30,tip:'Oreja al hombro y sí/no lentos. Sin forzar.',kind:'mobility',ex:'movilidad de cuello'},
+  {lbl:'Círculos de hombro y brazos',sec:40,tip:'Círculos grandes atrás, luego cruza y abre el pecho.',kind:'mobility',ex:'círculos de hombros movilidad'},
+  {lbl:'Gato-camello',sec:45,tip:'A cuatro patas: arquea y redondea la columna, lento.',kind:'mobility',ex:'gato camello movilidad columna'},
+  {lbl:'Rotación torácica',sec:40,tip:'A cuatro patas, mano en la nuca, abre el codo al techo. Alterna.',kind:'mobility',ex:'rotación torácica movilidad'},
+  {lbl:'Círculos de cadera',sec:40,tip:'De pie, manos en cadera, círculos amplios a cada lado.',kind:'mobility',ex:'círculos de cadera movilidad'},
+  {lbl:'Balanceo de pierna',sec:40,tip:'Agárrate a algo: balancea adelante-atrás y lateral. Cambia.',kind:'mobility',ex:'balanceo de pierna dinámico'},
+  {lbl:'Sentadilla profunda con apoyo',sec:45,tip:'Baja a la sentadilla y mécete abriendo caderas (prying squat).',kind:'activation',ex:'prying squat movilidad cadera'},
+  {lbl:'Tobillos',sec:35,tip:'Rodilla hacia la pared sin levantar el talón. Alterna.',kind:'mobility',ex:'movilidad de tobillo rodilla a pared'},
+  {lbl:'Activa el pulso',sec:60,tip:'15 sentadillas + 10 bisagras + 20 jumping jacks suaves.',kind:'warm',ex:'calentamiento dinámico activación'}
+];
+function startMorningWarmup(onDone){closeModal();runSequence('Calentamiento mañana',WU_MORNING.map(p=>({...p})),onDone||(()=>renderDashboard()));}
+function morningWarmupMenu(onDone){
+  window._wuDone=onDone||null;
+  const mins=Math.round(WU_MORNING.reduce((a,p)=>a+p.sec,0)/60);
+  openModal(`<h3>🔥 Calentamiento de mañana</h3><p class="mini" style="margin-bottom:10px">A primera hora el cuerpo está frío: 6 min de movilidad de arriba abajo antes de coger la kettlebell. Elige cómo:</p>
+  <button class="btn btn-acc" style="width:100%;margin-bottom:8px" onclick="startMorningWarmup(window._wuDone)">▶ Guiado por voz (${mins} min)</button>
+  <a href="${ytSearch('rutina movilidad articular mañana 6 minutos sin material')}" target="_blank" style="display:block;text-decoration:none"><button class="btn btn-acc2" style="width:100%;margin-bottom:8px">🎬 Seguir una rutina en vídeo</button></a>
+  <button class="btn2" style="width:100%" onclick="closeModal();if(window._wuDone)window._wuDone()">Saltar calentamiento</button>`);
+}
 function warmupFor(routine){
   // detectar tipo por nombre + primer ejercicio de fuerza
   const nm=(routine.name||'').toUpperCase();
